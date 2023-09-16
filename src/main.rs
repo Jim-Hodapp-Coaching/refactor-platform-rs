@@ -1,3 +1,3 @@
 fn main() {
-    println!("Hello, world!");
+    refactor_platform_api::main();
 }

@@ -1,0 +1,8 @@
+[package]
+name = "refactor-platform-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.6.20"
+tokio = { version = "1.32.0", features = ["full"] }

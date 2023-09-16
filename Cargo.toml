@@ -3,8 +3,8 @@ name = "refactor_platform_rs"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = [".", "api", "entity", "migration"]
 
 [dependencies]
-axum = "0.6.20"
-serde = "1.0.188"
+refactor-platform-api = { path = "api" }
