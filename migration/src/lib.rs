@@ -1,14 +1,12 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+pub use sea_orm_migration::prelude::*;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod m20220101_000001_create_table;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+pub struct Migrator;
+
+#[async_trait::async_trait]
+impl MigratorTrait for Migrator {
+    fn migrations() -> Vec<Box<dyn MigrationTrait>> {
+        vec![Box::new(m20220101_000001_create_table::Migration)]
     }
 }

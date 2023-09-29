@@ -7,4 +7,5 @@ edition = "2021"
 members = [".", "api", "entity", "migration"]
 
 [dependencies]
-refactor-platform-api = { path = "api" }
+api = { path = "api" }
+
