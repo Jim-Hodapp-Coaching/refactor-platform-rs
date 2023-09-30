@@ -2,4 +2,6 @@
 
 pub mod prelude;
 
+pub mod coaching_relationships;
 pub mod organizations;
+pub mod users;
