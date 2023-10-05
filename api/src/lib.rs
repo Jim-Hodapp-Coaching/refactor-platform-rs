@@ -1,5 +1,7 @@
-use service::sea_orm::{ConnectOptions, Database, DbErr};
+use service::sea_orm::{entity::prelude::*, ConnectOptions, Database, DatabaseConnection, DbErr};
 use tokio::time::Duration;
+
+use entity::{coaching_relationship, organization};
 
 #[tokio::main]
 async fn start() {
@@ -25,6 +27,22 @@ async fn start() {
     assert!(db.ping().await.is_ok());
     db.clone().close().await.unwrap();
     assert!(matches!(db.ping().await, Err(DbErr::ConnectionAcquire(_))));
+
+    seed_database(db);
+}
+
+fn seed_database(db: DatabaseConnection) {
+    let organization = organization::ActiveModel::from_json(json!({
+        "name": "Jim Hodapp Coaching",
+    }))?;
+
+    assert_eq!(
+        organization,
+        organization::ActiveModel {
+            id: ActiveValue::NotSet,
+            name: ActiveValue::Set("Jim Hodapp Coaching".to_owned()),
+        }
+    );
 }
 
 pub fn main() {

@@ -8,3 +8,8 @@ name = "entity"
 path = "src/lib.rs"
 
 [dependencies]
+serde = { version = "1", features = ["derive"] }
+
+
+[dependencies.sea-orm]
+version = "0.12.3"
