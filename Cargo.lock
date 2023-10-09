@@ -1865,6 +1865,7 @@ name = "refactor_platform_rs"
 version = "0.1.0"
 dependencies = [
  "api",
+ "clap",
 ]
 
 [[package]]

@@ -3,6 +3,8 @@ use tokio::time::Duration;
 
 use entity::{coaching_relationship, organization};
 
+//use refactor_platform_rs::config::Config;
+
 #[tokio::main]
 async fn start() {
     let mut opt = ConnectOptions::new("postgres://refactor_rs:password@localhost:5432/postgres");
