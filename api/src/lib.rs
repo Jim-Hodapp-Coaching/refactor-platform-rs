@@ -1,4 +1,7 @@
-use service::sea_orm::{entity::prelude::*, ConnectOptions, Database, DatabaseConnection, DbErr};
+use serde_json::json;
+use service::sea_orm::{
+    entity::prelude::*, query::*, ActiveValue, ConnectOptions, Database, DatabaseConnection, DbErr,
+};
 use tokio::time::Duration;
 
 use entity::{coaching_relationship, organization};
@@ -22,21 +25,14 @@ async fn start() {
         .await
         .expect("Database connection failed");
 
-    db.ping().await.unwrap();
-
-    println!("hello!");
-
-    assert!(db.ping().await.is_ok());
-    db.clone().close().await.unwrap();
-    assert!(matches!(db.ping().await, Err(DbErr::ConnectionAcquire(_))));
-
-    seed_database(db);
+    seed_database(db).await;
 }
 
-fn seed_database(db: DatabaseConnection) {
+async fn seed_database(db: DatabaseConnection) {
     let organization = organization::ActiveModel::from_json(json!({
         "name": "Jim Hodapp Coaching",
-    }))?;
+    }))
+    .unwrap();
 
     assert_eq!(
         organization,
@@ -45,6 +41,16 @@ fn seed_database(db: DatabaseConnection) {
             name: ActiveValue::Set("Jim Hodapp Coaching".to_owned()),
         }
     );
+
+    let persisted_org: organization::Model = organization.insert(&db).await.unwrap();
+
+    let queried_org: Option<organization::Model> =
+        organization::Entity::find_by_id(persisted_org.id)
+            .one(&db)
+            .await
+            .unwrap();
+
+    println!("queried_org: {:?}", queried_org);
 }
 
 pub fn main() {

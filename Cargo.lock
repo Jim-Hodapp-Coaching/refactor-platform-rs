@@ -132,6 +132,7 @@ dependencies = [
  "entity",
  "futures",
  "log",
+ "serde_json",
  "service",
  "tokio",
  "tower",
