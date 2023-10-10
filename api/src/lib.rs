@@ -4,7 +4,7 @@ use service::sea_orm::{
 };
 use tokio::time::Duration;
 
-use entity::{coaching_relationship, organization};
+use entity::{coaching_relationship, organization, user};
 
 //use refactor_platform_rs::config::Config;
 
@@ -51,6 +51,38 @@ async fn seed_database(db: DatabaseConnection) {
             .unwrap();
 
     println!("queried_org: {:?}", queried_org);
+
+    let caleb = user::ActiveModel::from_json(json!({
+        "email": "calebbourg2@gmail.com",
+        "first_name": "Caleb",
+        "last_name": "Bourg"
+    }))
+    .unwrap();
+
+    let persisted_caleb = caleb.insert(&db).await.unwrap();
+
+    let queried_caleb: Option<user::Model> = user::Entity::find_by_id(persisted_caleb.id)
+        .one(&db)
+        .await
+        .unwrap();
+
+    println!("queried_caleb: {:?}", queried_caleb);
+
+    let jim = user::ActiveModel::from_json(json!({
+        "email": "jim@jimhodappcoaching.com",
+        "first_name": "Jim",
+        "last_name": "Hodapp"
+    }))
+    .unwrap();
+
+    let persisted_jim = jim.insert(&db).await.unwrap();
+
+    let queried_jim: Option<user::Model> = user::Entity::find_by_id(persisted_jim.id)
+        .one(&db)
+        .await
+        .unwrap();
+
+    println!("queried_jim: {:?}", queried_jim);
 }
 
 pub fn main() {

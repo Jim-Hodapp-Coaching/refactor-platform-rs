@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(schema_name = "refactor_platform_rs", table_name = "users")]
 pub struct Model {
     #[sea_orm(primary_key)]
+    #[serde(skip_deserializing)]
     pub id: i32,
     pub email: String,
     pub first_name: String,
