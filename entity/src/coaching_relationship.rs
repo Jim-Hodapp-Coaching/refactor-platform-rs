@@ -20,6 +20,8 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum Relation {
     Organization,
+    Coach,
+    Coachee,
 }
 
 impl RelationTrait for Relation {
@@ -28,6 +30,14 @@ impl RelationTrait for Relation {
             Self::Organization => Entity::belongs_to(super::organization::Entity)
                 .from(Column::OrganizationId)
                 .to(super::organization::Column::Id)
+                .into(),
+            Self::Coach => Entity::belongs_to(super::user::Entity)
+                .from(Column::CoachId)
+                .to(super::user::Column::Id)
+                .into(),
+            Self::Coachee => Entity::belongs_to(super::user::Entity)
+                .from(Column::CoacheeId)
+                .to(super::user::Column::Id)
                 .into(),
         }
     }

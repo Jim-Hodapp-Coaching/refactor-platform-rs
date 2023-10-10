@@ -83,6 +83,26 @@ async fn seed_database(db: DatabaseConnection) {
         .unwrap();
 
     println!("queried_jim: {:?}", queried_jim);
+
+    let coaching_relationship = coaching_relationship::ActiveModel::from_json(json!({
+        "coach_id": queried_jim.unwrap().id.to_string(),
+        "coachee_id": queried_caleb.unwrap().id.to_string(),
+        "organization_id": queried_org.unwrap().id.to_string()
+    }))
+    .unwrap();
+
+    let persisted_coaching_relationship = coaching_relationship.insert(&db).await.unwrap();
+
+    let queried_coaching_relationship: Option<coaching_relationship::Model> =
+        coaching_relationship::Entity::find_by_id(persisted_coaching_relationship.id)
+            .one(&db)
+            .await
+            .unwrap();
+
+    println!(
+        "queried_coaching_relationship: {:?}",
+        queried_coaching_relationship
+    );
 }
 
 pub fn main() {
