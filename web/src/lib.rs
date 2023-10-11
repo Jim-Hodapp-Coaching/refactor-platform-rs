@@ -1,14 +1,22 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+pub use self::error::{Error, Result};
+use axum::Server;
+use std::net::SocketAddr;
+use std::str::FromStr;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod error;
+mod router;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub async fn init_server() -> Result<()> {
+    let host = "127.0.0.1";
+    let port = 3000;
+    let server_url = format!("{host}:{port}");
+
+    let addr = SocketAddr::from_str(&server_url).unwrap();
+    // using unwrap() here as the app should panic if the server cannot start
+    Server::bind(&addr)
+        .serve(router::define_routes().into_make_service())
+        .await
+        .unwrap();
+
+    Ok(())
 }

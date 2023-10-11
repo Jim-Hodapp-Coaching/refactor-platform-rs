@@ -1,6 +1,6 @@
 use serde_json::json;
 use service::sea_orm::{
-    entity::prelude::*, query::*, ActiveValue, ConnectOptions, Database, DatabaseConnection, DbErr,
+    entity::prelude::*, ActiveValue, ConnectOptions, Database, DatabaseConnection,
 };
 use tokio::time::Duration;
 
@@ -8,8 +8,7 @@ use entity::{coaching_relationship, organization, user};
 
 //use refactor_platform_rs::config::Config;
 
-#[tokio::main]
-async fn start() {
+pub async fn init_database() {
     let mut opt = ConnectOptions::new("postgres://refactor_rs:password@localhost:5432/postgres");
     opt.max_connections(100)
         .min_connections(5)
@@ -25,7 +24,7 @@ async fn start() {
         .await
         .expect("Database connection failed");
 
-    seed_database(db).await;
+    // seed_database(db).await;
 }
 
 async fn seed_database(db: DatabaseConnection) {
@@ -103,8 +102,4 @@ async fn seed_database(db: DatabaseConnection) {
         "queried_coaching_relationship: {:?}",
         queried_coaching_relationship
     );
-}
-
-pub fn main() {
-    start()
 }

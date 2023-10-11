@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 entity = { path = "../entity" }
-axum = "0.6.20"
 # used to block for testing
 futures = "0.3.28"
 log = "0.4.20"
