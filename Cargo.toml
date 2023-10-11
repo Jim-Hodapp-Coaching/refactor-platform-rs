@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = [".", "api", "entity", "migration"]
+members = [".", "entity_api", "entity", "migration"]
 
 [dependencies]
-api = { path = "api" }
+entity_api = { path = "entity_api" }
 clap = { version = "4.4.6", features = ["cargo", "derive", "env"] }
 

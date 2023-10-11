@@ -125,20 +125,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "api"
-version = "0.1.0"
-dependencies = [
- "axum",
- "entity",
- "futures",
- "log",
- "serde_json",
- "service",
- "tokio",
- "tower",
-]
-
-[[package]]
 name = "arrayvec"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -757,6 +743,20 @@ version = "0.1.0"
 dependencies = [
  "sea-orm",
  "serde",
+]
+
+[[package]]
+name = "entity_api"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "entity",
+ "futures",
+ "log",
+ "serde_json",
+ "service",
+ "tokio",
+ "tower",
 ]
 
 [[package]]
@@ -1865,8 +1865,8 @@ dependencies = [
 name = "refactor_platform_rs"
 version = "0.1.0"
 dependencies = [
- "api",
  "clap",
+ "entity_api",
 ]
 
 [[package]]

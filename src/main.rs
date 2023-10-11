@@ -8,5 +8,5 @@ fn main() {
     //     println!("DB URI: {uri}");
     // }
 
-    api::main();
+    entity_api::main();
 }
