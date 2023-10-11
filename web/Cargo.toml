@@ -9,3 +9,4 @@ edition = "2021"
 entity_api = { path = "../entity_api" }
 axum = "0.6.20"
 tower-http = { version = "0.4.4", features = ["fs"] }
+service = { path = "../service" }

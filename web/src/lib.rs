@@ -1,12 +1,14 @@
 pub use self::error::{Error, Result};
 use axum::Server;
+use service::AppState;
 use std::net::SocketAddr;
 use std::str::FromStr;
 
 mod error;
 mod router;
 
-pub async fn init_server() -> Result<()> {
+pub async fn init_server(_app_state: AppState) -> Result<()> {
+    // These will probably come from app_state.config (command line)
     let host = "127.0.0.1";
     let port = 3000;
     let server_url = format!("{host}:{port}");

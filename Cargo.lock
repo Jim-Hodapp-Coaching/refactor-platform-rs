@@ -3229,6 +3229,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "entity_api",
+ "service",
  "tower-http",
 ]
 

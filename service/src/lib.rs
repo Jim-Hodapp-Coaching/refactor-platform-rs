@@ -1,10 +1,11 @@
+use config::Config;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
 use tokio::time::Duration;
 
-//use refactor_platform_rs::config::Config;
+pub mod config;
 
-pub async fn init_database() -> Result<DatabaseConnection, DbErr> {
-    let mut opt = ConnectOptions::new("postgres://refactor_rs:password@localhost:5432/postgres");
+pub async fn init_database(mut app_state: AppState) -> Result<AppState, DbErr> {
+    let mut opt = ConnectOptions::new::<&str>(app_state.config.database_uri().as_ref());
     opt.max_connections(100)
         .min_connections(5)
         .connect_timeout(Duration::from_secs(8))
@@ -17,5 +18,21 @@ pub async fn init_database() -> Result<DatabaseConnection, DbErr> {
 
     let db = Database::connect(opt).await?;
 
-    Ok(db)
+    app_state.database_connection = Some(db);
+
+    Ok(app_state)
+}
+
+pub struct AppState {
+    pub database_connection: Option<DatabaseConnection>,
+    pub config: Config,
+}
+
+impl AppState {
+    pub fn new(config: Config) -> Self {
+        Self {
+            database_connection: None,
+            config: config,
+        }
+    }
 }
