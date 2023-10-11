@@ -8,7 +8,3 @@ entity = { path = "../entity" }
 # used to block for testing
 futures = "0.3.28"
 log = "0.4.20"
-serde_json = "1.0.107"
-service = { path = "../service" }
-tokio = { version = "1.32.0", features = ["full"] }
-tower = "0.4.13"

@@ -12,6 +12,9 @@ pub async fn init_server() -> Result<()> {
     let server_url = format!("{host}:{port}");
 
     let addr = SocketAddr::from_str(&server_url).unwrap();
+
+    println!("Server Starting!");
+
     // using unwrap() here as the app should panic if the server cannot start
     Server::bind(&addr)
         .serve(router::define_routes().into_make_service())

@@ -8,6 +8,9 @@ async fn main() {
     //     println!("DB URI: {uri}");
     // }
 
-    entity_api::init_database().await;
+    // Returning a DatabaseConnection here in case we need to pass it
+    // into the axum Router context at some point to make it available to
+    // route handlers (controllers)
+    let _db = service::init_database().await.unwrap();
     web::init_server().await.unwrap();
 }

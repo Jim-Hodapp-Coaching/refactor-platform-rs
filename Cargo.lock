@@ -752,10 +752,6 @@ dependencies = [
  "entity",
  "futures",
  "log",
- "serde_json",
- "service",
- "tokio",
- "tower",
 ]
 
 [[package]]
@@ -1881,7 +1877,7 @@ name = "refactor_platform_rs"
 version = "0.1.0"
 dependencies = [
  "clap",
- "entity_api",
+ "service",
  "tokio",
  "web",
 ]
@@ -2365,7 +2361,11 @@ dependencies = [
 name = "service"
 version = "0.1.0"
 dependencies = [
+ "log",
  "sea-orm",
+ "serde_json",
+ "tokio",
+ "tower",
 ]
 
 [[package]]
