@@ -1,21 +1,22 @@
+use crate::AppState;
 use axum::{
-    response::Html,
     routing::{get, get_service},
     Router,
 };
 use tower_http::services::ServeDir;
 
-pub fn define_routes() -> Router {
+use crate::controller::organization_controller::OrganizationController;
+
+pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
-        .merge(base_routes())
+        .merge(base_routes(app_state))
         .fallback_service(static_routes())
 }
 
-pub fn base_routes() -> Router {
-    Router::new().route(
-        "/",
-        get(|| async { Html("<p>this handler will be in a controller</p>") }),
-    )
+pub fn base_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/", get(OrganizationController::index))
+        .with_state(app_state)
 }
 
 // This will serve static files that we can use as a "fallback" for when the server panics

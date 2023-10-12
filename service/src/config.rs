@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Config {
     database_uri: Option<String>,
 }

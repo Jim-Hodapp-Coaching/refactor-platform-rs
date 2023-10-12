@@ -23,6 +23,8 @@ pub async fn init_database(mut app_state: AppState) -> Result<AppState, DbErr> {
     Ok(app_state)
 }
 
+// Needs to implement Clone to be able to be passed into Router as State
+#[derive(Clone)]
 pub struct AppState {
     pub database_connection: Option<DatabaseConnection>,
     pub config: Config,
