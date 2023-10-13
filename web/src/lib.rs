@@ -16,7 +16,7 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
 
     let addr = SocketAddr::from_str(&server_url).unwrap();
 
-    println!("Server Starting!");
+    println!("Server starting... listening for connections on http://{host}:{port}");
 
     // using unwrap() here as the app should panic if the server cannot start
     Server::bind(&addr)
