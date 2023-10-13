@@ -1,11 +1,26 @@
-#[derive(Clone)]
+use clap::Parser;
+
+#[derive(Clone, Parser)]
+#[command(author, version, about, long_about = None)]
 pub struct Config {
-    database_uri: Option<String>,
+    /// Sets the Postgresql database URI
+    #[arg(short, long, env, default_value="postgres://refactor_rs:password@localhost:5432/refactor_platform_rs")]
+    pub database_uri: Option<String>,
+
+    /// Turn on different tracing levels
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    pub trace: u8,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Config {
     pub fn new() -> Self {
-        Self { database_uri: None }
+        Config::parse()
     }
 
     pub fn set_database_uri(mut self, database_uri: String) -> Self {

@@ -12,7 +12,5 @@ async fn main() {
 }
 
 fn get_config() -> Config {
-    let config = Config::new();
-    // handle command line args and return service::config::Config struct
-    config.set_database_uri("postgres://refactor_rs:password@localhost:5432/postgres".to_string())
+    Config::new()
 }
