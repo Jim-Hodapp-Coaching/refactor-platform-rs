@@ -8,6 +8,7 @@ members = [".", "entity_api", "entity", "migration", "service", "web"]
 
 [dependencies]
 service = { path = "service" }
+entity_api = {path = "entity_api" }
 web = { path = "web" }
 clap = { version = "4.4.6", features = ["cargo", "derive", "env"] }
 tokio = "1.33.0"

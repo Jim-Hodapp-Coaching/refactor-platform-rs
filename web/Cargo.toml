@@ -6,8 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-entity_api = { path = "../entity_api" }
+entity = { path = "../entity" }
 axum = "0.6.20"
 tower-http = { version = "0.4.4", features = ["fs"] }
 serde_json = "1.0.107"
 service = { path = "../service" }
+
+[dependencies.sea-orm]
+version = "0.12.3" # sea-orm version
+features = [
+    "debug-print",
+    "runtime-tokio-native-tls",
+    "sqlx-postgres"
+]

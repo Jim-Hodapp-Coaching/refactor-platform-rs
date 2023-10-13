@@ -9,13 +9,13 @@ use crate::controller::organization_controller::OrganizationController;
 
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
-        .merge(base_routes(app_state))
+        .merge(organization_routes(app_state))
         .fallback_service(static_routes())
 }
 
-pub fn base_routes(app_state: AppState) -> Router {
+pub fn organization_routes(app_state: AppState) -> Router {
     Router::new()
-        .route("/", get(OrganizationController::index))
+        .route("/organization", get(OrganizationController::index))
         .with_state(app_state)
 }
 
