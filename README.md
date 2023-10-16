@@ -19,10 +19,10 @@ sea-orm-cli migrate generate your_table_name
 
 ## Run migrations (Assumes database name is postgres)
 ```bash
-DATABASE_URL=postgres://refactor_rs:password@localhost:5432/postgres sea-orm-cli migrate up -s refactor_platform_rs 
+DATABASE_URL=postgres://refactor_rs:password@localhost:5432/refactor_platform_rs sea-orm-cli migrate up -s refactor_platform_rs 
 ```
 
 ## Generate Entity from Database
 ```bash
- DATABASE_URL=postgres://refactor_rs:password@localhost:5432/postgres sea-orm-cli generate entity  -s refactor_platform_rs -o entity/src
+ DATABASE_URL=postgres://refactor_rs:password@localhost:5432/refactor_platform_rs sea-orm-cli generate entity  -s refactor_platform_rs -o entity/src
 ```
