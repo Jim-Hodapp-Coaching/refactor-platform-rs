@@ -19,7 +19,7 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
             organization,
             organization::ActiveModel {
                 id: ActiveValue::NotSet,
-                name: ActiveValue::Set("Jim Hodapp Coaching".to_owned()),
+                name: ActiveValue::Set(name.to_owned()),
             }
         );
 

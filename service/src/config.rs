@@ -4,7 +4,12 @@ use clap::Parser;
 #[command(author, version, about, long_about = None)]
 pub struct Config {
     /// Sets the Postgresql database URI to connect to
-    #[arg(short, long, env, default_value="postgres://refactor_rs:password@localhost:5432/refactor_platform_rs")]
+    #[arg(
+        short,
+        long,
+        env,
+        default_value = "postgres://refactor_rs:password@localhost:5432/refactor_platform_rs"
+    )]
     pub database_uri: Option<String>,
 
     /// Turn on different tracing levels [0 = Warn, 1 = Debug, 2 = Info, 3 = Trace]
