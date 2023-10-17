@@ -23,8 +23,8 @@ fn get_config() -> Config {
 fn init_logger(config: &Config) {
     let log_level = match config.trace_level {
         0 => simplelog::LevelFilter::Warn,
-        1 => simplelog::LevelFilter::Debug,
-        2 => simplelog::LevelFilter::Info,
+        1 => simplelog::LevelFilter::Info,
+        2 => simplelog::LevelFilter::Debug,
         3 => simplelog::LevelFilter::Trace,
         _ => simplelog::LevelFilter::Trace,
     };

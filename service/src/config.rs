@@ -12,7 +12,7 @@ pub struct Config {
     )]
     pub database_uri: Option<String>,
 
-    /// Turn on different tracing levels [0 = Warn, 1 = Debug, 2 = Info, 3 = Trace]
+    /// Turn on different tracing levels [0 = Warn, 1 = Info, 2 = Debug, 3 = Trace]
     #[arg(short, long, default_value_t = 0)]
     pub trace_level: u8,
 }
