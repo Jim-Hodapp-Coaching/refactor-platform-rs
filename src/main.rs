@@ -1,12 +1,41 @@
-// mod config;
+use service::{config::Config, AppState};
 
-// use config::*;
+extern crate simplelog;
 
-fn main() {
-    // let app_config = get_config();
-    // if let Some(uri) = app_config.uri.as_deref() {
-    //     println!("DB URI: {uri}");
-    // }
+#[tokio::main]
+async fn main() {
+    let config = get_config();
 
-    api::main();
+    init_logger(&config);
+
+    let mut app_state = AppState::new(config);
+    app_state = service::init_database(app_state).await.unwrap();
+
+    entity_api::seed_database(app_state.database_connection.as_ref().unwrap()).await;
+
+    web::init_server(app_state).await.unwrap();
+}
+
+fn get_config() -> Config {
+    Config::new()
+}
+
+fn init_logger(config: &Config) {
+    let log_level = match config.trace_level {
+        0 => simplelog::LevelFilter::Warn,
+        1 => simplelog::LevelFilter::Info,
+        2 => simplelog::LevelFilter::Debug,
+        3 => simplelog::LevelFilter::Trace,
+        _ => simplelog::LevelFilter::Trace,
+    };
+
+    simplelog::TermLogger::init(
+        log_level,
+        simplelog::Config::default(),
+        simplelog::TerminalMode::Mixed,
+        simplelog::ColorChoice::Auto,
+    )
+    .expect("Failed to start simplelog");
+
+    simplelog::info!("<b>Starting up...</b>.");
 }

@@ -4,9 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = [".", "api", "entity", "migration"]
+members = [".", "entity_api", "entity", "migration", "service", "web"]
 
 [dependencies]
-api = { path = "api" }
+service = { path = "service" }
+entity_api = {path = "entity_api" }
+web = { path = "web" }
+
 clap = { version = "4.4.6", features = ["cargo", "derive", "env"] }
+log = "0.4"
+simplelog = { version = "0.12", features = ["paris"] }
+tokio = "1.33.0"
 

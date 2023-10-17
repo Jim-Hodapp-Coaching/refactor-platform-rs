@@ -1,0 +1,17 @@
+[package]
+name = "entity_api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+entity = { path = "../entity" }
+serde_json = "1.0.107"
+log = "0.4.20"
+
+[dependencies.sea-orm]
+version = "0.12.3" # sea-orm version
+features = [
+    "debug-print",
+    "runtime-tokio-native-tls",
+    "sqlx-postgres"
+]

@@ -26,3 +26,17 @@ DATABASE_URL=postgres://refactor_rs:password@localhost:5432/refactor_platform_rs
 ```bash
  DATABASE_URL=postgres://refactor_rs:password@localhost:5432/refactor_platform_rs sea-orm-cli generate entity  -s refactor_platform_rs -o entity/src
 ```
+
+# Project Directory Structure
+
+`entity_api` - data operations on the various `Entity` models
+
+`entity` - shape of the data models and the relationships to each other
+
+`migration` - relational DB SQL migrations
+
+`service` - CLI flags, environment variables, config handling and backend daemon setup
+
+`src` - contains a main function that initializes logging and calls all sub-services
+
+`web` - API endpoint definition, routing, handling of request/responses, controllers
