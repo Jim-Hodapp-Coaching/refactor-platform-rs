@@ -5,6 +5,22 @@ extern crate simplelog;
 #[tokio::main]
 async fn main() {
     let config = get_config();
+
+    init_logger(&config);
+
+    let mut app_state = AppState::new(config);
+    app_state = service::init_database(app_state).await.unwrap();
+
+    entity_api::seed_database(app_state.database_connection.as_ref().unwrap()).await;
+
+    web::init_server(app_state).await.unwrap();
+}
+
+fn get_config() -> Config {
+    Config::new()
+}
+
+fn init_logger(config: &Config) {
     let log_level = match config.trace_level {
         0 => simplelog::LevelFilter::Warn,
         1 => simplelog::LevelFilter::Debug,
@@ -22,15 +38,4 @@ async fn main() {
     .expect("Failed to start simplelog");
 
     simplelog::info!("<b>Starting up...</b>.");
-
-    let mut app_state = AppState::new(config);
-    app_state = service::init_database(app_state).await.unwrap();
-
-    entity_api::seed_database(app_state.database_connection.as_ref().unwrap()).await;
-
-    web::init_server(app_state).await.unwrap();
-}
-
-fn get_config() -> Config {
-    Config::new()
 }
