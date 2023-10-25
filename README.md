@@ -9,7 +9,8 @@ CREATE SCHEMA IF NOT EXISTS refactor_platform_rs;
 --Check to see that the schema exists
 SELECT schema_name FROM information_schema.schemata;
 --Grant schema access to user
-GRANT CREATE ON SCHEMA public TO refactor_rs;
+GRANT CREATE ON SCHEMA refactor_platform_rs TO refactor_rs;
+GRANT USAGE ON SCHEMA refactor_platform_rs TO refactor_rs;
 ```
 
 ## Generate new migration
@@ -17,9 +18,9 @@ GRANT CREATE ON SCHEMA public TO refactor_rs;
 sea-orm-cli migrate generate your_table_name
 ```
 
-## Run migrations (Assumes database name is postgres)
+## Run migrations (Assumes database name is refactor_platform_rs)
 ```bash
-DATABASE_URL=postgres://refactor_rs:password@localhost:5432/postgres sea-orm-cli migrate up -s refactor_platform_rs 
+DATABASE_URL=postgres://refactor_rs:password@localhost:5432/refactor_platform_rs sea-orm-cli migrate up -s refactor_platform_rs 
 ```
 
 ## Generate Entity from Database
