@@ -16,3 +16,5 @@ log = "0.4"
 simplelog = { version = "0.12", features = ["paris"] }
 tokio = "1.33.0"
 
+[dev-dependencies]
+httpc-test = "0.1.7"
