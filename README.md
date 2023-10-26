@@ -1,6 +1,17 @@
-# Basic local DB setup and management
+# Refactor Coaching Platform (Backend)
 
-## Set Up Database (running commands against postgres server.)
+## A Brief Intro
+
+A Rust-based backend that provides a web API for various client applications (e.g. a web frontend) that facilitate the coaching of software engineers.
+
+The platform itself is useful for professional independent coaches, informal mentors and engineering leaders who work with individual software engineers and/or teams by providing a single application that facilitates and enhances your coaching practice.
+
+## Basic Local DB Setup and Management
+
+### Set Up Database
+
+Note: these are commands meant to run against a real Postgresql server.
+
 ```sql
 --create user
 CREATE USER refactor_rs WITH PASSWORD 'password';
@@ -12,22 +23,25 @@ SELECT schema_name FROM information_schema.schemata;
 GRANT CREATE ON SCHEMA public TO refactor_rs;
 ```
 
-## Generate new migration
+### Generate a New Migration
 ```bash
 sea-orm-cli migrate generate your_table_name
 ```
 
-## Run migrations (Assumes database name is postgres)
+### Run Migrations
+
+Note: this assumes a database name of `refactor_platform_rs`
+
 ```bash
 DATABASE_URL=postgres://refactor_rs:password@localhost:5432/refactor_platform_rs sea-orm-cli migrate up -s refactor_platform_rs 
 ```
 
-## Generate Entity from Database
+### Generate Entity from Database
 ```bash
  DATABASE_URL=postgres://refactor_rs:password@localhost:5432/refactor_platform_rs sea-orm-cli generate entity  -s refactor_platform_rs -o entity/src
 ```
 
-# Project Directory Structure
+## Project Directory Structure
 
 `entity_api` - data operations on the various `Entity` models
 
