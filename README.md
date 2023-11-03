@@ -1,6 +1,6 @@
 # Refactor Coaching Platform (Backend)
 
-## A Brief Intro
+## Intro
 
 A Rust-based backend that provides a web API for various client applications (e.g. a web frontend) that facilitate the coaching of software engineers.
 
