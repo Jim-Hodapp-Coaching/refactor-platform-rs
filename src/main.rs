@@ -1,5 +1,5 @@
 // Copyright (c) 2023 Jim Hodapp & Caleb Bourg
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -14,7 +14,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //!
 //! **Refactor Coaching Platform**
-//! 
+//!
 //! A Rust-based backend that provides a web API for various client applications
 //! (e.g. a web frontend) that facilitate the coaching of software engineers.
 //!
@@ -22,7 +22,6 @@
 //! mentors and engineering leaders who work with individual software engineers
 //! and/or teams by providing a single application that facilitates and enhances
 //! your coaching practice.
-//! 
 
 use service::{config::Config, AppState};
 

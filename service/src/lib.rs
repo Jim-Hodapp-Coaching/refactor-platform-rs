@@ -31,10 +31,10 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(config: Config) -> Self {
+    pub fn new(app_config: Config) -> Self {
         Self {
             database_connection: None,
-            config: config,
+            config: app_config,
         }
     }
 }
