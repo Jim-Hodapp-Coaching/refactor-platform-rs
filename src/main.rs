@@ -14,15 +14,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //!
 //! **Refactor Coaching Platform**
-//! 
+//! -
 //! A Rust-based backend that provides a web API for various client applications
 //! (e.g. a web frontend) that facilitate the coaching of software engineers.
-//!
+//! -
 //! The platform itself is useful for professional independent coaches, informal
 //! mentors and engineering leaders who work with individual software engineers
 //! and/or teams by providing a single application that facilitates and enhances
 //! your coaching practice.
-//! 
 
 use service::{config::Config, AppState};
 
