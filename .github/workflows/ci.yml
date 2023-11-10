@@ -36,17 +36,6 @@ jobs:
       - name: Test
         run: cargo test
 
-  docker_build:
-    name: Docker build
-    runs-on: ubuntu-22.04
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Build Docker image
-        run: docker build .
-
   lint:
     name: Lint
     runs-on: ubuntu-22.04
