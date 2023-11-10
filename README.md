@@ -1,3 +1,5 @@
+[![Build & Tests (backend)](https://github.com/Jim-Hodapp-Coaching/refactor-platform-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Jim-Hodapp-Coaching/refactor-platform-rs/actions/workflows/ci.yml)
+
 # Refactor Coaching Platform (Backend)
 
 ## Intro
