@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key)]
     #[serde(skip_deserializing)]
+    // TODO: consider changing this to a u64
     pub id: i32,
     pub name: String,
 }
