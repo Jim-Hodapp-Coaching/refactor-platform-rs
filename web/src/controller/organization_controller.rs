@@ -4,10 +4,10 @@ use axum::response::IntoResponse;
 use axum::Json;
 use entity::organization;
 use entity::organization::Entity as Organization;
-use sea_orm::ActiveValue::{Set, NotSet};
-use sea_orm::ActiveModelTrait;
-use sea_orm::DeleteResult;
 use sea_orm::entity::EntityTrait;
+use sea_orm::ActiveModelTrait;
+use sea_orm::ActiveValue::{NotSet, Set};
+use sea_orm::DeleteResult;
 use serde_json::json;
 
 extern crate log;
@@ -34,7 +34,10 @@ impl OrganizationController {
     /// --request POST \
     /// --data '{"name":"My New Organization"}' \
     /// http://localhost:3000/organizations
-    pub async fn create(State(app_state): State<AppState>, Json(organization_json): Json<organization::Model>) -> impl IntoResponse {
+    pub async fn create(
+        State(app_state): State<AppState>,
+        Json(organization_json): Json<organization::Model>,
+    ) -> impl IntoResponse {
         debug!("CREATE new Organization: {}", organization_json.name);
 
         let organization_active_model = organization::ActiveModel {
@@ -42,7 +45,8 @@ impl OrganizationController {
             name: Set(organization_json.name),
         };
 
-        let organization: organization::Model = organization_active_model.insert(&app_state.database_connection.unwrap())
+        let organization: organization::Model = organization_active_model
+            .insert(&app_state.database_connection.unwrap())
             .await
             .unwrap();
 
@@ -53,10 +57,14 @@ impl OrganizationController {
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request DELETE \
     /// http://localhost:3000/organizations/<id>
-    pub async fn delete(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+    pub async fn delete(
+        State(app_state): State<AppState>,
+        Path(id): Path<i32>,
+    ) -> impl IntoResponse {
         debug!("DELETE Organization by id: {}", id);
 
-        let res: DeleteResult = Organization::delete_by_id(id).exec(&app_state.database_connection.unwrap())
+        let res: DeleteResult = Organization::delete_by_id(id)
+            .exec(&app_state.database_connection.unwrap())
             .await
             .unwrap();
 
