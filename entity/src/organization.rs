@@ -3,11 +3,12 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, DeriveEntityModel, Eq, Deserialize, Serialize)]
 #[sea_orm(schema_name = "refactor_platform_rs", table_name = "organizations")]
 pub struct Model {
     #[sea_orm(primary_key)]
     #[serde(skip_deserializing)]
+    // TODO: consider changing this to a u64
     pub id: i32,
     pub name: String,
 }

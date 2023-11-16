@@ -1,6 +1,6 @@
 use crate::AppState;
 use axum::{
-    routing::{get, get_service},
+    routing::{delete, get, get_service, post, put},
     Router,
 };
 use tower_http::services::ServeDir;
@@ -15,7 +15,13 @@ pub fn define_routes(app_state: AppState) -> Router {
 
 pub fn organization_routes(app_state: AppState) -> Router {
     Router::new()
-        .route("/organization", get(OrganizationController::index))
+        // TODO: Add an API versioning scheme and prefix all routes with it
+        // See Router::nest() - https://docs.rs/axum/latest/axum/struct.Router.html#method.nest
+        .route("/organizations", get(OrganizationController::index))
+        .route("/organizations/:id", get(OrganizationController::read))
+        .route("/organizations", post(OrganizationController::create))
+        .route("/organizations/:id", put(OrganizationController::update))
+        .route("/organizations/:id", delete(OrganizationController::delete))
         .with_state(app_state)
 }
 
