@@ -3259,6 +3259,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "entity",
+ "entity_api",
  "log",
  "sea-orm",
  "serde_json",
