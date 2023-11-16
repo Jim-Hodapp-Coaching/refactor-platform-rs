@@ -1,4 +1,4 @@
-use crate::AppState;
+use crate::{AppState, Error};
 use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 use axum::Json;
@@ -76,7 +76,7 @@ impl OrganizationController {
         State(app_state): State<AppState>,
         Path(id): Path<i32>,
         Query(organization_params): Query<organization::Model>,
-    ) -> impl IntoResponse {
+    ) -> Result<Json<entity::organization::Model>, Error> {
         debug!(
             "UPDATE the entire Organization by id: {}, new name: {}",
             id, organization_params.name
@@ -99,10 +99,10 @@ impl OrganizationController {
                     .await
                     .unwrap()
             }
-            None => organization::Model::default(),
+            None => return Err(Error::EntityNotFound),
         };
 
-        Json(updated_organization)
+        Ok(Json(updated_organization))
     }
 
     /// DELETE an Organization entity specified by its primary key

@@ -5,12 +5,18 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
-    PlaceholderError,
+    InternalServer,
+    EntityNotFound,
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL SERVER ERROR").into_response()
+        match self {
+            Error::InternalServer => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL SERVER ERROR").into_response()
+            }
+            Error::EntityNotFound => (StatusCode::NOT_FOUND, "ENTITY NOT FOUND").into_response(),
+        }
     }
 }
 
