@@ -4,12 +4,12 @@ use axum::response::IntoResponse;
 use axum::Json;
 use entity::organization;
 use entity::organization::Entity as Organization;
+use entity_api::organization as OrganizationApi;
 use sea_orm::entity::EntityTrait;
 use sea_orm::ActiveModelTrait;
 use sea_orm::ActiveValue::{NotSet, Set};
 use sea_orm::DeleteResult;
 use serde_json::json;
-use entity_api::organization as OrganizationApi;
 
 extern crate log;
 use log::*;
@@ -22,7 +22,8 @@ impl OrganizationController {
     /// --request GET \
     /// http://localhost:4000/organizations
     pub async fn index(State(app_state): State<AppState>) -> impl IntoResponse {
-        let organizations = OrganizationApi::find_all(&app_state.database_connection.unwrap()).await;
+        let organizations =
+            OrganizationApi::find_all(&app_state.database_connection.unwrap()).await;
 
         Json(organizations)
     }
@@ -34,10 +35,11 @@ impl OrganizationController {
     pub async fn read(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
         debug!("GET Organization by id: {}", id);
 
-        let organization: Option<organization::Model> = organization::Entity::find_by_id(id)
-            .one(&app_state.database_connection.unwrap())
-            .await
-            .unwrap_or_default();
+        let organization: Result<Option<organization::Model>, Error> =
+            match OrganizationApi::find_by_id(&app_state.database_connection.unwrap(), id).await {
+                Ok(result) => Ok(result),
+                Err(error) => Err(error.into()),
+            };
 
         Json(organization)
     }
