@@ -3262,6 +3262,7 @@ dependencies = [
  "entity_api",
  "log",
  "sea-orm",
+ "serde",
  "serde_json",
  "service",
  "tower-http",
