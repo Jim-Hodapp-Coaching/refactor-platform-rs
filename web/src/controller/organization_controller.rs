@@ -36,10 +36,9 @@ impl OrganizationController {
         debug!("GET Organization by id: {}", id);
 
         let organization: Result<Option<organization::Model>, Error> =
-            match OrganizationApi::find_by_id(&app_state.database_connection.unwrap(), id).await {
-                Ok(result) => Ok(result),
-                Err(error) => Err(error.into()),
-            };
+            OrganizationApi::find_by_id(&app_state.database_connection.unwrap(), id)
+                .await
+                .map_err(|err| err.into());
 
         Json(organization)
     }
