@@ -31,7 +31,7 @@ impl IntoResponse for Error {
             Error::InternalServer => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL SERVER ERROR").into_response()
             }
-            Error::EntityNotFound => (StatusCode::NOT_FOUND, "ENTITY NOT FOUND").into_response(),
+            Error::EntityNotFound => (StatusCode::NO_CONTENT, "NO CONTENT").into_response(),
             Error::UnprocessableEntity => {
                 (StatusCode::UNPROCESSABLE_ENTITY, "UNPROCESSABLE ENTITY").into_response()
             }
