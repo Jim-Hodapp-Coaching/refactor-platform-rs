@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 entity = { path = "../entity" }
+service = { path = "../service" }
 serde_json = "1.0.107"
 log = "0.4.20"
 

@@ -22,8 +22,7 @@ impl OrganizationController {
     /// --request GET \
     /// http://localhost:4000/organizations
     pub async fn index(State(app_state): State<AppState>) -> impl IntoResponse {
-        let organizations =
-            OrganizationApi::find_all(&app_state.database_connection.unwrap()).await;
+        let organizations = OrganizationApi::find_all(&app_state).await;
 
         Json(organizations)
     }
@@ -36,7 +35,7 @@ impl OrganizationController {
         debug!("GET Organization by id: {}", id);
 
         let organization: Result<Option<organization::Model>, Error> =
-            OrganizationApi::find_by_id(&app_state.database_connection.unwrap(), id)
+            OrganizationApi::find_by_id(&app_state, id)
                 .await
                 .map_err(|err| err.into());
 

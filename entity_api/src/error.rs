@@ -17,6 +17,7 @@ pub struct Error {
 
 #[derive(Debug)]
 pub enum EntityApiErrorType {
+    DatabaseConnectionLost,
     // Record not found
     RecordNotFound,
     // Record not updated
@@ -50,7 +51,7 @@ impl From<DbErr> for Error {
             },
             DbErr::Conn(_) => Error {
                 inner: err,
-                error_type: EntityApiErrorType::SystemError,
+                error_type: EntityApiErrorType::DatabaseConnectionLost,
             },
             DbErr::Exec(_) => Error {
                 inner: err,

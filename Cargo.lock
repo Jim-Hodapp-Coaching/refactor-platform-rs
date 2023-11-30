@@ -793,6 +793,7 @@ dependencies = [
  "log",
  "sea-orm",
  "serde_json",
+ "service",
 ]
 
 [[package]]

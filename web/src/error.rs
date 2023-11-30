@@ -12,6 +12,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 #[derive(Debug, Serialize)]
 
 pub enum Error {
+    DatabaseConnectionLost,
     InternalServer,
     EntityNotFound,
     UnprocessableEntity,
@@ -28,6 +29,11 @@ impl std::fmt::Display for Error {
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self {
+            Error::DatabaseConnectionLost => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "DB CONNECTION LOST - INTERNAL SERVER ERROR",
+            )
+                .into_response(),
             Error::InternalServer => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL SERVER ERROR").into_response()
             }
@@ -42,6 +48,7 @@ impl IntoResponse for Error {
 impl From<EntityApiError> for Error {
     fn from(err: EntityApiError) -> Self {
         match err.error_type {
+            EntityApiErrorType::DatabaseConnectionLost => Error::DatabaseConnectionLost,
             EntityApiErrorType::RecordNotFound => Error::EntityNotFound,
             EntityApiErrorType::RecordNotUpdated => Error::UnprocessableEntity,
             EntityApiErrorType::SystemError => Error::InternalServer,
