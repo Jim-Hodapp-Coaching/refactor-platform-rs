@@ -20,7 +20,7 @@ impl OrganizationController {
     /// GET all Organizations
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request GET \
-    /// http://localhost:3000/organizations
+    /// http://localhost:4000/organizations
     pub async fn index(State(app_state): State<AppState>) -> impl IntoResponse {
         let organizations =
             OrganizationApi::find_all(&app_state.database_connection.unwrap()).await;
@@ -31,7 +31,7 @@ impl OrganizationController {
     /// GET a particular Organization entity specified by its primary key
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request GET \
-    /// http://localhost:3000/organizations/<id>
+    /// http://localhost:4000/organizations/<id>
     pub async fn read(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
         debug!("GET Organization by id: {}", id);
 
@@ -47,7 +47,7 @@ impl OrganizationController {
     /// Test this with curl: curl --header "Content-Type: application/json" \
     /// --request POST \
     /// --data '{"name":"My New Organization"}' \
-    /// http://localhost:3000/organizations
+    /// http://localhost:4000/organizations
     pub async fn create(
         State(app_state): State<AppState>,
         Json(organization_json): Json<organization::Model>,
@@ -70,7 +70,7 @@ impl OrganizationController {
     /// UPDATE a particular Organization entity specified by its primary key
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request PUT \
-    /// http://localhost:3000/organizations/<id>\?name\=New_Organization_Name
+    /// http://localhost:4000/organizations/<id>\?name\=New_Organization_Name
     pub async fn update(
         State(app_state): State<AppState>,
         Path(id): Path<i32>,
@@ -107,7 +107,7 @@ impl OrganizationController {
     /// DELETE an Organization entity specified by its primary key
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request DELETE \
-    /// http://localhost:3000/organizations/<id>
+    /// http://localhost:4000/organizations/<id>
     pub async fn delete(
         State(app_state): State<AppState>,
         Path(id): Path<i32>,
