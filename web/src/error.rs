@@ -4,8 +4,8 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
-use entity_api::error::EntityApiErrorType;
-use entity_api::error::Error as EntityApiError;
+use entity_api::error::EntityApiError;
+use entity_api::error::Error as EntityApiErrorSuper;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -45,13 +45,13 @@ impl IntoResponse for Error {
     }
 }
 
-impl From<EntityApiError> for Error {
-    fn from(err: EntityApiError) -> Self {
+impl From<EntityApiErrorSuper> for Error {
+    fn from(err: EntityApiErrorSuper) -> Self {
         match err.error_type {
-            EntityApiErrorType::DatabaseConnectionLost => Error::DatabaseConnectionLost,
-            EntityApiErrorType::RecordNotFound => Error::EntityNotFound,
-            EntityApiErrorType::RecordNotUpdated => Error::UnprocessableEntity,
-            EntityApiErrorType::SystemError => Error::InternalServer,
+            EntityApiError::DatabaseConnectionLost => Error::DatabaseConnectionLost,
+            EntityApiError::RecordNotFound => Error::EntityNotFound,
+            EntityApiError::RecordNotUpdated => Error::UnprocessableEntity,
+            EntityApiError::SystemError => Error::InternalServer,
         }
     }
 }
