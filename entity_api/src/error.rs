@@ -1,6 +1,8 @@
 use std::error::Error as StdError;
 use std::fmt;
 
+use serde::Serialize;
+
 use sea_orm::error::DbErr;
 
 /// Errors while executing operations related to entities.
@@ -10,12 +12,12 @@ use sea_orm::error::DbErr;
 #[derive(Debug)]
 pub struct Error {
     // Underlying error emitted from seaORM internals
-    pub inner: DbErr,
+    pub inner: Option<DbErr>,
     // Enum representing which category of error
     pub error_type: EntityApiErrorType,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum EntityApiErrorType {
     // Record not found
     RecordNotFound,
@@ -37,27 +39,27 @@ impl From<DbErr> for Error {
     fn from(err: DbErr) -> Self {
         match err {
             DbErr::RecordNotFound(_) => Error {
-                inner: err,
+                inner: Some(err),
                 error_type: EntityApiErrorType::RecordNotFound,
             },
             DbErr::RecordNotUpdated => Error {
-                inner: err,
+                inner: Some(err),
                 error_type: EntityApiErrorType::RecordNotUpdated,
             },
             DbErr::ConnectionAcquire(_) => Error {
-                inner: err,
+                inner: Some(err),
                 error_type: EntityApiErrorType::SystemError,
             },
             DbErr::Conn(_) => Error {
-                inner: err,
+                inner: Some(err),
                 error_type: EntityApiErrorType::SystemError,
             },
             DbErr::Exec(_) => Error {
-                inner: err,
+                inner: Some(err),
                 error_type: EntityApiErrorType::SystemError,
             },
             _ => Error {
-                inner: err,
+                inner: Some(err),
                 error_type: EntityApiErrorType::SystemError,
             },
         }

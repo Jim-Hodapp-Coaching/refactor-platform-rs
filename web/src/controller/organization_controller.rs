@@ -3,12 +3,7 @@ use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use entity::organization;
-use entity::organization::Entity as Organization;
 use entity_api::organization as OrganizationApi;
-use sea_orm::entity::EntityTrait;
-use sea_orm::ActiveModelTrait;
-use sea_orm::ActiveValue::{NotSet, Set};
-use sea_orm::DeleteResult;
 use serde_json::json;
 
 extern crate log;
@@ -32,15 +27,16 @@ impl OrganizationController {
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request GET \
     /// http://localhost:4000/organizations/<id>
-    pub async fn read(State(app_state): State<AppState>, Path(id): Path<i32>) -> impl IntoResponse {
+    pub async fn read(
+        State(app_state): State<AppState>,
+        Path(id): Path<i32>,
+    ) -> Result<impl IntoResponse, Error> {
         debug!("GET Organization by id: {}", id);
 
-        let organization: Result<Option<organization::Model>, Error> =
-            OrganizationApi::find_by_id(&app_state.database_connection.unwrap(), id)
-                .await
-                .map_err(|err| err.into());
+        let organization: Option<organization::Model> =
+            OrganizationApi::find_by_id(&app_state.database_connection.unwrap(), id).await?;
 
-        Json(organization)
+        Ok(Json(organization))
     }
 
     /// CREATE a new Organization entity
@@ -50,21 +46,15 @@ impl OrganizationController {
     /// http://localhost:4000/organizations
     pub async fn create(
         State(app_state): State<AppState>,
-        Json(organization_json): Json<organization::Model>,
-    ) -> impl IntoResponse {
-        debug!("CREATE new Organization: {}", organization_json.name);
+        Json(organization_model): Json<organization::Model>,
+    ) -> Result<impl IntoResponse, Error> {
+        debug!("CREATE new Organization: {}", organization_model.name);
 
-        let organization_active_model = organization::ActiveModel {
-            id: NotSet,
-            name: Set(organization_json.name),
-        };
+        let organization: organization::Model =
+            OrganizationApi::create(&app_state.database_connection.unwrap(), organization_model)
+                .await?;
 
-        let organization: organization::Model = organization_active_model
-            .insert(&app_state.database_connection.unwrap())
-            .await
-            .unwrap_or_default();
-
-        Json(organization)
+        Ok(Json(organization))
     }
 
     /// UPDATE a particular Organization entity specified by its primary key
@@ -74,32 +64,19 @@ impl OrganizationController {
     pub async fn update(
         State(app_state): State<AppState>,
         Path(id): Path<i32>,
-        Query(organization_params): Query<organization::Model>,
-    ) -> Result<Json<entity::organization::Model>, Error> {
+        Query(organization_model): Query<organization::Model>,
+    ) -> Result<impl IntoResponse, Error> {
         debug!(
             "UPDATE the entire Organization by id: {}, new name: {}",
-            id, organization_params.name
+            id, organization_model.name
         );
 
-        let db = app_state.database_connection.as_ref().unwrap();
-
-        let organization_to_update = organization::Entity::find_by_id(id)
-            .one(db)
-            .await
-            .unwrap_or_default();
-
-        let updated_organization = match organization_to_update {
-            Some(org) => {
-                let mut organization_am: organization::ActiveModel = org.into();
-                organization_am.name = Set(organization_params.name);
-
-                organization::Entity::update(organization_am)
-                    .exec(db)
-                    .await
-                    .unwrap()
-            }
-            None => return Err(Error::EntityNotFound),
-        };
+        let updated_organization: organization::Model = OrganizationApi::update(
+            &app_state.database_connection.unwrap(),
+            id,
+            organization_model,
+        )
+        .await?;
 
         Ok(Json(updated_organization))
     }
@@ -111,17 +88,10 @@ impl OrganizationController {
     pub async fn delete(
         State(app_state): State<AppState>,
         Path(id): Path<i32>,
-    ) -> impl IntoResponse {
+    ) -> Result<impl IntoResponse, Error> {
         debug!("DELETE Organization by id: {}", id);
 
-        let res: DeleteResult = Organization::delete_by_id(id)
-            .exec(&app_state.database_connection.unwrap())
-            .await
-            .unwrap();
-
-        // TODO: temporary check while learning, return a DBErr instead
-        assert_eq!(res.rows_affected, 1);
-
-        Json(json!({"id": id}))
+        OrganizationApi::delete_by_id(&app_state.database_connection.unwrap(), id).await?;
+        Ok(Json(json!({"id": id})))
     }
 }

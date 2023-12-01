@@ -792,6 +792,7 @@ dependencies = [
  "entity",
  "log",
  "sea-orm",
+ "serde",
  "serde_json",
 ]
 

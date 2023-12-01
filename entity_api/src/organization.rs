@@ -1,8 +1,47 @@
-use super::error::Error;
+use super::error::{EntityApiErrorType, Error};
 use entity::organization;
-use organization::{Entity, Model};
-use sea_orm::{entity::prelude::*, ActiveValue, DatabaseConnection};
+use organization::{ActiveModel, Entity, Model};
+use sea_orm::{entity::prelude::*, ActiveValue, DatabaseConnection, TryIntoModel};
 use serde_json::json;
+
+pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Result<Model, Error> {
+    let organization_active_model: ActiveModel = organization_model.into();
+    Ok(organization_active_model.insert(db).await?)
+}
+
+pub async fn update(
+    db: &DatabaseConnection,
+    id: i32,
+    organization_model: Model,
+) -> Result<Model, Error> {
+    let result = find_by_id(db, id).await?;
+
+    match result {
+        Some(_) => {
+            let active_model: ActiveModel = organization_model.into();
+            Ok(active_model.save(db).await?.try_into_model()?)
+        }
+        None => Err(Error {
+            inner: None,
+            error_type: EntityApiErrorType::RecordNotFound,
+        }),
+    }
+}
+
+pub async fn delete_by_id(db: &DatabaseConnection, id: i32) -> Result<(), Error> {
+    let result = find_by_id(db, id).await?;
+
+    match result {
+        Some(organization_model) => {
+            organization_model.delete(db).await?;
+            Ok(())
+        }
+        None => Err(Error {
+            inner: None,
+            error_type: EntityApiErrorType::RecordNotFound,
+        }),
+    }
+}
 
 pub async fn find_all(db: &DatabaseConnection) -> Vec<Model> {
     Entity::find().all(db).await.unwrap_or(vec![])

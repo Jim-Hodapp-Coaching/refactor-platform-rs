@@ -9,13 +9,8 @@ use entity_api::error::Error as EntityApiError;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, Serialize)]
-
-pub enum Error {
-    InternalServer,
-    EntityNotFound,
-    UnprocessableEntity,
-}
+#[derive(Debug)]
+pub struct Error(EntityApiError);
 
 impl StdError for Error {}
 
@@ -27,24 +22,25 @@ impl std::fmt::Display for Error {
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        match self {
-            Error::InternalServer => {
+        match self.0.error_type {
+            EntityApiErrorType::SystemError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL SERVER ERROR").into_response()
             }
-            Error::EntityNotFound => (StatusCode::NO_CONTENT, "NO CONTENT").into_response(),
-            Error::UnprocessableEntity => {
+            EntityApiErrorType::RecordNotFound => {
+                (StatusCode::NO_CONTENT, "NO CONTENT").into_response()
+            }
+            EntityApiErrorType::RecordNotUpdated => {
                 (StatusCode::UNPROCESSABLE_ENTITY, "UNPROCESSABLE ENTITY").into_response()
             }
         }
     }
 }
 
-impl From<EntityApiError> for Error {
-    fn from(err: EntityApiError) -> Self {
-        match err.error_type {
-            EntityApiErrorType::RecordNotFound => Error::EntityNotFound,
-            EntityApiErrorType::RecordNotUpdated => Error::UnprocessableEntity,
-            EntityApiErrorType::SystemError => Error::InternalServer,
-        }
+impl<E> From<E> for Error
+where
+    E: Into<EntityApiError>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
     }
 }
