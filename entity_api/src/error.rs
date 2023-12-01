@@ -14,11 +14,11 @@ pub struct Error {
     // Underlying error emitted from seaORM internals
     pub inner: Option<DbErr>,
     // Enum representing which category of error
-    pub error_type: EntityApiErrorType,
+    pub error_code: EntityApiErrorCode,
 }
 
 #[derive(Debug, Serialize)]
-pub enum EntityApiErrorType {
+pub enum EntityApiErrorCode {
     // Record not found
     RecordNotFound,
     // Record not updated
@@ -40,27 +40,27 @@ impl From<DbErr> for Error {
         match err {
             DbErr::RecordNotFound(_) => Error {
                 inner: Some(err),
-                error_type: EntityApiErrorType::RecordNotFound,
+                error_code: EntityApiErrorCode::RecordNotFound,
             },
             DbErr::RecordNotUpdated => Error {
                 inner: Some(err),
-                error_type: EntityApiErrorType::RecordNotUpdated,
+                error_code: EntityApiErrorCode::RecordNotUpdated,
             },
             DbErr::ConnectionAcquire(_) => Error {
                 inner: Some(err),
-                error_type: EntityApiErrorType::SystemError,
+                error_code: EntityApiErrorCode::SystemError,
             },
             DbErr::Conn(_) => Error {
                 inner: Some(err),
-                error_type: EntityApiErrorType::SystemError,
+                error_code: EntityApiErrorCode::SystemError,
             },
             DbErr::Exec(_) => Error {
                 inner: Some(err),
-                error_type: EntityApiErrorType::SystemError,
+                error_code: EntityApiErrorCode::SystemError,
             },
             _ => Error {
                 inner: Some(err),
-                error_type: EntityApiErrorType::SystemError,
+                error_code: EntityApiErrorCode::SystemError,
             },
         }
     }

@@ -2,9 +2,8 @@ use std::error::Error as StdError;
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::Serialize;
 
-use entity_api::error::EntityApiErrorType;
+use entity_api::error::EntityApiErrorCode;
 use entity_api::error::Error as EntityApiError;
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -20,16 +19,17 @@ impl std::fmt::Display for Error {
     }
 }
 
+// List of possible StatusCode variants https://docs.rs/http/latest/http/status/struct.StatusCode.html#associatedconstant.UNPROCESSABLE_ENTITY
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        match self.0.error_type {
-            EntityApiErrorType::SystemError => {
+        match self.0.error_code {
+            EntityApiErrorCode::SystemError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL SERVER ERROR").into_response()
             }
-            EntityApiErrorType::RecordNotFound => {
+            EntityApiErrorCode::RecordNotFound => {
                 (StatusCode::NO_CONTENT, "NO CONTENT").into_response()
             }
-            EntityApiErrorType::RecordNotUpdated => {
+            EntityApiErrorCode::RecordNotUpdated => {
                 (StatusCode::UNPROCESSABLE_ENTITY, "UNPROCESSABLE ENTITY").into_response()
             }
         }

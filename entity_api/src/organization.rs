@@ -1,4 +1,4 @@
-use super::error::{EntityApiErrorType, Error};
+use super::error::{EntityApiErrorCode, Error};
 use entity::organization;
 use organization::{ActiveModel, Entity, Model};
 use sea_orm::{entity::prelude::*, ActiveValue, DatabaseConnection, TryIntoModel};
@@ -23,7 +23,7 @@ pub async fn update(
         }
         None => Err(Error {
             inner: None,
-            error_type: EntityApiErrorType::RecordNotFound,
+            error_code: EntityApiErrorCode::RecordNotFound,
         }),
     }
 }
@@ -38,7 +38,7 @@ pub async fn delete_by_id(db: &DatabaseConnection, id: i32) -> Result<(), Error>
         }
         None => Err(Error {
             inner: None,
-            error_type: EntityApiErrorType::RecordNotFound,
+            error_code: EntityApiErrorCode::RecordNotFound,
         }),
     }
 }
