@@ -37,4 +37,8 @@ impl AppState {
             config: app_config,
         }
     }
+
+    pub fn db_conn_ref(&self) -> Option<&DatabaseConnection> {
+        self.database_connection.as_ref()
+    }
 }
