@@ -48,10 +48,7 @@ pub async fn find_all(db: &DatabaseConnection) -> Vec<Model> {
 }
 
 pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> Result<Option<Model>, Error> {
-    Entity::find_by_id(id)
-        .one(db)
-        .await
-        .map_err(|err| err.into())
+    Ok(Entity::find_by_id(id).one(db).await?)
 }
 
 pub(crate) async fn seed_database(db: &DatabaseConnection) {
