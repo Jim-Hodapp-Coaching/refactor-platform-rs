@@ -5,17 +5,14 @@ use sea_orm::{entity::prelude::*, ActiveValue};
 use serde_json::json;
 use service::AppState;
 
-pub async fn find_all(app_state: &AppState) -> Vec<Model> {
+pub async fn find_all(app_state: &AppState) -> Result<Vec<Model>, Error> {
     let db = app_state.database_connection.as_ref().unwrap();
-    Entity::find().all(db).await.unwrap_or(vec![])
+    Ok(Entity::find().all(db).await?)
 }
 
 pub async fn find_by_id(app_state: &AppState, id: i32) -> Result<Option<Model>, Error> {
     let db = app_state.database_connection.as_ref().unwrap();
-    Entity::find_by_id(id)
-        .one(db)
-        .await
-        .map_err(|err| err.into())
+    Ok(Entity::find_by_id(id).one(db).await?)
 }
 
 pub(crate) async fn seed_database(app_state: &AppState) {
