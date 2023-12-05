@@ -1,15 +1,23 @@
 use super::error::{EntityApiErrorCode, Error};
 use entity::organization;
 use organization::{ActiveModel, Entity, Model};
-use sea_orm::{entity::prelude::*, ActiveValue, DatabaseConnection, TryIntoModel};
+use sea_orm::{
+    entity::prelude::*, ActiveValue, ActiveValue::Set, DatabaseConnection, TryIntoModel,
+};
 use serde_json::json;
 
 extern crate log;
 use log::*;
 
 pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Result<Model, Error> {
-    let organization_active_model: ActiveModel = organization_model.into();
-    debug!("Organization Active Model: {:?}", organization_active_model);
+    let organization_active_model: ActiveModel = ActiveModel {
+        name: Set(organization_model.name.to_owned()),
+        ..Default::default()
+    };
+    debug!(
+        "ActiveModel to be inserted: {:?}",
+        organization_active_model
+    );
 
     Ok(organization_active_model.insert(db).await?)
 }
