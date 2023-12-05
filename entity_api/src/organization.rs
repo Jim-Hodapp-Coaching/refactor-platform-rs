@@ -23,7 +23,7 @@ pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Resul
     Ok(organization_active_model.insert(db).await?)
 }
 
-pub async fn update(db: &DatabaseConnection, id: i32, model: Model) -> Result<Model, Error> {
+pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Model, Error> {
     let result = find_by_id(db, id).await?;
 
     match result {
