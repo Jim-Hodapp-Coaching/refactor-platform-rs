@@ -28,7 +28,10 @@ pub async fn update(db: &DatabaseConnection, id: i32, model: Model) -> Result<Mo
 
     match result {
         Some(organization) => {
-            debug!("Existing Organization model to be Updated: {:?}", organization);
+            debug!(
+                "Existing Organization model to be Updated: {:?}",
+                organization
+            );
 
             let active_model: ActiveModel = ActiveModel {
                 id: Unchanged(organization.id),
@@ -48,7 +51,10 @@ pub async fn delete_by_id(db: &DatabaseConnection, id: i32) -> Result<(), Error>
 
     match result {
         Some(organization_model) => {
-            debug!("Existing Organization model to be deleted: {:?}", organization_model);
+            debug!(
+                "Existing Organization model to be deleted: {:?}",
+                organization_model
+            );
 
             organization_model.delete(db).await?;
             Ok(())
