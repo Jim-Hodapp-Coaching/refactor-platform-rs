@@ -16,7 +16,7 @@ pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Resul
         ..Default::default()
     };
     debug!(
-        "ActiveModel to be inserted: {:?}",
+        "New Organization ActiveModel to be inserted: {:?}",
         organization_active_model
     );
 
