@@ -84,7 +84,7 @@ impl OrganizationController {
     /// http://localhost:4000/organizations/<id>
     pub async fn delete(
         State(app_state): State<AppState>,
-        Path(id): Path<i32>,
+        Path(id): Path<Id>,
     ) -> Result<impl IntoResponse, Error> {
         debug!("DELETE Organization by id: {}", id);
 
