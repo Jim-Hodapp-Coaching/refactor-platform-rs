@@ -1,5 +1,5 @@
 use crate::{AppState, Error};
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use entity::organization;
