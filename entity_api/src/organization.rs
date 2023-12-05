@@ -48,6 +48,8 @@ pub async fn delete_by_id(db: &DatabaseConnection, id: i32) -> Result<(), Error>
 
     match result {
         Some(organization_model) => {
+            debug!("Model to be deleted: {:?}", organization_model);
+
             organization_model.delete(db).await?;
             Ok(())
         }
