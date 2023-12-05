@@ -59,12 +59,12 @@ impl OrganizationController {
 
     /// UPDATE a particular Organization entity specified by its primary key
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
-    /// --request PUT \
-    /// http://localhost:4000/organizations/<id>\?name\=New_Organization_Name
+    /// --request PUT  http://localhost:4000/organizations/<id> \
+    /// --data '{"name":"My Updated Organization"}'
     pub async fn update(
         State(app_state): State<AppState>,
         Path(id): Path<i32>,
-        Query(organization_model): Query<organization::Model>,
+        Json(organization_model): Json<organization::Model>,
     ) -> Result<impl IntoResponse, Error> {
         debug!(
             "UPDATE the entire Organization by id: {}, new name: {}",

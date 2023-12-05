@@ -2,7 +2,8 @@ use super::error::{EntityApiErrorCode, Error};
 use entity::organization;
 use organization::{ActiveModel, Entity, Model};
 use sea_orm::{
-    entity::prelude::*, ActiveValue, ActiveValue::Set, DatabaseConnection, TryIntoModel,
+    entity::prelude::*, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
+    TryIntoModel,
 };
 use serde_json::json;
 
@@ -22,17 +23,18 @@ pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Resul
     Ok(organization_active_model.insert(db).await?)
 }
 
-pub async fn update(
-    db: &DatabaseConnection,
-    id: i32,
-    organization_model: Model,
-) -> Result<Model, Error> {
+pub async fn update(db: &DatabaseConnection, id: i32, model: Model) -> Result<Model, Error> {
     let result = find_by_id(db, id).await?;
 
     match result {
-        Some(_) => {
-            let active_model: ActiveModel = organization_model.into();
-            Ok(active_model.save(db).await?.try_into_model()?)
+        Some(organization) => {
+            debug!("Model to be Updated: {:?}", organization);
+
+            let active_model: ActiveModel = ActiveModel {
+                id: Unchanged(organization.id),
+                name: Set(model.name),
+            };
+            Ok(active_model.update(db).await?.try_into_model()?)
         }
         None => Err(Error {
             inner: None,
