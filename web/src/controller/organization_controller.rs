@@ -28,7 +28,7 @@ impl OrganizationController {
     /// http://localhost:4000/organizations/<id>
     pub async fn read(
         State(app_state): State<AppState>,
-        Path(id): Path<i32>,
+        Path(id): Path<Id>,
     ) -> Result<impl IntoResponse, Error> {
         debug!("GET Organization by id: {}", id);
 
