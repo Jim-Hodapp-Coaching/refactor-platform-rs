@@ -60,12 +60,15 @@ pub async fn delete_by_id(db: &DatabaseConnection, id: i32) -> Result<(), Error>
     }
 }
 
-pub async fn find_all(db: &DatabaseConnection) -> Vec<Model> {
-    Entity::find().all(db).await.unwrap_or(vec![])
+pub async fn find_all(db: &DatabaseConnection) -> Result<Vec<Model>, Error> {
+    Ok(Entity::find().all(db).await?)
 }
 
 pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> Result<Option<Model>, Error> {
-    Ok(Entity::find_by_id(id).one(db).await?)
+    let organization = Entity::find_by_id(id).one(db).await?;
+    debug!("Organization found: {:?}", organization);
+
+    Ok(organization)
 }
 
 pub(crate) async fn seed_database(db: &DatabaseConnection) {

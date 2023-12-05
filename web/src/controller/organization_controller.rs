@@ -16,10 +16,10 @@ impl OrganizationController {
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request GET \
     /// http://localhost:4000/organizations
-    pub async fn index(State(app_state): State<AppState>) -> impl IntoResponse {
-        let organizations = OrganizationApi::find_all(app_state.db_conn_ref().unwrap()).await;
+    pub async fn index(State(app_state): State<AppState>) -> Result<impl IntoResponse, Error> {
+        let organizations = OrganizationApi::find_all(app_state.db_conn_ref().unwrap()).await?;
 
-        Json(organizations)
+        Ok(Json(organizations))
     }
 
     /// GET a particular Organization entity specified by its primary key
