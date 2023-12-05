@@ -70,7 +70,7 @@ pub async fn find_all(db: &DatabaseConnection) -> Result<Vec<Model>, Error> {
     Ok(Entity::find().all(db).await?)
 }
 
-pub async fn find_by_id(db: &DatabaseConnection, id: i32) -> Result<Option<Model>, Error> {
+pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>, Error> {
     let organization = Entity::find_by_id(id).one(db).await?;
     debug!("Organization found: {:?}", organization);
 
