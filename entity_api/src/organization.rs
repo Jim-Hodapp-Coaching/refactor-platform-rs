@@ -28,7 +28,7 @@ pub async fn update(db: &DatabaseConnection, id: i32, model: Model) -> Result<Mo
 
     match result {
         Some(organization) => {
-            debug!("Model to be Updated: {:?}", organization);
+            debug!("Existing Organization model to be Updated: {:?}", organization);
 
             let active_model: ActiveModel = ActiveModel {
                 id: Unchanged(organization.id),
