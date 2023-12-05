@@ -46,7 +46,7 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
     }
 }
 
-pub async fn delete_by_id(db: &DatabaseConnection, id: i32) -> Result<(), Error> {
+pub async fn delete_by_id(db: &DatabaseConnection, id: Id) -> Result<(), Error> {
     let result = find_by_id(db, id).await?;
 
     match result {
