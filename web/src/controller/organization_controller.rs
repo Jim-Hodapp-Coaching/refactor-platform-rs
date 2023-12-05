@@ -52,6 +52,8 @@ impl OrganizationController {
         let organization: organization::Model =
             OrganizationApi::create(app_state.db_conn_ref().unwrap(), organization_model).await?;
 
+        debug!("Newly Created Organization: {:?}", &organization);
+
         Ok(Json(organization))
     }
 

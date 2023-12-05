@@ -4,8 +4,13 @@ use organization::{ActiveModel, Entity, Model};
 use sea_orm::{entity::prelude::*, ActiveValue, DatabaseConnection, TryIntoModel};
 use serde_json::json;
 
+extern crate log;
+use log::*;
+
 pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Result<Model, Error> {
     let organization_active_model: ActiveModel = organization_model.into();
+    debug!("Organization Active Model: {:?}", organization_active_model);
+
     Ok(organization_active_model.insert(db).await?)
 }
 
