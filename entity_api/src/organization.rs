@@ -1,5 +1,5 @@
 use super::error::{EntityApiErrorCode, Error};
-use entity::organization;
+use entity::{organization, Id};
 use organization::{ActiveModel, Entity, Model};
 use sea_orm::{
     entity::prelude::*, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,

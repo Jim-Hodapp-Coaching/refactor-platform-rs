@@ -2,7 +2,7 @@ use crate::{AppState, Error};
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;
-use entity::organization;
+use entity::{organization, Id};
 use entity_api::organization as OrganizationApi;
 use serde_json::json;
 
