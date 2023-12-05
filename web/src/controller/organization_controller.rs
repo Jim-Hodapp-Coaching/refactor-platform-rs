@@ -63,7 +63,7 @@ impl OrganizationController {
     /// --data '{"name":"My Updated Organization"}'
     pub async fn update(
         State(app_state): State<AppState>,
-        Path(id): Path<i32>,
+        Path(id): Path<Id>,
         Json(organization_model): Json<organization::Model>,
     ) -> Result<impl IntoResponse, Error> {
         debug!(
