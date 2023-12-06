@@ -7,12 +7,14 @@ edition = "2021"
 
 [dependencies]
 entity = { path = "../entity" }
+entity_api = { path = "../entity_api" }
 service = { path = "../service" }
 
 axum = "0.6.20"
 log = "0.4"
 tower-http = { version = "0.4.4", features = ["fs"] }
 serde_json = "1.0.107"
+serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.sea-orm]
 version = "0.12.3" # sea-orm version

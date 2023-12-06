@@ -792,6 +792,7 @@ dependencies = [
  "entity",
  "log",
  "sea-orm",
+ "serde",
  "serde_json",
 ]
 
@@ -3370,8 +3371,10 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "entity",
+ "entity_api",
  "log",
  "sea-orm",
+ "serde",
  "serde_json",
  "service",
  "tower-http",
