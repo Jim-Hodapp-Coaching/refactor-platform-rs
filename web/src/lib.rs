@@ -23,7 +23,9 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     info!("Server starting... listening for connections on http://{host}:{port}");
 
     let listener = TcpListener::bind(listen_addr).await.unwrap();
-    axum::serve(listener, router::define_routes(app_state)).await.unwrap();
+    axum::serve(listener, router::define_routes(app_state))
+        .await
+        .unwrap();
 
     Ok(())
 }
