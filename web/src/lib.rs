@@ -1,8 +1,8 @@
 pub use self::error::{Error, Result};
-use axum::Server;
 use service::AppState;
 use std::net::SocketAddr;
 use std::str::FromStr;
+use tokio::net::TcpListener;
 
 extern crate log;
 
@@ -22,11 +22,8 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
 
     info!("Server starting... listening for connections on http://{host}:{port}");
 
-    // using unwrap() here as the app should panic if the server cannot start
-    Server::bind(&listen_addr)
-        .serve(router::define_routes(app_state).into_make_service())
-        .await
-        .unwrap();
+    let listener = TcpListener::bind(listen_addr).await.unwrap();
+    axum::serve(listener, router::define_routes(app_state)).await.unwrap();
 
     Ok(())
 }

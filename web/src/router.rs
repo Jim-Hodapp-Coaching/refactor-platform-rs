@@ -1,6 +1,6 @@
 use crate::AppState;
 use axum::{
-    routing::{delete, get, get_service, post, put},
+    routing::{delete, get, post, put},
     Router,
 };
 use tower_http::services::ServeDir;
@@ -27,5 +27,5 @@ pub fn organization_routes(app_state: AppState) -> Router {
 
 // This will serve static files that we can use as a "fallback" for when the server panics
 pub fn static_routes() -> Router {
-    Router::new().nest_service("/", get_service(ServeDir::new("./")))
+    Router::new().nest_service("/", ServeDir::new("./"))
 }
