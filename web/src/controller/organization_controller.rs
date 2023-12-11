@@ -17,7 +17,12 @@ impl OrganizationController {
     /// --request GET \
     /// http://localhost:4000/organizations
     pub async fn index(State(app_state): State<AppState>) -> Result<impl IntoResponse, Error> {
-        let organizations = OrganizationApi::find_all(app_state.db_conn_ref().unwrap()).await?;
+        let organizations = OrganizationApi::find_all(
+            app_state
+                .db_conn_ref()
+                .expect("DatabaseConnection not established"),
+        )
+        .await?;
 
         Ok(Json(organizations))
     }
@@ -32,10 +37,19 @@ impl OrganizationController {
     ) -> Result<impl IntoResponse, Error> {
         debug!("GET Organization by id: {}", id);
 
-        let organization: Option<organization::Model> =
-            OrganizationApi::find_by_id(app_state.db_conn_ref().unwrap(), id).await?;
+        let organization: Option<organization::Model> = OrganizationApi::find_by_id(
+            app_state
+                .db_conn_ref()
+                .expect("DatabaseConnection not established"),
+            id,
+        )
+        .await?;
 
         Ok(Json(organization))
+    }
+
+    pub async fn read_hw() -> &'static str {
+        "Hello world"
     }
 
     /// CREATE a new Organization entity
@@ -49,8 +63,13 @@ impl OrganizationController {
     ) -> Result<impl IntoResponse, Error> {
         debug!("CREATE new Organization: {}", organization_model.name);
 
-        let organization: organization::Model =
-            OrganizationApi::create(app_state.db_conn_ref().unwrap(), organization_model).await?;
+        let organization: organization::Model = OrganizationApi::create(
+            app_state
+                .db_conn_ref()
+                .expect("DatabaseConnection not established"),
+            organization_model,
+        )
+        .await?;
 
         debug!("Newly Created Organization: {:?}", &organization);
 
@@ -71,9 +90,14 @@ impl OrganizationController {
             id, organization_model.name
         );
 
-        let updated_organization: organization::Model =
-            OrganizationApi::update(app_state.db_conn_ref().unwrap(), id, organization_model)
-                .await?;
+        let updated_organization: organization::Model = OrganizationApi::update(
+            app_state
+                .db_conn_ref()
+                .expect("DatabaseConnection not established"),
+            id,
+            organization_model,
+        )
+        .await?;
 
         Ok(Json(updated_organization))
     }
@@ -88,7 +112,13 @@ impl OrganizationController {
     ) -> Result<impl IntoResponse, Error> {
         debug!("DELETE Organization by id: {}", id);
 
-        OrganizationApi::delete_by_id(app_state.db_conn_ref().unwrap(), id).await?;
+        OrganizationApi::delete_by_id(
+            app_state
+                .db_conn_ref()
+                .expect("DatabaseConnection not established"),
+            id,
+        )
+        .await?;
         Ok(Json(json!({"id": id})))
     }
 }
