@@ -16,3 +16,6 @@ log = "0.4"
 simplelog = { version = "0.12", features = ["paris"] }
 tokio = "1.33.0"
 
+[[bin]]
+name = "all_tests"
+path = "src/scripts/all_tests.rs"
