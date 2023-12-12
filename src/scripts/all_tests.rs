@@ -2,33 +2,37 @@ use std::io::{self, Write};
 use std::process::Command;
 
 fn main() {
-    let workspace_root = ".".to_string();
+    let mut exit_codes = Vec::new();
 
-    for crate_name in find_crates(&workspace_root).iter() {
+    for crate_name in crates_to_test().iter() {
         let mut command = Command::new("cargo");
+
         println!("Running Tests for {:?} Crate", crate_name);
+
+        // It may be that we need to map each crate with specific commands at some point
+        // for now calling "--features mock" for each crate.
         command
             .args(["test", "--features", "mock"])
             .args(["-p", crate_name]);
+
         let output = command.output().unwrap();
 
         println!("Test Output Status: {}", output.status);
 
         io::stdout().write_all(&output.stdout).unwrap();
         io::stderr().write_all(&output.stderr).unwrap();
+
+        exit_codes.push(output.status.code().unwrap());
     }
+    if exit_codes.iter().any(|code| *code != 0i32) {
+        println!("Exit Codes From Tests: {:?}", exit_codes);
+        // Will fail CI
+        std::process::exit(1);
+    }
+    // Will pass CI
+    std::process::exit(0);
 }
 
-fn find_crates(workspace_root: &str) -> Vec<String> {
-    let mut crates = Vec::new();
-
-    for entry in std::fs::read_dir(workspace_root).unwrap() {
-        let entry = entry.unwrap();
-        if entry.path().is_dir() && entry.path().join("Cargo.toml").is_file() {
-            let crate_name = entry.file_name().to_string_lossy().to_string();
-            crates.push(crate_name);
-        }
-    }
-
-    crates
+fn crates_to_test() -> Vec<String> {
+    vec!["entity_api".to_string()]
 }
