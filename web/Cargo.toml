@@ -24,3 +24,6 @@ features = [
     "runtime-tokio-native-tls",
     "sqlx-postgres"
 ]
+
+[features]
+mock = ["sea-orm/mock"]
