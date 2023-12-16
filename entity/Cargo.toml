@@ -12,4 +12,4 @@ serde = { version = "1", features = ["derive"] }
 
 
 [dependencies.sea-orm]
-version = "0.12.3"
+version = "0.12"
