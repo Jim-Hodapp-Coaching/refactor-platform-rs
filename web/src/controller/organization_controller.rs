@@ -88,7 +88,7 @@ impl OrganizationController {
     ) -> Result<impl IntoResponse, Error> {
         debug!("DELETE Organization by id: {}", id);
 
-        OrganizationApi::delete_by_id(&app_state.db_conn_ref().unwrap(), id).await?;
+        OrganizationApi::delete_by_id(app_state.db_conn_ref().unwrap(), id).await?;
         Ok(Json(json!({"id": id})))
     }
 }
