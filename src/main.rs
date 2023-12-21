@@ -64,3 +64,54 @@ fn init_logger(config: &Config) {
 
     simplelog::info!("<b>Starting up...</b>.");
 }
+
+#[cfg(test)]
+mod all_tests {
+    use std::io::{self, Write};
+    use std::process::Command;
+    #[tokio::test]
+    async fn main() {
+        let mut exit_codes = Vec::new();
+
+        for crate_name in crates_to_test().iter() {
+            let mut command = Command::new("cargo");
+
+            io::stdout()
+                .write_fmt(format_args!("Running Tests for {:?} Crate", crate_name))
+                .unwrap();
+
+            // It may be that we need to map each crate with specific commands at some point
+            // for now calling "--features mock" for each crate.
+            command
+                .args(["test", "--features", "mock"])
+                .args(["-p", crate_name]);
+
+            let output = command.output().unwrap();
+
+            io::stdout()
+                .write_fmt(format_args!(
+                    "{:?} Test's Output Status: {}",
+                    crate_name, output.status
+                ))
+                .unwrap();
+
+            io::stdout().write_all(&output.stdout).unwrap();
+            io::stderr().write_all(&output.stderr).unwrap();
+
+            exit_codes.push(output.status.code().unwrap());
+        }
+        if exit_codes.iter().any(|code| *code != 0i32) {
+            io::stdout()
+                .write_fmt(format_args!("Exit Codes From Tests: {:?}", exit_codes))
+                .unwrap();
+            // Will fail CI
+            std::process::exit(1);
+        }
+        // Will pass CI
+        std::process::exit(0);
+
+        fn crates_to_test() -> Vec<String> {
+            vec!["entity_api".to_string(), "web".to_string()]
+        }
+    }
+}
