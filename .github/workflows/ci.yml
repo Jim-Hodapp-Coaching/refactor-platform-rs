@@ -34,7 +34,7 @@ jobs:
         run: cargo build --all-targets
 
       - name: Test
-        run: cargo run --bin all_tests
+        run: cargo test
 
   lint:
     name: Lint
