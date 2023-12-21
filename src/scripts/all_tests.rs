@@ -34,5 +34,5 @@ fn main() {
 }
 
 fn crates_to_test() -> Vec<String> {
-    vec!["entity_api".to_string()]
+    vec!["entity_api".to_string(), "web".to_string()]
 }

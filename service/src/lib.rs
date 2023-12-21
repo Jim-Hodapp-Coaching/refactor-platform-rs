@@ -42,4 +42,8 @@ impl AppState {
     pub fn db_conn_ref(&self) -> Option<&DatabaseConnection> {
         self.database_connection.as_ref().as_ref()
     }
+
+    pub fn set_db_conn(&mut self, db: DatabaseConnection) {
+        self.database_connection = Arc::new(Some(db));
+    }
 }
