@@ -48,7 +48,7 @@ fn get_config() -> Config {
 }
 
 fn init_logger(config: &Config) {
-    let log_level = match config.log_level_filter {
+    let log_level_filter = match config.log_level_filter {
         LevelFilter::Off => simplelog::LevelFilter::Off,
         LevelFilter::Error => simplelog::LevelFilter::Error,
         LevelFilter::Warn => simplelog::LevelFilter::Warn,
@@ -58,7 +58,7 @@ fn init_logger(config: &Config) {
     };
 
     simplelog::TermLogger::init(
-        log_level,
+        log_level_filter,
         simplelog::Config::default(),
         simplelog::TerminalMode::Mixed,
         simplelog::ColorChoice::Auto,

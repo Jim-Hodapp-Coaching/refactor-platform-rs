@@ -27,7 +27,7 @@ pub struct Config {
         short,
         long,
         default_value_t = LevelFilter::Warn,
-        value_parser = clap::builder::PossibleValuesParser::new(["off", "error", "warn", "info", "debug", "trace"])
+        value_parser = clap::builder::PossibleValuesParser::new(["OFF", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"])
             .map(|s| s.parse::<LevelFilter>().unwrap()),
         )]
     pub log_level_filter: LevelFilter,
