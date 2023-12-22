@@ -1,6 +1,8 @@
+use clap::builder::TypedValueParser as _;
 use clap::Parser;
+use std::fmt;
 
-#[derive(Clone, Parser)]
+#[derive(Clone, Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Config {
     /// Sets the Postgresql database URI to connect to
@@ -20,9 +22,15 @@ pub struct Config {
     #[arg(short, long, default_value_t = 4000)]
     pub port: u16,
 
-    /// Turn on different tracing levels [0 = Warn, 1 = Info, 2 = Debug, 3 = Trace]
-    #[arg(short, long, default_value_t = 0)]
-    pub trace_level: u8,
+    /// Turn on log level verbosity threshold to control what gets displayed on console output
+    #[arg(
+        short,
+        long,
+        default_value_t = LogLevel::Warn,
+        value_parser = clap::builder::PossibleValuesParser::new(["error", "warn", "info", "debug", "trace"])
+            .map(|s| s.parse::<LogLevel>().unwrap()),
+        )]
+    pub log_level: LogLevel,
 }
 
 impl Default for Config {
@@ -43,5 +51,57 @@ impl Config {
 
     pub fn database_uri(&self) -> String {
         self.database_uri.clone().expect("No Database URI Provided")
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+#[repr(u8)]
+pub enum LogLevel {
+    Error = 0,
+    #[default]
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl From<LogLevel> for u8 {
+    fn from(trace_level: LogLevel) -> u8 {
+        match trace_level {
+            LogLevel::Error => 0,
+            LogLevel::Warn => 1,
+            LogLevel::Info => 2,
+            LogLevel::Debug => 3,
+            LogLevel::Trace => 4,
+        }
+    }
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let level_string = match self {
+            LogLevel::Error => "error",
+            LogLevel::Warn => "warn",
+            LogLevel::Info => "info",
+            LogLevel::Debug => "debug",
+            LogLevel::Trace => "trace",
+        };
+
+        level_string.fmt(f)
+    }
+}
+
+impl std::str::FromStr for LogLevel {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "trace" => Ok(Self::Trace),
+            "debug" => Ok(Self::Debug),
+            "info" => Ok(Self::Info),
+            "warn" => Ok(Self::Warn),
+            "error" => Ok(Self::Error),
+            _ => Err(format!("Unknown trace level: {s}")),
+        }
     }
 }

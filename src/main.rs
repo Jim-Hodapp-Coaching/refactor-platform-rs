@@ -23,7 +23,10 @@
 //! and/or teams by providing a single application that facilitates and enhances
 //! your coaching practice.
 
-use service::{config::Config, AppState};
+use service::{
+    config::{Config, LogLevel},
+    AppState,
+};
 
 extern crate simplelog;
 
@@ -46,12 +49,12 @@ fn get_config() -> Config {
 }
 
 fn init_logger(config: &Config) {
-    let log_level = match config.trace_level {
-        0 => simplelog::LevelFilter::Warn,
-        1 => simplelog::LevelFilter::Info,
-        2 => simplelog::LevelFilter::Debug,
-        3 => simplelog::LevelFilter::Trace,
-        _ => simplelog::LevelFilter::Trace,
+    let log_level = match config.log_level {
+        LogLevel::Error => simplelog::LevelFilter::Error,
+        LogLevel::Warn => simplelog::LevelFilter::Warn,
+        LogLevel::Info => simplelog::LevelFilter::Info,
+        LogLevel::Debug => simplelog::LevelFilter::Debug,
+        LogLevel::Trace => simplelog::LevelFilter::Trace,
     };
 
     simplelog::TermLogger::init(
@@ -65,20 +68,25 @@ fn init_logger(config: &Config) {
     simplelog::info!("<b>Starting up...</b>.");
 }
 
+// This is the parent test "runner" that initiates all other crate
+// unit/integration tests.
 #[cfg(test)]
 mod all_tests {
-    use std::io::{self, Write};
+    use service::config::LogLevel;
     use std::process::Command;
+
     #[tokio::test]
     async fn main() {
+        let mut config = super::get_config();
+        config.log_level = LogLevel::Trace;
+        super::init_logger(&config);
+
         let mut exit_codes = Vec::new();
 
         for crate_name in crates_to_test().iter() {
             let mut command = Command::new("cargo");
 
-            io::stdout()
-                .write_fmt(format_args!("Running Tests for {:?} Crate", crate_name))
-                .unwrap();
+            simplelog::info!("<b>Running tests for {:?} crate</b>\r\n", crate_name);
 
             // It may be that we need to map each crate with specific commands at some point
             // for now calling "--features mock" for each crate.
@@ -88,22 +96,23 @@ mod all_tests {
 
             let output = command.output().unwrap();
 
-            io::stdout()
-                .write_fmt(format_args!(
-                    "{:?} Test's Output Status: {}",
-                    crate_name, output.status
-                ))
-                .unwrap();
+            match output.status.success() {
+                true => {
+                    simplelog::info!("<b>All {:?} tests completed successfully.\r\n", crate_name)
+                }
+                false => simplelog::error!(
+                    "<b>{:?} tests completed with errors ({})</b>\r\n",
+                    crate_name,
+                    output.status
+                ),
+            }
 
-            io::stdout().write_all(&output.stdout).unwrap();
-            io::stderr().write_all(&output.stderr).unwrap();
+            simplelog::info!("{}", String::from_utf8_lossy(output.stdout.as_slice()));
 
             exit_codes.push(output.status.code().unwrap());
         }
         if exit_codes.iter().any(|code| *code != 0i32) {
-            io::stdout()
-                .write_fmt(format_args!("Exit Codes From Tests: {:?}", exit_codes))
-                .unwrap();
+            simplelog::error!("** One or more crate tests failed.");
             // Will fail CI
             std::process::exit(1);
         }
