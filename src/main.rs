@@ -23,10 +23,9 @@
 //! and/or teams by providing a single application that facilitates and enhances
 //! your coaching practice.
 
-use service::{
-    config::{Config, LogLevel},
-    AppState,
-};
+use service::{config::Config, AppState};
+
+use log::LevelFilter;
 
 extern crate simplelog;
 
@@ -49,12 +48,13 @@ fn get_config() -> Config {
 }
 
 fn init_logger(config: &Config) {
-    let log_level = match config.log_level {
-        LogLevel::Error => simplelog::LevelFilter::Error,
-        LogLevel::Warn => simplelog::LevelFilter::Warn,
-        LogLevel::Info => simplelog::LevelFilter::Info,
-        LogLevel::Debug => simplelog::LevelFilter::Debug,
-        LogLevel::Trace => simplelog::LevelFilter::Trace,
+    let log_level = match config.log_level_filter {
+        LevelFilter::Off => simplelog::LevelFilter::Off,
+        LevelFilter::Error => simplelog::LevelFilter::Error,
+        LevelFilter::Warn => simplelog::LevelFilter::Warn,
+        LevelFilter::Info => simplelog::LevelFilter::Info,
+        LevelFilter::Debug => simplelog::LevelFilter::Debug,
+        LevelFilter::Trace => simplelog::LevelFilter::Trace,
     };
 
     simplelog::TermLogger::init(
@@ -72,13 +72,13 @@ fn init_logger(config: &Config) {
 // unit/integration tests.
 #[cfg(test)]
 mod all_tests {
-    use service::config::LogLevel;
+    use log::LevelFilter;
     use std::process::Command;
 
     #[tokio::test]
     async fn main() {
         let mut config = super::get_config();
-        config.log_level = LogLevel::Trace;
+        config.log_level_filter = LevelFilter::Trace;
         super::init_logger(&config);
 
         let mut exit_codes = Vec::new();
