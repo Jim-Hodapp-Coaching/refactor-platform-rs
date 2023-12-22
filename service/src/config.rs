@@ -1,6 +1,8 @@
+use clap::builder::TypedValueParser as _;
 use clap::Parser;
+use log::LevelFilter;
 
-#[derive(Clone, Parser)]
+#[derive(Clone, Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Config {
     /// Sets the Postgresql database URI to connect to
@@ -20,9 +22,15 @@ pub struct Config {
     #[arg(short, long, default_value_t = 4000)]
     pub port: u16,
 
-    /// Turn on different tracing levels [0 = Warn, 1 = Info, 2 = Debug, 3 = Trace]
-    #[arg(short, long, default_value_t = 0)]
-    pub trace_level: u8,
+    /// Set the log level verbosity threshold (level) to control what gets displayed on console output
+    #[arg(
+        short,
+        long,
+        default_value_t = LevelFilter::Warn,
+        value_parser = clap::builder::PossibleValuesParser::new(["OFF", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"])
+            .map(|s| s.parse::<LevelFilter>().unwrap()),
+        )]
+    pub log_level_filter: LevelFilter,
 }
 
 impl Default for Config {

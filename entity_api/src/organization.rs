@@ -101,3 +101,34 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
         organization.insert(db).await.unwrap();
     }
 }
+
+#[cfg(test)]
+// We need to gate seaORM's mock feature behind conditional compilation because
+// the feature removes the Clone trait implementation from seaORM's DatabaseConnection.
+// see https://github.com/SeaQL/sea-orm/issues/830
+#[cfg(feature = "mock")]
+mod tests {
+    use super::*;
+    use sea_orm::{DatabaseBackend, MockDatabase};
+
+    #[tokio::test]
+    async fn find_all_returns_a_list_of_records_when_present() -> Result<(), Error> {
+        let organizations = vec![vec![
+            organization::Model {
+                id: 1,
+                name: "Organization One".to_owned(),
+            },
+            organization::Model {
+                id: 2,
+                name: "Organization One".to_owned(),
+            },
+        ]];
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(organizations.clone())
+            .into_connection();
+
+        assert_eq!(find_all(&db).await?, organizations[0]);
+
+        Ok(())
+    }
+}

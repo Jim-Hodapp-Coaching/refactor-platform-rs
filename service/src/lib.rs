@@ -1,5 +1,6 @@
 use config::Config;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
+use std::sync::Arc;
 use tokio::time::Duration;
 
 pub mod config;
@@ -18,7 +19,7 @@ pub async fn init_database(mut app_state: AppState) -> Result<AppState, DbErr> {
 
     let db = Database::connect(opt).await?;
 
-    app_state.database_connection = Some(db);
+    app_state.database_connection = Arc::new(Some(db));
 
     Ok(app_state)
 }
@@ -26,19 +27,23 @@ pub async fn init_database(mut app_state: AppState) -> Result<AppState, DbErr> {
 // Needs to implement Clone to be able to be passed into Router as State
 #[derive(Clone)]
 pub struct AppState {
-    pub database_connection: Option<DatabaseConnection>,
+    pub database_connection: Arc<Option<DatabaseConnection>>,
     pub config: Config,
 }
 
 impl AppState {
     pub fn new(app_config: Config) -> Self {
         Self {
-            database_connection: None,
+            database_connection: Arc::new(None),
             config: app_config,
         }
     }
 
     pub fn db_conn_ref(&self) -> Option<&DatabaseConnection> {
-        self.database_connection.as_ref()
+        self.database_connection.as_ref().as_ref()
+    }
+
+    pub fn set_db_conn(&mut self, db: DatabaseConnection) {
+        self.database_connection = Arc::new(Some(db));
     }
 }

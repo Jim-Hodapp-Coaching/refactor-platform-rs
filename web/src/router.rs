@@ -29,3 +29,52 @@ pub fn organization_routes(app_state: AppState) -> Router {
 pub fn static_routes() -> Router {
     Router::new().nest_service("/", ServeDir::new("./"))
 }
+
+#[cfg(test)]
+// We need to gate seaORM's mock feature behind conditional compilation because
+// the feature removes the Clone trait implementation from seaORM's DatabaseConnection.
+// see https://github.com/SeaQL/sea-orm/issues/830
+#[cfg(feature = "mock")]
+mod organization_endpoints_tests {
+    use super::*;
+    use entity::organization;
+    use sea_orm::{DatabaseBackend, MockDatabase};
+    use serde_json::json;
+    use service::config::Config;
+    use std::net::SocketAddr;
+    use tokio::net::TcpListener;
+
+    // Purpose: adds an Organization instance to a mock DB and tests the API to successfully
+    // retrieve it as valid JSON.
+    #[tokio::test]
+    async fn read_returns_succesful_json_when_organization_exists() -> anyhow::Result<()> {
+        let organizations = vec![vec![organization::Model {
+            id: 1,
+            name: "Organization One".to_owned(),
+        }]];
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(organizations.clone())
+            .into_connection();
+
+        let mut app_state = AppState::new(Config::default());
+        app_state.set_db_conn(db);
+        let router = define_routes(app_state);
+
+        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
+        let addr = listener.local_addr()?;
+
+        tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        let client = reqwest::Client::new();
+
+        let url = format!("http://{addr}/organizations/1");
+
+        let response = client.get(url).send().await?.text().await?;
+        assert_eq!(response, json!(organizations[0][0]).to_string());
+
+        Ok(())
+    }
+}
