@@ -38,16 +38,27 @@ pub fn static_routes() -> Router {
 mod organization_endpoints_tests {
     use super::*;
     use entity::organization;
+    use log::*;
     use sea_orm::{DatabaseBackend, MockDatabase};
     use serde_json::json;
-    use service::config::Config;
+    use service::{config::Config, logging::Logger};
     use std::net::SocketAddr;
     use tokio::net::TcpListener;
 
+    // Call this at the top of a test to enable TRACE level debug logging for
+    // the test itself, seaORM, and Axum
+    // TODO: It'd be awesome if we could pass a flag to enable this when running
+    // `cargo test`
+    fn _enable_test_logging() {
+        let mut config = service::config::Config::default();
+        config.log_level_filter = LevelFilter::Trace;
+        Logger::init_logger(&config);
+    }
+
     // Purpose: adds an Organization instance to a mock DB and tests the API to successfully
-    // retrieve it as valid JSON.
+    // retrieve it by a specific ID and as expected and valid JSON.
     #[tokio::test]
-    async fn read_returns_succesful_json_when_organization_exists() -> anyhow::Result<()> {
+    async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
         let organizations = vec![vec![organization::Model {
             id: 1,
             name: "Organization One".to_owned(),
@@ -74,6 +85,72 @@ mod organization_endpoints_tests {
 
         let response = client.get(url).send().await?.text().await?;
         assert_eq!(response, json!(organizations[0][0]).to_string());
+
+        Ok(())
+    }
+
+    // Purpose: adds multiple Organization instances to a mock DB and tests the API to successfully
+    // retrieve all of them as expected and valid JSON without specifying any particular ID.
+    #[tokio::test]
+    async fn read_returns_all_organizations() -> anyhow::Result<()> {
+        // Note: for entity_api::organization::find_all() to be able to return
+        // the correct query_results for the assert_eq!() below, they must all
+        // be grouped together in the same inner vector.
+        let organizations = [vec![
+            organization::Model {
+                id: 1,
+                name: "Organization One".to_owned(),
+            },
+            organization::Model {
+                id: 2,
+                name: "Organization Two".to_owned(),
+            },
+            organization::Model {
+                id: 3,
+                name: "Organization Three".to_owned(),
+            },
+        ]];
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(organizations.clone())
+            .into_connection();
+
+        let mut app_state = AppState::new(Config::default());
+        app_state.set_db_conn(db);
+
+        let router = define_routes(app_state);
+
+        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
+        let addr = listener.local_addr()?;
+
+        tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        let client = reqwest::Client::new();
+
+        let url = format!("http://{addr}/organizations");
+
+        let response = client.get(url).send().await?.text().await?;
+
+        let organization_model1 = &organizations[0][0];
+        let organization_model2 = &organizations[0][1];
+        let organization_model3 = &organizations[0][2];
+
+        assert_eq!(
+            response,
+            json!([{
+                 "id": organization_model1.id,
+                 "name": organization_model1.name,
+            },{
+                 "id": organization_model2.id,
+                 "name": organization_model2.name,
+            },{
+                 "id": organization_model3.id,
+                 "name": organization_model3.name,
+            }])
+            .to_string()
+        );
 
         Ok(())
     }

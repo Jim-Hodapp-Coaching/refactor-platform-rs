@@ -6,7 +6,6 @@ use entity::{organization, Id};
 use entity_api::organization as OrganizationApi;
 use serde_json::json;
 
-extern crate log;
 use log::*;
 
 pub struct OrganizationController {}
@@ -17,7 +16,10 @@ impl OrganizationController {
     /// --request GET \
     /// http://localhost:4000/organizations
     pub async fn index(State(app_state): State<AppState>) -> Result<impl IntoResponse, Error> {
+        debug!("GET all Organizations");
         let organizations = OrganizationApi::find_all(app_state.db_conn_ref().unwrap()).await?;
+
+        debug!("Found Organizations: {:?}", organizations);
 
         Ok(Json(organizations))
     }

@@ -23,17 +23,12 @@
 //! and/or teams by providing a single application that facilitates and enhances
 //! your coaching practice.
 
-use service::{config::Config, AppState};
-
-use log::LevelFilter;
-
-extern crate simplelog;
+use service::{config::Config, logging::Logger, AppState};
 
 #[tokio::main]
 async fn main() {
     let config = get_config();
-
-    init_logger(&config);
+    Logger::init_logger(&config);
 
     let mut app_state = AppState::new(config);
     app_state = service::init_database(app_state).await.unwrap();
@@ -47,39 +42,20 @@ fn get_config() -> Config {
     Config::new()
 }
 
-fn init_logger(config: &Config) {
-    let log_level_filter = match config.log_level_filter {
-        LevelFilter::Off => simplelog::LevelFilter::Off,
-        LevelFilter::Error => simplelog::LevelFilter::Error,
-        LevelFilter::Warn => simplelog::LevelFilter::Warn,
-        LevelFilter::Info => simplelog::LevelFilter::Info,
-        LevelFilter::Debug => simplelog::LevelFilter::Debug,
-        LevelFilter::Trace => simplelog::LevelFilter::Trace,
-    };
-
-    simplelog::TermLogger::init(
-        log_level_filter,
-        simplelog::Config::default(),
-        simplelog::TerminalMode::Mixed,
-        simplelog::ColorChoice::Auto,
-    )
-    .expect("Failed to start simplelog");
-
-    simplelog::info!("<b>Starting up...</b>.");
-}
-
 // This is the parent test "runner" that initiates all other crate
 // unit/integration tests.
 #[cfg(test)]
-mod all_tests {
+pub mod all_tests {
     use log::LevelFilter;
+    use service::logging::Logger;
+    use simplelog;
     use std::process::Command;
 
     #[tokio::test]
     async fn main() {
-        let mut config = super::get_config();
+        let mut config = crate::get_config();
         config.log_level_filter = LevelFilter::Trace;
-        super::init_logger(&config);
+        Logger::init_logger(&config);
 
         let mut exit_codes = Vec::new();
 
@@ -108,6 +84,7 @@ mod all_tests {
             }
 
             simplelog::info!("{}", String::from_utf8_lossy(output.stdout.as_slice()));
+            simplelog::info!("{}", String::from_utf8_lossy(output.stderr.as_slice()));
 
             exit_codes.push(output.status.code().unwrap());
         }

@@ -2644,6 +2644,7 @@ dependencies = [
  "log",
  "sea-orm",
  "serde_json",
+ "simplelog",
  "tokio",
  "tower",
 ]
