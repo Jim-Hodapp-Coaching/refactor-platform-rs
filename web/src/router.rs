@@ -38,27 +38,18 @@ pub fn static_routes() -> Router {
 mod organization_endpoints_tests {
     use super::*;
     use entity::organization;
-    use log::*;
     use sea_orm::{DatabaseBackend, MockDatabase};
     use serde_json::json;
-    use service::{config::Config, logging::Logger};
+    use service::config::Config;
     use std::net::SocketAddr;
     use tokio::net::TcpListener;
-
-    // Call this at the top of a test to enable TRACE level debug logging for
-    // the test itself, seaORM, and Axum
-    // TODO: It'd be awesome if we could pass a flag to enable this when running
-    // `cargo test`
-    fn _enable_test_logging() {
-        let mut config = service::config::Config::default();
-        config.log_level_filter = LevelFilter::Trace;
-        Logger::init_logger(&config);
-    }
 
     // Purpose: adds an Organization instance to a mock DB and tests the API to successfully
     // retrieve it by a specific ID and as expected and valid JSON.
     #[tokio::test]
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
+        let mut app_state = AppState::new(Config::default());
+
         let organizations = vec![vec![organization::Model {
             id: 1,
             name: "Organization One".to_owned(),
@@ -68,7 +59,6 @@ mod organization_endpoints_tests {
             .append_query_results(organizations.clone())
             .into_connection();
 
-        let mut app_state = AppState::new(Config::default());
         app_state.set_db_conn(db);
         let router = define_routes(app_state);
 
@@ -93,6 +83,8 @@ mod organization_endpoints_tests {
     // retrieve all of them as expected and valid JSON without specifying any particular ID.
     #[tokio::test]
     async fn read_returns_all_organizations() -> anyhow::Result<()> {
+        let mut app_state = AppState::new(Config::default());
+
         // Note: for entity_api::organization::find_all() to be able to return
         // the correct query_results for the assert_eq!() below, they must all
         // be grouped together in the same inner vector.
@@ -115,9 +107,7 @@ mod organization_endpoints_tests {
             .append_query_results(organizations.clone())
             .into_connection();
 
-        let mut app_state = AppState::new(Config::default());
         app_state.set_db_conn(db);
-
         let router = define_routes(app_state);
 
         let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
