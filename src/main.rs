@@ -45,7 +45,7 @@ fn get_config() -> Config {
 // This is the parent test "runner" that initiates all other crate
 // unit/integration tests.
 #[cfg(test)]
-pub mod all_tests {
+mod all_tests {
     use log::LevelFilter;
     use service::logging::Logger;
     use simplelog;
