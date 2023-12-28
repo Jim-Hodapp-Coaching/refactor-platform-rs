@@ -48,7 +48,7 @@ fn get_config() -> Config {
 mod all_tests {
     use log::LevelFilter;
     use service::logging::Logger;
-    use simplelog;
+    use simplelog::{error, info};
     use std::process::Command;
 
     #[tokio::test]
@@ -62,7 +62,7 @@ mod all_tests {
         for crate_name in crates_to_test().iter() {
             let mut command = Command::new("cargo");
 
-            simplelog::info!("<b>Running tests for {:?} crate</b>\r\n", crate_name);
+            info!("<b>Running tests for {:?} crate</b>\r\n", crate_name);
 
             // It may be that we need to map each crate with specific commands at some point
             // for now calling "--features mock" for each crate.
@@ -74,22 +74,21 @@ mod all_tests {
 
             match output.status.success() {
                 true => {
-                    simplelog::info!("<b>All {:?} tests completed successfully.\r\n", crate_name)
+                    info!("<b>All {:?} tests completed successfully.\r\n", crate_name)
                 }
-                false => simplelog::error!(
+                false => error!(
                     "<b>{:?} tests completed with errors ({})</b>\r\n",
-                    crate_name,
-                    output.status
+                    crate_name, output.status
                 ),
             }
 
-            simplelog::info!("{}", String::from_utf8_lossy(output.stdout.as_slice()));
-            simplelog::info!("{}", String::from_utf8_lossy(output.stderr.as_slice()));
+            info!("{}", String::from_utf8_lossy(output.stdout.as_slice()));
+            info!("{}", String::from_utf8_lossy(output.stderr.as_slice()));
 
             exit_codes.push(output.status.code().unwrap());
         }
         if exit_codes.iter().any(|code| *code != 0i32) {
-            simplelog::error!("** One or more crate tests failed.");
+            error!("** One or more crate tests failed.");
             // Will fail CI
             std::process::exit(1);
         }
