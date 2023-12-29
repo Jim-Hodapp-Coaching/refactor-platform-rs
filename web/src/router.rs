@@ -38,11 +38,19 @@ pub fn static_routes() -> Router {
 mod organization_endpoints_tests {
     use super::*;
     use entity::organization;
-    use sea_orm::{DatabaseBackend, MockDatabase};
+    use log::{LevelFilter, *};
+    use sea_orm::{DatabaseBackend, MockDatabase, MockExecResult};
     use serde_json::json;
-    use service::config::Config;
+    use service::{config::Config, logging::Logger};
     use std::net::SocketAddr;
     use tokio::net::TcpListener;
+
+    // Enable and call this at the start of a particular test to turn on TRACE
+    // level logging output used to debug a new or existing test.
+    fn _enable_test_logging(config: &mut Config) {
+        config.log_level_filter = LevelFilter::Trace;
+        Logger::init_logger(&config);
+    }
 
     // Purpose: adds an Organization instance to a mock DB and tests the API to successfully
     // retrieve it by a specific ID and as expected and valid JSON.
@@ -50,7 +58,7 @@ mod organization_endpoints_tests {
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
         let mut app_state = AppState::new(Config::default());
 
-        let organizations = vec![vec![organization::Model {
+        let organizations = [vec![organization::Model {
             id: 1,
             name: "Organization One".to_owned(),
         }]];
@@ -74,7 +82,9 @@ mod organization_endpoints_tests {
         let url = format!("http://{addr}/organizations/1");
 
         let response = client.get(url).send().await?.text().await?;
-        assert_eq!(response, json!(organizations[0][0]).to_string());
+
+        let organization_model1 = &organizations[0][0];
+        assert_eq!(response, json!(organization_model1).to_string());
 
         Ok(())
     }
@@ -129,18 +139,177 @@ mod organization_endpoints_tests {
 
         assert_eq!(
             response,
-            json!([{
-                 "id": organization_model1.id,
-                 "name": organization_model1.name,
-            },{
-                 "id": organization_model2.id,
-                 "name": organization_model2.name,
-            },{
-                 "id": organization_model3.id,
-                 "name": organization_model3.name,
-            }])
+            json!([
+                organization_model1,
+                organization_model2,
+                organization_model3
+            ])
             .to_string()
         );
+
+        Ok(())
+    }
+
+    // Purpose: adds multiple Organization instances to a mock DB and tests that calling
+    // the appropriate endpoint deletes instances specified by distinct IDs.
+    #[tokio::test]
+    async fn delete_organizations_specified_by_id() -> anyhow::Result<()> {
+        let config = Config::default();
+        let mut app_state = AppState::new(config);
+
+        let organizations = [
+            vec![organization::Model {
+                id: 2,
+                name: "Organization Two".to_owned(),
+            }],
+            vec![organization::Model {
+                id: 3,
+                name: "Organization Three".to_owned(),
+            }],
+        ];
+
+        let exec_results = [
+            MockExecResult {
+                last_insert_id: 2,
+                rows_affected: 1,
+            },
+            MockExecResult {
+                last_insert_id: 3,
+                rows_affected: 1,
+            },
+        ];
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(organizations.clone())
+            .append_exec_results(exec_results)
+            .into_connection();
+
+        app_state.set_db_conn(db);
+        let router = define_routes(app_state);
+
+        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
+        let addr = listener.local_addr()?;
+
+        tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        {
+            let client = reqwest::Client::new();
+
+            let url = format!("http://{addr}/organizations/2");
+            let response = client.delete(url).send().await?.text().await?;
+
+            debug!("response: {:?}", response);
+
+            let organization_model2 = &organizations[0][0];
+
+            assert_eq!(
+                response,
+                json!({
+                    "id": organization_model2.id,
+                })
+                .to_string()
+            );
+        }
+
+        {
+            let client = reqwest::Client::new();
+
+            let url = format!("http://{addr}/organizations/3");
+            let response = client.delete(url).send().await?.text().await?;
+
+            let organization_model3 = &organizations[1][0];
+
+            assert_eq!(
+                response,
+                json!({
+                    "id": organization_model3.id,
+                })
+                .to_string()
+            );
+        }
+
+        Ok(())
+    }
+
+    // Purpose: creates multiple new Organization instances to a mock DB by calling
+    // the post endpoint supplying the appropriate instance as a JSON payload.
+    #[tokio::test]
+    async fn create_new_organizations_successfully() -> anyhow::Result<()> {
+        let config = Config::default();
+        let mut app_state = AppState::new(config);
+
+        let organizations = [
+            vec![organization::Model {
+                id: 5,
+                name: "New Organization Five".to_owned(),
+            }],
+            vec![organization::Model {
+                id: 6,
+                name: "Second Organization Six".to_owned(),
+            }],
+        ];
+
+        let exec_results = [
+            MockExecResult {
+                last_insert_id: 5,
+                rows_affected: 1,
+            },
+            MockExecResult {
+                last_insert_id: 6,
+                rows_affected: 1,
+            },
+        ];
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(organizations.clone())
+            .append_exec_results(exec_results)
+            .into_connection();
+
+        app_state.set_db_conn(db);
+        let router = define_routes(app_state);
+
+        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
+        let addr = listener.local_addr()?;
+
+        tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        {
+            let client = reqwest::Client::new();
+
+            let organization_model5 = &organizations[0][0];
+
+            let url = format!("http://{addr}/organizations");
+            let response = client
+                .post(url)
+                .json(&organization_model5)
+                .send()
+                .await?
+                .text()
+                .await?;
+
+            assert_eq!(response, json!(organization_model5).to_string());
+        }
+
+        {
+            let client = reqwest::Client::new();
+
+            let organization_model6 = &organizations[1][0];
+
+            let url = format!("http://{addr}/organizations");
+            let response = client
+                .post(url)
+                .json(&organization_model6)
+                .send()
+                .await?
+                .text()
+                .await?;
+
+            assert_eq!(response, json!(organization_model6).to_string());
+        }
 
         Ok(())
     }
