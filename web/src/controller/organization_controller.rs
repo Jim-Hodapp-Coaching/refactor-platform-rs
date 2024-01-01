@@ -1,13 +1,73 @@
 use crate::{AppState, Error};
-use axum::extract::{Path, State};
+use axum::{async_trait, Extension};
+use axum::extract::{FromRequestParts, Path, State};
+use axum::http::{Method, request::Parts, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
+use axum_extra::{TypedHeader, headers::{Authorization, authorization::Bearer}};
+use chrono::{serde::ts_seconds, DateTime, Utc};
 use entity::{organization, Id};
 use entity_api::organization as OrganizationApi;
+use sea_orm::prelude::DateTimeUtc;
+use serde::{Serialize, Deserialize};
 use serde_json::json;
 
 extern crate log;
 use log::*;
+
+#[derive(Debug, Clone)]
+pub struct Authorized(pub Claims);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Claims {
+    pub email: String,
+    #[serde(with = "ts_seconds")]
+    pub exp: DateTime<Utc>,
+}
+
+pub struct AuthorizationMiddleware;
+
+#[async_trait]
+impl<S> FromRequestParts<S> for AuthorizationMiddleware
+where
+    S: Send + Sync,
+{
+    type Rejection = StatusCode;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        debug!("from_request_parts!");
+        if parts.method == Method::OPTIONS {
+            // For options requests browsers will not send the authorization header.
+            return Ok(Self);
+        }
+
+        let Ok(TypedHeader(Authorization(bearer))) =
+            TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state).await
+        else {
+            error!("Could not get Authorization header from the request");
+            return Err(StatusCode::UNAUTHORIZED);
+        };
+
+        match check_auth(bearer) {
+            Ok(auth) => {
+                // Set `auth` as a request extension so it can be accessed by other
+                // services down the stack.
+                parts.extensions.insert(auth);
+
+                Ok(Self)
+            }
+            Err(error) => {
+                error!("{error:?}");
+                Err(StatusCode::UNAUTHORIZED)
+            }
+        }
+    }
+}
+
+fn check_auth(bearer: Bearer) -> Result<Authorized, String> {
+    debug!("check_auth(), bearer: {:?}", bearer);
+    Ok(Authorized(Claims { email: "james.hodapp@gmail.com".to_string(), exp: DateTimeUtc::default() }))
+}
 
 pub struct OrganizationController {}
 
@@ -16,7 +76,13 @@ impl OrganizationController {
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request GET \
     /// http://localhost:4000/organizations
-    pub async fn index(State(app_state): State<AppState>) -> Result<impl IntoResponse, Error> {
+    pub async fn index(State(app_state): State<AppState>, Extension(claims): Extension<Authorized>) -> Result<impl IntoResponse, Error> {
+        let email = claims.0.email;
+        let exp = claims.0.exp;
+
+        debug!("Provided bearer claims email: {email}");
+        debug!("Provided bearer claims expiry: {exp}");
+
         let organizations = OrganizationApi::find_all(app_state.db_conn_ref().unwrap()).await?;
 
         Ok(Json(organizations))

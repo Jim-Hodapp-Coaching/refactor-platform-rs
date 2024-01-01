@@ -1,7 +1,7 @@
 use crate::AppState;
 use axum::{
     routing::{delete, get, post, put},
-    Router,
+    Router, middleware::from_extractor,
 };
 use tower_http::services::ServeDir;
 
@@ -22,6 +22,7 @@ pub fn organization_routes(app_state: AppState) -> Router {
         .route("/organizations", post(OrganizationController::create))
         .route("/organizations/:id", put(OrganizationController::update))
         .route("/organizations/:id", delete(OrganizationController::delete))
+        .route_layer(from_extractor::<crate::controller::organization_controller::AuthorizationMiddleware>())
         .with_state(app_state)
 }
 
