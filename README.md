@@ -1,11 +1,11 @@
 [![Build & Tests (backend)](https://github.com/Jim-Hodapp-Coaching/refactor-platform-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/Jim-Hodapp-Coaching/refactor-platform-rs/actions/workflows/ci.yml)
 
-# Refactor Coaching Platform
+# Refactor Coaching & Mentoring Platform
 ### Backend
 
 ## Intro
 
-A Rust-based backend that provides a web API for various client applications (e.g. a web frontend) that facilitate the coaching of software engineers.
+A Rust-based backend that provides a web API for various client applications (e.g. a web frontend) that facilitate the coaching and mentoring of software engineers.
 
 The platform itself is useful for professional independent coaches, informal mentors and engineering leaders who work with individual software engineers and/or teams by providing a single application that facilitates and enhances your coaching practice.
 
