@@ -7,7 +7,6 @@ use sea_orm::{
 };
 use serde_json::json;
 
-extern crate log;
 use log::*;
 
 pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Result<Model, Error> {

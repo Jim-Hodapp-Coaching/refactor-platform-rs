@@ -4,6 +4,7 @@ use std::sync::Arc;
 use tokio::time::Duration;
 
 pub mod config;
+pub mod logging;
 
 pub async fn init_database(mut app_state: AppState) -> Result<AppState, DbErr> {
     let mut opt = ConnectOptions::new::<&str>(app_state.config.database_uri().as_ref());
