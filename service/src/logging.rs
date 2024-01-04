@@ -22,7 +22,5 @@ impl Logger {
             simplelog::ColorChoice::Auto,
         )
         .expect("Failed to start simplelog");
-
-        simplelog::info!("<b>Starting up...</b>.");
     }
 }

@@ -23,12 +23,15 @@
 //! and/or teams by providing a single application that facilitates and enhances
 //! your coaching practice.
 
+use log::*;
 use service::{config::Config, logging::Logger, AppState};
 
 #[tokio::main]
 async fn main() {
     let config = get_config();
     Logger::init_logger(&config);
+
+    info!("Starting up...");
 
     let mut app_state = AppState::new(config);
     app_state = service::init_database(app_state).await.unwrap();
