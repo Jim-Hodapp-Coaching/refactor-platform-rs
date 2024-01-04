@@ -39,6 +39,7 @@ mod organization_endpoints_tests {
     use super::*;
     use entity::organization;
     use log::LevelFilter;
+    use reqwest::Url;
     use sea_orm::{DatabaseBackend, MockDatabase, MockExecResult};
     use serde_json::json;
     use service::{config::Config, logging::Logger};
@@ -50,6 +51,40 @@ mod organization_endpoints_tests {
     fn _enable_test_logging(config: &mut Config) {
         config.log_level_filter = LevelFilter::Trace;
         Logger::init_logger(&config);
+    }
+
+    // A test wrapper that sets up both an http server instance with the router backend
+    // endpoints and a Reqwest-based http client used to call the backend server.
+    //
+    // Adapted from: https://blog.sedrik.se/posts/secure-axum/
+    #[derive(Clone)]
+    pub struct TestClientServer {
+        pub client: reqwest::Client,
+        addr: String,
+    }
+
+    impl TestClientServer {
+        pub async fn new(router: Router) -> anyhow::Result<Self> {
+            let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
+            let addr = listener.local_addr()?;
+
+            tokio::spawn(async move {
+                axum::serve(listener, router).await.unwrap();
+            });
+
+            let client = reqwest::Client::new();
+
+            Ok(Self {
+                client,
+                addr: addr.to_string(),
+            })
+        }
+
+        pub fn url<S: AsRef<str>>(&self, path: S) -> anyhow::Result<String> {
+            let base = Url::parse(format!("http://{}", self.addr).as_ref())?;
+            let url = base.join(path.as_ref())?;
+            Ok(url.as_str().to_string())
+        }
     }
 
     // Purpose: adds an Organization instance to a mock DB and tests the API to successfully
@@ -68,20 +103,18 @@ mod organization_endpoints_tests {
             .into_connection();
 
         app_state.set_db_conn(db);
-        let router = define_routes(app_state);
 
-        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
-        let addr = listener.local_addr()?;
+        let test_client_server = TestClientServer::new(define_routes(app_state))
+            .await
+            .unwrap();
 
-        tokio::spawn(async move {
-            axum::serve(listener, router).await.unwrap();
-        });
-
-        let client = reqwest::Client::new();
-
-        let url = format!("http://{addr}/organizations/1");
-
-        let response = client.get(url).send().await?.text().await?;
+        let response = test_client_server
+            .client
+            .get(test_client_server.url("/organizations/1").unwrap())
+            .send()
+            .await?
+            .text()
+            .await?;
 
         let organization_model1 = &organizations[0][0];
         assert_eq!(response, json!(organization_model1).to_string());
@@ -118,20 +151,18 @@ mod organization_endpoints_tests {
             .into_connection();
 
         app_state.set_db_conn(db);
-        let router = define_routes(app_state);
 
-        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
-        let addr = listener.local_addr()?;
+        let test_client_server = TestClientServer::new(define_routes(app_state))
+            .await
+            .unwrap();
 
-        tokio::spawn(async move {
-            axum::serve(listener, router).await.unwrap();
-        });
-
-        let client = reqwest::Client::new();
-
-        let url = format!("http://{addr}/organizations");
-
-        let response = client.get(url).send().await?.text().await?;
+        let response = test_client_server
+            .client
+            .get(test_client_server.url("/organizations").unwrap())
+            .send()
+            .await?
+            .text()
+            .await?;
 
         let organization_model1 = &organizations[0][0];
         let organization_model2 = &organizations[0][1];
@@ -184,20 +215,18 @@ mod organization_endpoints_tests {
             .into_connection();
 
         app_state.set_db_conn(db);
-        let router = define_routes(app_state);
 
-        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
-        let addr = listener.local_addr()?;
-
-        tokio::spawn(async move {
-            axum::serve(listener, router).await.unwrap();
-        });
-
+        let test_client_server = TestClientServer::new(define_routes(app_state))
+            .await
+            .unwrap();
         {
-            let client = reqwest::Client::new();
-
-            let url = format!("http://{addr}/organizations/2");
-            let response = client.delete(url).send().await?.text().await?;
+            let response = test_client_server
+                .client
+                .delete(test_client_server.url("/organizations/2").unwrap())
+                .send()
+                .await?
+                .text()
+                .await?;
 
             let organization_model2 = &organizations[0][0];
 
@@ -211,10 +240,13 @@ mod organization_endpoints_tests {
         }
 
         {
-            let client = reqwest::Client::new();
-
-            let url = format!("http://{addr}/organizations/3");
-            let response = client.delete(url).send().await?.text().await?;
+            let response = test_client_server
+                .client
+                .delete(test_client_server.url("/organizations/3").unwrap())
+                .send()
+                .await?
+                .text()
+                .await?;
 
             let organization_model3 = &organizations[1][0];
 
@@ -264,23 +296,16 @@ mod organization_endpoints_tests {
             .into_connection();
 
         app_state.set_db_conn(db);
-        let router = define_routes(app_state);
 
-        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
-        let addr = listener.local_addr()?;
-
-        tokio::spawn(async move {
-            axum::serve(listener, router).await.unwrap();
-        });
-
+        let test_client_server = TestClientServer::new(define_routes(app_state))
+            .await
+            .unwrap();
         {
-            let client = reqwest::Client::new();
-
             let organization_model5 = &organizations[0][0];
 
-            let url = format!("http://{addr}/organizations");
-            let response = client
-                .post(url)
+            let response = test_client_server
+                .client
+                .post(test_client_server.url("/organizations").unwrap())
                 .json(&organization_model5)
                 .send()
                 .await?
@@ -291,13 +316,11 @@ mod organization_endpoints_tests {
         }
 
         {
-            let client = reqwest::Client::new();
-
             let organization_model6 = &organizations[1][0];
 
-            let url = format!("http://{addr}/organizations");
-            let response = client
-                .post(url)
+            let response = test_client_server
+                .client
+                .post(test_client_server.url("/organizations").unwrap())
                 .json(&organization_model6)
                 .send()
                 .await?
@@ -338,25 +361,19 @@ mod organization_endpoints_tests {
             .into_connection();
 
         app_state.set_db_conn(db);
-        let router = define_routes(app_state);
 
-        let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
-        let addr = listener.local_addr()?;
-
-        tokio::spawn(async move {
-            axum::serve(listener, router).await.unwrap();
-        });
-
-        let client = reqwest::Client::new();
+        let test_client_server = TestClientServer::new(define_routes(app_state))
+            .await
+            .unwrap();
 
         let updated_organization_model2 = organization::Model {
             id: 2,
             name: "Updated Organization Two".to_owned(),
         };
 
-        let url = format!("http://{addr}/organizations/2");
-        let response = client
-            .put(url)
+        let response = test_client_server
+            .client
+            .put(test_client_server.url("/organizations/2").unwrap())
             .json(&updated_organization_model2)
             .send()
             .await?
