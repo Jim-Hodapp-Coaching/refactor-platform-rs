@@ -1,16 +1,15 @@
 use async_trait::async_trait;
 use axum_login::{AuthnBackend, UserId, tracing::field::debug};
-use entity::{user, Id};
+use entity::user::{Column, Model};
 //use super::error::{EntityApiErrorCode, Error};
 use log::*;
 use password_auth::verify_password;
 use sea_orm::{entity::prelude::*, DatabaseConnection};
 use serde::Deserialize;
 use std::sync::Arc;
-//use user::{ActiveModel, Entity, Model};
 
 #[derive(Debug, Clone)]
-pub struct AuthBackend {
+pub struct Backend {
     db: Arc<DatabaseConnection>,
 }
 
@@ -21,17 +20,17 @@ pub struct Credentials {
     pub next: Option<String>,
 }
 
-impl AuthBackend {
+impl Backend {
     pub fn new(db: &DatabaseConnection) -> Self {
         Self { db: Arc::new(db.clone()) }
     }
 }
 
 #[async_trait]
-impl AuthnBackend for AuthBackend {
+impl AuthnBackend for Backend {
     // TODO: I think we need to wrap entity::user::Model so that
     // the DeriveEntityModel doesn't "erase" the AuthUser impl
-    type User = user::Model;
+    type User = Model;
     type Credentials = Credentials;
     type Error = crate::error::Error;
 
@@ -42,7 +41,7 @@ impl AuthnBackend for AuthBackend {
         debug("** authenticate()");
 
         let user: Option<Self::User> = entity::user::Entity::find()
-            .filter(user::Column::Email.contains(creds.username))
+            .filter(Column::Email.contains(creds.username))
             .one(self.db.as_ref())
             .await?;
 
@@ -68,4 +67,4 @@ impl AuthnBackend for AuthBackend {
     }
 }
 
-pub type AuthSession = axum_login::AuthSession<AuthBackend>;
+pub type AuthSession = axum_login::AuthSession<Backend>;

@@ -5,10 +5,10 @@ use axum::{
 };
 use tower_http::services::ServeDir;
 
-use crate::controller::organization_controller::OrganizationController;
+use crate::controller::{organization_controller::OrganizationController, user_session_controller::UserSessionController};
 
 pub fn define_routes(app_state: AppState) -> Router {
-    Router::new()
+    root_router()
         .merge(organization_routes(app_state))
         .fallback_service(static_routes())
 }
@@ -22,8 +22,22 @@ pub fn organization_routes(app_state: AppState) -> Router {
         .route("/organizations", post(OrganizationController::create))
         .route("/organizations/:id", put(OrganizationController::update))
         .route("/organizations/:id", delete(OrganizationController::delete))
+
+        .route("/login/password", post(UserSessionController::login))
         .with_state(app_state)
 }
+
+pub fn root_router() -> Router {
+    Router::new().route("/", get(UserSessionController::index))
+}
+
+// TODO: rename to session_routes or user_session_routes?
+// pub fn service_routes() -> Router {
+//     Router::new()
+//         // TODO: Add an API versioning scheme and prefix all routes with it
+//         // See Router::nest() - https://docs.rs/axum/latest/axum/struct.Router.html#method.nest
+//         .route("/login/password", post(UserSessionController::login))
+// }
 
 // This will serve static files that we can use as a "fallback" for when the server panics
 pub fn static_routes() -> Router {
