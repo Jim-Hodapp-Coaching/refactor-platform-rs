@@ -11,6 +11,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     #[serde(skip_deserializing)]
     pub id: Id,
+    #[sea_orm(unique, indexed)]
     pub email: String,
     pub password: String,
     pub first_name: String,

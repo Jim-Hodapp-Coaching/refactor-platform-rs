@@ -54,7 +54,7 @@ impl UserSessionController {
     }
 
     /// curl -v --header "Content-Type: application/x-www-form-urlencoded" \
-    /// --data "username=james\.hodapp\@gmail\.com&password=password&next=organizations" \
+    /// --data "username=james.hodapp@gmail.com&password=password&next=organizations" \
     /// http://localhost:4000/login
     pub async fn login(
         mut auth_session: UserApi::AuthSession,

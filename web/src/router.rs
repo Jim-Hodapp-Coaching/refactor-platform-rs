@@ -6,7 +6,7 @@ use axum::{
 };
 use axum_login::login_required;
 use entity_api::user::Backend;
-//use tower_http::services::ServeDir;
+use tower_http::services::ServeDir;
 
 use crate::controller::{
     organization_controller::OrganizationController, user_session_controller::UserSessionController,
@@ -16,7 +16,7 @@ pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
         .merge(organization_routes(app_state))
         .merge(login_routes())
-    //.fallback_service(static_routes())
+        .fallback_service(static_routes())
 }
 
 pub fn organization_routes(app_state: AppState) -> Router {
@@ -45,21 +45,12 @@ pub fn login_routes() -> Router {
     Router::new()
         .route("/login", get(UserSessionController::get_login))
         .route("/login", post(UserSessionController::login))
-    //Router::new().route("/", get(UserSessionController::protected))
 }
 
-// TODO: rename to session_routes or user_session_routes?
-// pub fn service_routes() -> Router {
-//     Router::new()
-//         // TODO: Add an API versioning scheme and prefix all routes with it
-//         // See Router::nest() - https://docs.rs/axum/latest/axum/struct.Router.html#method.nest
-//         .route("/login/password", post(UserSessionController::login))
-// }
-
 // This will serve static files that we can use as a "fallback" for when the server panics
-// pub fn static_routes() -> Router {
-//     Router::new().nest_service("/", ServeDir::new("./"))
-// }
+pub fn static_routes() -> Router {
+    Router::new().nest_service("/", ServeDir::new("./"))
+}
 
 #[cfg(test)]
 // We need to gate seaORM's mock feature behind conditional compilation because
