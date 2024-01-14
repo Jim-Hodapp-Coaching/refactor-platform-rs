@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use axum_login::{AuthnBackend, UserId, tracing::field::debug};
+use axum_login::{tracing::field::debug, AuthnBackend, UserId};
 use entity::user::{Column, Model};
 //use super::error::{EntityApiErrorCode, Error};
 use log::*;
@@ -22,7 +22,10 @@ pub struct Credentials {
 
 impl Backend {
     pub fn new(db: &DatabaseConnection) -> Self {
-        Self { db: Arc::new(db.clone()) }
+        info!("** Backend::new()");
+        Self {
+            db: Arc::new(db.clone()),
+        }
     }
 }
 
@@ -38,7 +41,7 @@ impl AuthnBackend for Backend {
         &self,
         creds: Self::Credentials,
     ) -> Result<Option<Self::User>, Self::Error> {
-        debug("** authenticate()");
+        debug!("** authenticate()");
 
         let user: Option<Self::User> = entity::user::Entity::find()
             .filter(Column::Email.contains(creds.username))
@@ -49,13 +52,13 @@ impl AuthnBackend for Backend {
 
         Ok(user.filter(|user| {
             verify_password(creds.password, &user.password)
-            .ok()
-            .is_some()
+                .ok()
+                .is_some()
         }))
     }
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
-        debug("** get_user()");
+        debug!("** get_user()");
 
         let user: Option<Self::User> = entity::user::Entity::find_by_id(*user_id)
             .one(self.db.as_ref())

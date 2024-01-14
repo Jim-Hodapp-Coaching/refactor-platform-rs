@@ -1,16 +1,22 @@
 use crate::AppState;
 use axum::{
+    response::IntoResponse,
     routing::{delete, get, post, put},
     Router,
 };
-use tower_http::services::ServeDir;
+use axum_login::login_required;
+use entity_api::user::Backend;
+//use tower_http::services::ServeDir;
 
-use crate::controller::{organization_controller::OrganizationController, user_session_controller::UserSessionController};
+use crate::controller::{
+    organization_controller::OrganizationController, user_session_controller::UserSessionController,
+};
 
 pub fn define_routes(app_state: AppState) -> Router {
-    root_router()
+    Router::new()
         .merge(organization_routes(app_state))
-        .fallback_service(static_routes())
+        .merge(login_routes())
+    //.fallback_service(static_routes())
 }
 
 pub fn organization_routes(app_state: AppState) -> Router {
@@ -22,13 +28,24 @@ pub fn organization_routes(app_state: AppState) -> Router {
         .route("/organizations", post(OrganizationController::create))
         .route("/organizations/:id", put(OrganizationController::update))
         .route("/organizations/:id", delete(OrganizationController::delete))
-
-        .route("/login/password", post(UserSessionController::login))
+        .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
 
-pub fn root_router() -> Router {
-    Router::new().route("/", get(UserSessionController::index))
+pub fn protected_routes() -> Router {
+    Router::new()
+        .route(
+            "/protected",
+            get(|| async { "Gotta be logged in to see me!".into_response() }),
+        )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+}
+
+pub fn login_routes() -> Router {
+    Router::new()
+        .route("/login", get(UserSessionController::get_login))
+        .route("/login", post(UserSessionController::login))
+    //Router::new().route("/", get(UserSessionController::protected))
 }
 
 // TODO: rename to session_routes or user_session_routes?
@@ -40,9 +57,9 @@ pub fn root_router() -> Router {
 // }
 
 // This will serve static files that we can use as a "fallback" for when the server panics
-pub fn static_routes() -> Router {
-    Router::new().nest_service("/", ServeDir::new("./"))
-}
+// pub fn static_routes() -> Router {
+//     Router::new().nest_service("/", ServeDir::new("./"))
+// }
 
 #[cfg(test)]
 // We need to gate seaORM's mock feature behind conditional compilation because
