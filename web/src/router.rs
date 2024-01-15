@@ -14,7 +14,7 @@ use crate::controller::{
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
         .merge(organization_routes(app_state))
-        .merge(login_routes())
+        .merge(session_routes())
         .merge(protected_routes())
         .fallback_service(static_routes())
 }
@@ -38,10 +38,11 @@ pub fn protected_routes() -> Router {
         .route_layer(login_required!(Backend, login_url = "/login"))
 }
 
-pub fn login_routes() -> Router {
+pub fn session_routes() -> Router {
     Router::new()
         .route("/login", get(UserSessionController::get_login))
         .route("/login", post(UserSessionController::login))
+        .route("/logout", get(UserSessionController::logout))
 }
 
 // This will serve static files that we can use as a "fallback" for when the server panics
