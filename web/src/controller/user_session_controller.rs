@@ -1,11 +1,10 @@
-use crate::{AppState, Error};
-use axum::extract::{Query, State};
+use crate::Error;
 use axum::{
+    extract::Query,
     http::StatusCode,
     response::{IntoResponse, Redirect},
+    Form,
 };
-use axum::{Form, Json};
-use entity::user;
 use entity_api::user as UserApi;
 use log::*;
 use serde::Deserialize;
@@ -54,8 +53,15 @@ impl UserSessionController {
     }
 
     /// curl -v --header "Content-Type: application/x-www-form-urlencoded" \
-    /// --data "username=james.hodapp@gmail.com&password=password&next=organizations" \
+    /// --data "username=james.hodapp@gmail.com&password=password1&next=organizations" \
     /// http://localhost:4000/login
+    ///
+    /// Successful login will return a session cookie with id, e.g.:
+    /// set-cookie: id=07bbbe54-bd35-425f-8e63-618a8d8612df; HttpOnly; SameSite=Strict; Path=/; Max-Age=86399
+    ///
+    /// After logging in successfully, you must pass the session id back to the server for
+    /// every API call, e.g.:
+    /// curl -v --header "Cookie: id=07bbbe54-bd35-425f-8e63-618a8d8612df" --request GET http://localhost:4000/organizations
     pub async fn login(
         mut auth_session: UserApi::AuthSession,
         Form(creds): Form<UserApi::Credentials>,

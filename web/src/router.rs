@@ -1,6 +1,5 @@
 use crate::AppState;
 use axum::{
-    response::IntoResponse,
     routing::{delete, get, post, put},
     Router,
 };
@@ -16,6 +15,7 @@ pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
         .merge(organization_routes(app_state))
         .merge(login_routes())
+        .merge(protected_routes())
         .fallback_service(static_routes())
 }
 
@@ -34,10 +34,7 @@ pub fn organization_routes(app_state: AppState) -> Router {
 
 pub fn protected_routes() -> Router {
     Router::new()
-        .route(
-            "/protected",
-            get(|| async { "Gotta be logged in to see me!".into_response() }),
-        )
+        .route("/protected", get(UserSessionController::protected))
         .route_layer(login_required!(Backend, login_url = "/login"))
 }
 

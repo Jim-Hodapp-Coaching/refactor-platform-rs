@@ -3,7 +3,7 @@ use axum_login::{AuthnBackend, UserId};
 use entity::user::{self, Column, Model};
 //use super::error::{EntityApiErrorCode, Error};
 use log::*;
-use password_auth::verify_password;
+use password_auth::{generate_hash, verify_password};
 use sea_orm::{entity::prelude::*, sea_query, ActiveValue, DatabaseConnection};
 use serde::Deserialize;
 use std::sync::Arc;
@@ -15,7 +15,7 @@ pub struct Backend {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Credentials {
-    pub username: String,
+    pub email: String,
     pub password: String,
     pub next: Option<String>,
 }
@@ -41,13 +41,10 @@ impl AuthnBackend for Backend {
         &self,
         creds: Self::Credentials,
     ) -> Result<Option<Self::User>, Self::Error> {
-        debug!(
-            "** authenticate(): {:?}:{:?}",
-            creds.username, creds.password
-        );
+        debug!("** authenticate(): {:?}:{:?}", creds.email, creds.password);
 
         let user: Option<Self::User> = entity::user::Entity::find()
-            .filter(Column::Email.contains(creds.username))
+            .filter(Column::Email.contains(creds.email))
             .one(self.db.as_ref())
             .await?;
 
@@ -82,14 +79,14 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
             email: ActiveValue::Set("james.hodapp@gmail.com".to_owned()),
             first_name: ActiveValue::Set("Jim".to_owned()),
             last_name: ActiveValue::Set("Hodapp".to_owned()),
-            password: ActiveValue::Set("password1".to_owned()),
+            password: ActiveValue::Set(generate_hash("password1").to_owned()),
         },
         user::ActiveModel {
             id: ActiveValue::NotSet,
             email: ActiveValue::Set("test@gmail.com".to_owned()),
             first_name: ActiveValue::Set("Test First".to_owned()),
             last_name: ActiveValue::Set("Test Last".to_owned()),
-            password: ActiveValue::Set("password2".to_owned()),
+            password: ActiveValue::Set(generate_hash("password2").to_owned()),
         },
     ];
 

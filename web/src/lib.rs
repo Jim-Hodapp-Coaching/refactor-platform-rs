@@ -1,7 +1,4 @@
-//use axum::{BoxError, error_handling::HandleErrorLayer, http::StatusCode};
-use crate::router::protected_routes;
 use axum_login::{
-    login_required,
     tower_sessions::{Expiry, MemoryStore, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
@@ -14,7 +11,6 @@ use std::net::SocketAddr;
 use std::str::FromStr;
 use time::Duration;
 use tokio::net::TcpListener;
-//use tower::ServiceBuilder;
 
 mod controller;
 mod error;
@@ -26,6 +22,13 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
         .with_expiry(Expiry::OnInactivity(Duration::days(1)));
+
+    // TODO: this is usable once we no longer use the MemoryStore and use the PostgresStore instead:
+    // let deletion_task = tokio::task::spawn(
+    //     session_store
+    //         .clone().
+    //         .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    // );
 
     // Auth service
     let backend = Backend::new(app_state.db_conn_ref().unwrap());
@@ -44,12 +47,13 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     axum::serve(
         listener,
         router::define_routes(app_state)
-            .merge(router::protected_routes())
             .layer(auth_layer)
             .into_make_service(),
     )
     .await
     .unwrap();
+
+    // deletion_task.await?;
 
     Ok(())
 }
