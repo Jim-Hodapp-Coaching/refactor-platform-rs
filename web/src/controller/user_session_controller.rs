@@ -1,6 +1,4 @@
-use crate::Error;
 use axum::{
-    extract::Query,
     http::StatusCode,
     response::{IntoResponse, Redirect},
     Form,
@@ -67,24 +65,6 @@ impl UserSessionController {
             debug!("Redirecting to root");
             Ok(Redirect::to("/").into_response())
         }
-    }
-
-    /// Delivers a page for the user to be able to log in to the platform.
-    /// Test this with curl: curl \
-    /// --request GET \
-    /// http://localhost:4000/login
-    pub async fn get_login(
-        Query(NextUrl { next }): Query<NextUrl>,
-    ) -> Result<impl IntoResponse, Error> {
-        debug!(
-            "UserSessionController::get_login(), next: {:?}",
-            next.unwrap_or_default()
-        );
-
-        // TODO: try and respond with an HTML template like the example until we understand
-        // how the code works inside and out.
-
-        Ok(())
     }
 
     /// Logs the user out of the platform by destroying their session.

@@ -1,5 +1,5 @@
 use axum_login::{
-    tower_sessions::{Expiry, MemoryStore, SessionManagerLayer},
+    tower_sessions::{ExpiredDeletion, Expiry, PostgresStore, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
 use entity_api::user::Backend;
@@ -18,17 +18,29 @@ mod router;
 
 pub async fn init_server(app_state: AppState) -> Result<()> {
     // Session layer
-    let session_store = MemoryStore::default();
+    //let session_store = MemoryStore::default();
+    let session_store = PostgresStore::new(
+        app_state
+            .db_conn_ref()
+            .unwrap()
+            .get_postgres_connection_pool()
+            .to_owned(),
+    );
+    // TODO: this put the created session under the tower_sessions/sessions in the DB, do we want this to
+    // be under refactor_platform_rs/user_sessions or something?
+    // See the following for setting the schema/table name pair:
+    // https://docs.rs/tower-sessions/latest/tower_sessions/struct.PostgresStore.html
+    session_store.migrate().await.unwrap();
+
+    let deletion_task = tokio::task::spawn(
+        session_store
+            .clone()
+            .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
+    );
+
     let session_layer = SessionManagerLayer::new(session_store)
         .with_secure(false)
         .with_expiry(Expiry::OnInactivity(Duration::days(1)));
-
-    // TODO: this is usable once we no longer use the MemoryStore and use the PostgresStore instead:
-    // let deletion_task = tokio::task::spawn(
-    //     session_store
-    //         .clone().
-    //         .continuously_delete_expired(tokio::time::Duration::from_secs(60)),
-    // );
 
     // Auth service
     let backend = Backend::new(app_state.db_conn_ref().unwrap());
@@ -53,7 +65,7 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     .await
     .unwrap();
 
-    // deletion_task.await?;
+    let _res = deletion_task.await.unwrap();
 
     Ok(())
 }

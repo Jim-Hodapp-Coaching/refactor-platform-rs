@@ -40,7 +40,6 @@ pub fn protected_routes() -> Router {
 
 pub fn session_routes() -> Router {
     Router::new()
-        .route("/login", get(UserSessionController::get_login))
         .route("/login", post(UserSessionController::login))
         .route("/logout", get(UserSessionController::logout))
 }
