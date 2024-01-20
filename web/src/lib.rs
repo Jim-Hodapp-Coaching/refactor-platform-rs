@@ -18,7 +18,6 @@ mod router;
 
 pub async fn init_server(app_state: AppState) -> Result<()> {
     // Session layer
-    //let session_store = MemoryStore::default();
     let session_store = PostgresStore::new(
         app_state
             .db_conn_ref()
