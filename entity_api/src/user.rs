@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use axum_login::{AuthnBackend, UserId};
 use entity::user::{self, Column, Model};
-//use super::error::{EntityApiErrorCode, Error};
 use log::*;
 use password_auth::{generate_hash, verify_password};
 use sea_orm::{entity::prelude::*, sea_query, ActiveValue, DatabaseConnection};
