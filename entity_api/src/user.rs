@@ -30,8 +30,6 @@ impl Backend {
 
 #[async_trait]
 impl AuthnBackend for Backend {
-    // TODO: I think we need to wrap entity::user::Model so that
-    // the DeriveEntityModel doesn't "erase" the AuthUser impl
     type User = Model;
     type Credentials = Credentials;
     type Error = crate::error::Error;
