@@ -17,7 +17,7 @@ impl OrganizationController {
     /// http://localhost:4000/organizations
     pub async fn index(State(app_state): State<AppState>) -> Result<impl IntoResponse, Error> {
         debug!("GET all Organizations");
-        let organizations = OrganizationApi::find_all(app_state.db_conn_ref().unwrap()).await?;
+        let organizations = OrganizationApi::find_all(app_state.db_conn_ref()).await?;
 
         debug!("Found Organizations: {:?}", organizations);
 
@@ -35,7 +35,7 @@ impl OrganizationController {
         debug!("GET Organization by id: {}", id);
 
         let organization: Option<organization::Model> =
-            OrganizationApi::find_by_id(app_state.db_conn_ref().unwrap(), id).await?;
+            OrganizationApi::find_by_id(app_state.db_conn_ref(), id).await?;
 
         Ok(Json(organization))
     }
@@ -52,7 +52,7 @@ impl OrganizationController {
         debug!("CREATE new Organization: {}", organization_model.name);
 
         let organization: organization::Model =
-            OrganizationApi::create(app_state.db_conn_ref().unwrap(), organization_model).await?;
+            OrganizationApi::create(app_state.db_conn_ref(), organization_model).await?;
 
         debug!("Newly Created Organization: {:?}", &organization);
 
@@ -74,8 +74,7 @@ impl OrganizationController {
         );
 
         let updated_organization: organization::Model =
-            OrganizationApi::update(app_state.db_conn_ref().unwrap(), id, organization_model)
-                .await?;
+            OrganizationApi::update(app_state.db_conn_ref(), id, organization_model).await?;
 
         Ok(Json(updated_organization))
     }
@@ -90,7 +89,7 @@ impl OrganizationController {
     ) -> Result<impl IntoResponse, Error> {
         debug!("DELETE Organization by id: {}", id);
 
-        OrganizationApi::delete_by_id(app_state.db_conn_ref().unwrap(), id).await?;
+        OrganizationApi::delete_by_id(app_state.db_conn_ref(), id).await?;
         Ok(Json(json!({"id": id})))
     }
 }

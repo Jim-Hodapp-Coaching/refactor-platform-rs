@@ -6,8 +6,8 @@ use tokio::time::Duration;
 pub mod config;
 pub mod logging;
 
-pub async fn init_database(mut app_state: AppState) -> Result<AppState, DbErr> {
-    let mut opt = ConnectOptions::new::<&str>(app_state.config.database_uri().as_ref());
+pub async fn init_database(database_uri: &str) -> Result<DatabaseConnection, DbErr> {
+    let mut opt = ConnectOptions::new::<&str>(database_uri);
     opt.max_connections(100)
         .min_connections(5)
         .connect_timeout(Duration::from_secs(8))
@@ -20,31 +20,29 @@ pub async fn init_database(mut app_state: AppState) -> Result<AppState, DbErr> {
 
     let db = Database::connect(opt).await?;
 
-    app_state.database_connection = Arc::new(Some(db));
-
-    Ok(app_state)
+    Ok(db)
 }
 
 // Needs to implement Clone to be able to be passed into Router as State
 #[derive(Clone)]
 pub struct AppState {
-    pub database_connection: Arc<Option<DatabaseConnection>>,
+    pub database_connection: Arc<DatabaseConnection>,
     pub config: Config,
 }
 
 impl AppState {
-    pub fn new(app_config: Config) -> Self {
+    pub fn new(app_config: Config, db: DatabaseConnection) -> Self {
         Self {
-            database_connection: Arc::new(None),
+            database_connection: Arc::new(db),
             config: app_config,
         }
     }
 
-    pub fn db_conn_ref(&self) -> Option<&DatabaseConnection> {
-        self.database_connection.as_ref().as_ref()
+    pub fn db_conn_ref(&self) -> &DatabaseConnection {
+        self.database_connection.as_ref()
     }
 
     pub fn set_db_conn(&mut self, db: DatabaseConnection) {
-        self.database_connection = Arc::new(Some(db));
+        self.database_connection = Arc::new(db);
     }
 }

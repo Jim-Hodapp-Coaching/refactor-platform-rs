@@ -21,7 +21,6 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     let session_store = PostgresStore::new(
         app_state
             .db_conn_ref()
-            .unwrap()
             .get_postgres_connection_pool()
             .to_owned(),
     );
@@ -42,7 +41,7 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
         .with_expiry(Expiry::OnInactivity(Duration::days(1)));
 
     // Auth service
-    let backend = Backend::new(app_state.db_conn_ref().unwrap());
+    let backend = Backend::new(app_state.db_conn_ref());
     let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
 
     // These will probably come from app_state.config (command line)

@@ -33,10 +33,11 @@ async fn main() {
 
     info!("Starting up...");
 
-    let mut app_state = AppState::new(config);
-    app_state = service::init_database(app_state).await.unwrap();
+    let db = service::init_database(config.database_uri()).await.unwrap();
 
-    entity_api::seed_database(app_state.db_conn_ref().unwrap()).await;
+    let app_state = AppState::new(config, db);
+
+    entity_api::seed_database(app_state.db_conn_ref()).await;
 
     web::init_server(app_state).await.unwrap();
 }
