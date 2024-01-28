@@ -8,7 +8,7 @@ Table refactor_platform.organizations {
 }
 
 // Coaching relationship type belonging to the refactor_platform schema
-// from the perspective of the coachee
+// from the perspective of the coach
 enum refactor_platform.coaching_relationship {
   client
   direct_report
