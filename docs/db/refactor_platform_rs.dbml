@@ -4,6 +4,7 @@
 Table refactor_platform.organizations {
   id integer [primary key, unique, not null, increment]
   name varchar [note: 'The name of the organization that the coach <--> coachee belong to']
+  logo varchar [note: 'A URI pointing to the organization\'s logo icon file']
   created_at timestamp 
 }
 
