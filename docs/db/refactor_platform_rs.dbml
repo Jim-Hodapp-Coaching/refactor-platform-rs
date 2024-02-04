@@ -35,6 +35,7 @@ Table refactor_platform.users {
   password varchar
   timezone timezone
   github_username varchar // Specifically GH for now, can generalize later
+  github_profile_url varchar
   created_at timestamp
 }
 
