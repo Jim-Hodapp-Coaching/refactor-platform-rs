@@ -2,6 +2,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Redirect},
     Form,
+    Json,
 };
 use entity_api::user as UserApi;
 use log::*;
@@ -62,8 +63,9 @@ impl UserSessionController {
             debug!("Redirecting to next: {next}");
             Ok(Redirect::to(next).into_response())
         } else {
-            debug!("Redirecting to root");
-            Ok(Redirect::to("/").into_response())
+            let response_json = Json(json!({"first_name": user.first_name, "last_name": user.last_name, "email": user.email}));
+            debug!("JSON response with 200 OK: {:?}", response_json);
+            Ok(response_json.into_response())
         }
     }
 
