@@ -11,17 +11,22 @@ entity_api = { path = "../entity_api" }
 service = { path = "../service" }
 
 axum = "0.7.2"
+axum-login = "0.12.0"
 log = "0.4"
 tower-http = { version = "0.5.0", features = ["fs"] }
 serde_json = "1.0.107"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.35.0", features = ["full"] }
+tower = "0.4.13"
+tower-sessions = { version = "0.9", features = ["postgres-store", "deletion-task"]}
+time = "0.3.31"
 
 [dependencies.sea-orm]
 version = "0.12" # sea-orm version
 features = [
     "debug-print",
     "runtime-tokio-native-tls",
+    "sea-orm-internal",
     "sqlx-postgres"
 ]
 

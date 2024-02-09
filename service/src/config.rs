@@ -12,7 +12,7 @@ pub struct Config {
         env,
         default_value = "postgres://refactor_rs:password@localhost:5432/refactor_platform_rs"
     )]
-    pub database_uri: Option<String>,
+    database_uri: Option<String>,
 
     /// The host interface to listen for incoming connections
     #[arg(short, long, default_value = "127.0.0.1")]
@@ -49,7 +49,9 @@ impl Config {
         self
     }
 
-    pub fn database_uri(&self) -> String {
-        self.database_uri.clone().expect("No Database URI Provided")
+    pub fn database_uri(&self) -> &str {
+        self.database_uri
+            .as_ref()
+            .expect("No Database URI Provided")
     }
 }

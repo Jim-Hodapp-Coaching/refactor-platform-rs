@@ -3,13 +3,19 @@ use axum::{
     routing::{delete, get, post, put},
     Router,
 };
+use axum_login::login_required;
+use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
-use crate::controller::organization_controller::OrganizationController;
+use crate::controller::{
+    organization_controller::OrganizationController, user_session_controller::UserSessionController,
+};
 
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
         .merge(organization_routes(app_state))
+        .merge(session_routes())
+        .merge(protected_routes())
         .fallback_service(static_routes())
 }
 
@@ -22,7 +28,20 @@ pub fn organization_routes(app_state: AppState) -> Router {
         .route("/organizations", post(OrganizationController::create))
         .route("/organizations/:id", put(OrganizationController::update))
         .route("/organizations/:id", delete(OrganizationController::delete))
+        .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
+}
+
+pub fn protected_routes() -> Router {
+    Router::new()
+        .route("/protected", get(UserSessionController::protected))
+        .route_layer(login_required!(Backend, login_url = "/login"))
+}
+
+pub fn session_routes() -> Router {
+    Router::new()
+        .route("/login", post(UserSessionController::login))
+        .route("/logout", get(UserSessionController::logout))
 }
 
 // This will serve static files that we can use as a "fallback" for when the server panics
