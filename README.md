@@ -43,7 +43,7 @@ GRANT ALL PRIVILEGES ON SCHEMA refactor_platform TO refactor;
 Note: this assumes a database name of `refactor_platform`
 
 ```bash
-DATABASE_URL=postgres://refactor:password@localhost:5432/refactor_platform sea-orm-cli migrate up -s refactor_platform_rs 
+DATABASE_URL=postgres://refactor:password@localhost:5432/refactor_platform sea-orm-cli migrate up -s refactor_platform
 ```
 
 ### Generate a new Entity from Database
