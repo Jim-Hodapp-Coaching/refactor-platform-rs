@@ -13,7 +13,7 @@ service = { path = "../service" }
 axum = "0.7.2"
 axum-login = "0.12.0"
 log = "0.4"
-tower-http = { version = "0.5.0", features = ["fs"] }
+tower-http = { version = "0.5.0", features = ["fs", "cors"] }
 serde_json = "1.0.107"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.35.0", features = ["full"] }
