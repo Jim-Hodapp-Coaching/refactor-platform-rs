@@ -10,6 +10,7 @@ use service::AppState;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use time::Duration;
+use tower_http::cors::CorsLayer;
 use tokio::net::TcpListener;
 
 mod controller;
@@ -57,6 +58,7 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     axum::serve(
         listener,
         router::define_routes(app_state)
+            .layer(CorsLayer::permissive()) // FIXME: permissive for early development convenience
             .layer(auth_layer)
             .into_make_service(),
     )
