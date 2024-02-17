@@ -2,97 +2,81 @@
 // Docs: https://dbml.dbdiagram.io/docs
 
 Table refactor_platform.organizations {
-  id integer [primary key, unique, not null, increment]
+  id uuid [primary key, unique, not null]
   name varchar [note: 'The name of the organization that the coach <--> coachee belong to']
   logo varchar [note: 'A URI pointing to the organization\'s logo icon file']
-  created_at timestamp 
+  created_at timestamp
+  updated_at timestamp [note: 'The last date and time fields were changed']
 }
 
 // Coaching relationship type belonging to the refactor_platform schema
 // from the perspective of the coach
-enum refactor_platform.coaching_relationship {
-  client
-  direct_report
-}
-
-// Declares a coach <--> coachee coaching relationship
-// E.g. Manager <--> Software Engineer direct report
-// E.g. Independent coach <--> Software Engineer client
-Table refactor_platform.coaches_coachees {
-  id integer [primary key, unique, not null, increment]
-  organization_id integer [note: 'The organization associated with this coaching relationship']
-  coach_id integer [note: 'The coach associated with this coaching relationship']
-  coachee_id integer [note: 'The coachee associated with this coaching relationship']
-  relationship coaching_relationship 
+Table refactor_platform.coaching_relationships {
+  id uuid [primary key, unique, not null]
+  organization_id uuid [not null, note: 'The organization associated with this coaching relationship']
+  coach_id uuid [not null, note: 'The coach associated with this coaching relationship']
+  coachee_id uuid [not null, note: 'The coachee associated with this coaching relationship']
+  created_at timestamp 
+  updated_at timestamp [note: 'The last date and time fields were changed']
 }
 
 Table refactor_platform.users {
-  id integer [primary key, unique, not null, increment]
+  id uuid [primary key, unique, not null]
   email varchar
   first_name varchar
   last_name varchar
   display_name varchar [note: 'If a user wants to go by something other than first & last names']
   password varchar
-  timezone timezone
+  timezone varchar
   github_username varchar // Specifically GH for now, can generalize later
   github_profile_url varchar
   created_at timestamp
-}
-
-Table refactor_platform.coachees {
-  id integer [primary key, unique, not null, increment]
-  user_id integer
-  organization_id integer
-}
-
-Table refactor_platform.coaches {
-  id integer [primary key, unique, not null, increment]
-  user_id integer
-  organization_id integer
+  updated_at timestamp [note: 'The last date and time fields were changed']
 }
 
 Table refactor_platform.coaching_sessions {
-  id integer [primary key, unique, not null, increment]
-  coaches_coachees_id integer [note: 'The coaching relationship (i.e. what coach & coachee under what organization) associated with this coaching session']
+  id uuid [primary key, unique, not null]
+  coaching_relationship_id uuid [not null, note: 'The coaching relationship (i.e. what coach & coachee under what organization) associated with this coaching session']
   date timestamp [note: 'The date and time of a session']
-  timezone timezone [note: 'The baseline timezone used for the `date` field']
+  timezone varchar [note: 'The baseline timezone used for the `date` field']
   created_at timestamp
+  updated_at timestamp [note: 'The last date and time fields were changed']
 }
 
 Table refactor_platform.overarching_goals {
-  id integer [primary key, unique, not null, increment]
-  coaching_session_id integer [note: 'The coaching session that an overarching goal is associated with']
+  id uuid [primary key, unique, not null]
+  coaching_session_id uuid [note: 'The coaching session that an overarching goal is associated with']
   title varchar [note: 'A short description of an overarching goal']
   details varchar [note: 'A long description of an overarching goal']
-  completed boolean // May be unnecessary if there's a valid completed_at timestamp
   completed_at timestamp [note: 'The date and time an overarching goal was completed']
-  completed_by_id integer [note: 'The user that successfully completed an overarching goal']
   created_at timestamp
-  updated_at timestamp [note: 'The last date and time an overarching goal\'s fields were changed']
+  updated_at timestamp [note: 'The last date and time fields were changed']
 }
 
 Table refactor_platform.notes {
-  id integer [primary key, unique, not null, increment]
-  coaching_session_id integer
+  id uuid [primary key, unique, not null]
+  coaching_session_id uuid [not null]
   body varchar [note: 'Main text of the note supporting Markdown']
+  user_id uuid [not null, note: 'User that created (owns) the note']
   created_at timestamp
   updated_at timestamp [note: 'The last date and time an overarching note\'s fields were changed']
 }
 
 Table refactor_platform.agreements {
-  id integer [primary key, unique, not null, increment]
-  coaching_session_id integer
+  id uuid [primary key, unique, not null]
+  coaching_session_id uuid [not null]
   details varchar [note: 'Either a short or long description of an agreement reached between coach and coachee in a coaching session']
+  user_id uuid [not null, note: 'User that created (owns) the agreement']
   created_at timestamp
   updated_at timestamp [note: 'The last date and time an overarching agreement\'s fields were changed']
 }
 
 Table refactor_platform.actions {
-  id integer [primary key, unique, not null, increment]
+  id uuid [primary key, unique, not null]
   // The first session where this action was created
   // It will carry forward to every future session until
   // its due_by is passed or it was completed by the coachee
-  coaching_session_id integer
+  coaching_session_id uuid [not null]
   due_by timestamp
   completed boolean // May be unnecessary if there's a valid completed_at timestamp
   completed_at timestamp
@@ -100,31 +84,24 @@ Table refactor_platform.actions {
   updated_at timestamp
 }
 
-// coaches_coachees relationships
-Ref: refactor_platform.coaches_coachees.organization_id - refactor_platform.organizations.id
-Ref: refactor_platform.coaches_coachees.coachee_id - refactor_platform.coachees.id
-Ref: refactor_platform.coaches_coachees.coach_id - refactor_platform.coaches.id
-
-// coachees relationships
-Ref: refactor_platform.coachees.user_id - refactor_platform.users.id
-Ref: refactor_platform.coachees.organization_id > refactor_platform.organizations.id
-
-// coaches relationships
-Ref: refactor_platform.coaches.user_id - refactor_platform.users.id
-Ref: refactor_platform.coaches.organization_id > refactor_platform.organizations.id
-
-// overarching_goals relationships
-Ref: refactor_platform.overarching_goals.coaching_session_id - refactor_platform.coaching_sessions.id
-Ref: refactor_platform.overarching_goals.completed_by_id - refactor_platform.users.id
-
-// notes relationships
-Ref: refactor_platform.notes.coaching_session_id - refactor_platform.coaching_sessions.id
+// coaching_relationships relationships
+Ref: refactor_platform.coaching_relationships.organization_id > refactor_platform.organizations.id
+Ref: refactor_platform.coaching_relationships.coachee_id > refactor_platform.users.id
+Ref: refactor_platform.coaching_relationships.coach_id > refactor_platform.users.id
 
 // coaching_sessions relationships
-Ref: refactor_platform.coaching_sessions.coaches_coachees_id > refactor_platform.coaches_coachees.id
+Ref: refactor_platform.coaching_sessions.coaching_relationship_id > refactor_platform.coaching_relationships.id
+
+// overarching_goals relationships
+Ref: refactor_platform.overarching_goals.coaching_session_id > refactor_platform.coaching_sessions.id
+
+// notes relationships
+Ref: refactor_platform.notes.coaching_session_id > refactor_platform.coaching_sessions.id
+Ref: refactor_platform.notes.user_id > refactor_platform.users.id
 
 // agreements relationships
 Ref: refactor_platform.agreements.coaching_session_id > refactor_platform.coaching_sessions.id
+Ref: refactor_platform.agreements.user_id > refactor_platform.users.id
 
 // actions relationships
 Ref: refactor_platform.actions.coaching_session_id > refactor_platform.coaching_sessions.id

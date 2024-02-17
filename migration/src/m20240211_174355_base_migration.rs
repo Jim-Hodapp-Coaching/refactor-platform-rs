@@ -21,8 +21,7 @@ impl MigrationTrait for Migration {
 
         file.read_to_string(&mut sql).map_err(stringify_err)?;
 
-        // format sql as valid sql statements
-        sql = sql.replace(";", ";\n");
+        process_sql(&sql);
 
         db.execute_unprepared(&sql).await?;
 
@@ -30,7 +29,15 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Replace the sample below with your own migration scripts
-        todo!();
+        Ok(())
     }
+}
+
+// format sql as valid sql statements
+fn process_sql(sql: &str) -> String {
+    sql.replace(";", ";\n")
+        .lines()
+        .filter(|line| !line.trim().starts_with("--"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
