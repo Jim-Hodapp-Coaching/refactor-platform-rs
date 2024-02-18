@@ -10,7 +10,7 @@ pub struct Config {
         short,
         long,
         env,
-        default_value = "postgres://refactor_rs:password@localhost:5432/refactor_platform_rs"
+        default_value = "postgres://refactor:password@localhost:5432/refactor_platform"
     )]
     database_uri: Option<String>,
 

@@ -16,7 +16,7 @@ pub async fn init_database(database_uri: &str) -> Result<DatabaseConnection, DbE
         .max_lifetime(Duration::from_secs(8))
         .sqlx_logging(true)
         .sqlx_logging_level(log::LevelFilter::Info)
-        .set_schema_search_path("refactor_platform_rs"); // Setting default PostgreSQL schema
+        .set_schema_search_path("refactor_platform"); // Setting default PostgreSQL schema
 
     let db = Database::connect(opt).await?;
 
