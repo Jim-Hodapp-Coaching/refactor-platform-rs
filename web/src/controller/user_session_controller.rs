@@ -12,7 +12,7 @@ use serde_json::json;
 // to redirect after log in.
 #[derive(Debug, Deserialize)]
 pub struct NextUrl {
-    next: Option<String>,
+    _next: Option<String>,
 }
 
 pub struct UserSessionController {}
@@ -63,7 +63,8 @@ impl UserSessionController {
             Ok(Redirect::to(next).into_response())
         } else {
             let response_json = Json(
-                json!({"first_name": user.first_name, "last_name": user.last_name, "email": user.email}),
+                json!({"first_name": user.first_name, "last_name": user.last_name, 
+                    "email": user.email, "display_name": user.display_name}),
             );
             debug!("JSON response with 200 OK: {:?}", response_json);
             Ok(response_json.into_response())

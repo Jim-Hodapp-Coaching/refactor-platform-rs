@@ -1,0 +1,114 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Table refactor_platform.organizations {
+  id integer [primary key, unique, not null, increment]
+  external_id uuid [unique, not null, default: `gen_random_uuid()`, note: 'The publicly visible identifier for a record']
+  name varchar [note: 'The name of the organization that the coach <--> coachee belong to']
+  logo varchar [note: 'A URI pointing to the organization\'s logo icon file']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
+}
+
+// Coaching relationship type belonging to the refactor_platform schema
+// from the perspective of the coach
+Table refactor_platform.coaching_relationships {
+  id integer [primary key, unique, not null, increment]
+  external_id uuid [unique, not null, default: `gen_random_uuid()`, note: 'The publicly visible identifier for a record']
+  organization_id integer [not null, note: 'The organization associated with this coaching relationship']
+  coach_id integer [not null, note: 'The coach associated with this coaching relationship']
+  coachee_id integer [not null, note: 'The coachee associated with this coaching relationship']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
+}
+
+Table refactor_platform.users {
+  id integer [primary key, unique, not null, increment]
+  external_id uuid [unique, not null, default: `gen_random_uuid()`, note: 'The publicly visible identifier for a record']
+  email varchar [unique, not null]
+  first_name varchar
+  last_name varchar
+  display_name varchar [note: 'If a user wants to go by something other than first & last names']
+  password varchar
+  github_username varchar // Specifically GH for now, can generalize later
+  github_profile_url varchar
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
+}
+
+Table refactor_platform.coaching_sessions {
+  id integer [primary key, unique, not null, increment]
+  external_id uuid [unique, not null, default: `gen_random_uuid()`, note: 'The publicly visible identifier for a record']
+  coaching_relationship_id integer [not null, note: 'The coaching relationship (i.e. what coach & coachee under what organization) associated with this coaching session']
+  date timestamp [note: 'The date and time of a session']
+  timezone varchar [note: 'The baseline timezone used for the `date` field']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
+}
+
+Table refactor_platform.overarching_goals {
+  id integer [primary key, unique, not null, increment]
+  external_id uuid [unique, not null, default: `gen_random_uuid()`, note: 'The publicly visible identifier for a record']
+  coaching_session_id integer [note: 'The coaching session that an overarching goal is associated with']
+  title varchar [note: 'A short description of an overarching goal']
+  details varchar [note: 'A long description of an overarching goal']
+  completed_at timestamptz [note: 'The date and time an overarching goal was completed']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
+}
+
+Table refactor_platform.notes {
+  id integer [primary key, unique, not null, increment]
+  external_id uuid [unique, not null, default: `gen_random_uuid()`, note: 'The publicly visible identifier for a record']
+  coaching_session_id integer [not null]
+  body varchar [note: 'Main text of the note supporting Markdown']
+  user_id integer [not null, note: 'User that created (owns) the note']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time an overarching note\'s fields were changed']
+}
+
+Table refactor_platform.agreements {
+  id integer [primary key, unique, not null, increment]
+  external_id uuid [unique, not null, default: `gen_random_uuid()`, note: 'The publicly visible identifier for a record']
+  coaching_session_id integer [not null]
+  details varchar [note: 'Either a short or long description of an agreement reached between coach and coachee in a coaching session']
+  user_id integer [not null, note: 'User that created (owns) the agreement']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time an overarching agreement\'s fields were changed']
+}
+
+Table refactor_platform.actions {
+  id integer [primary key, unique, not null, increment]
+  external_id uuid [unique, not null, default: `gen_random_uuid()`, note: 'The publicly visible identifier for a record']
+  // The first session where this action was created
+  // It will carry forward to every future session until
+  // its due_by is passed or it was completed by the coachee
+  coaching_session_id integer [not null]
+  due_by timestamptz
+  completed boolean // May be unnecessary if there's a valid completed_at timestamp
+  completed_at timestamptz
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+// coaching_relationships relationships
+Ref: refactor_platform.coaching_relationships.organization_id > refactor_platform.organizations.id
+Ref: refactor_platform.coaching_relationships.coachee_id > refactor_platform.users.id
+Ref: refactor_platform.coaching_relationships.coach_id > refactor_platform.users.id
+
+// coaching_sessions relationships
+Ref: refactor_platform.coaching_sessions.coaching_relationship_id > refactor_platform.coaching_relationships.id
+
+// overarching_goals relationships
+Ref: refactor_platform.overarching_goals.coaching_session_id > refactor_platform.coaching_sessions.id
+
+// notes relationships
+Ref: refactor_platform.notes.coaching_session_id > refactor_platform.coaching_sessions.id
+Ref: refactor_platform.notes.user_id > refactor_platform.users.id
+
+// agreements relationships
+Ref: refactor_platform.agreements.coaching_session_id > refactor_platform.coaching_sessions.id
+Ref: refactor_platform.agreements.user_id > refactor_platform.users.id
+
+// actions relationships
+Ref: refactor_platform.actions.coaching_session_id > refactor_platform.coaching_sessions.id

@@ -2,20 +2,26 @@
 
 use crate::Id;
 use axum_login::AuthUser;
+use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Deserialize, Serialize)]
-#[sea_orm(schema_name = "refactor_platform_rs", table_name = "users")]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Deserialize, Serialize)]
+#[sea_orm(schema_name = "refactor_platform", table_name = "users")]
 pub struct Model {
     #[sea_orm(primary_key)]
     #[serde(skip_deserializing)]
     pub id: Id,
     #[sea_orm(unique, indexed)]
     pub email: String,
-    pub password: String,
     pub first_name: String,
     pub last_name: String,
+    pub display_name: String,
+    pub password: String,
+    pub github_username: String,
+    pub github_profile_url: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

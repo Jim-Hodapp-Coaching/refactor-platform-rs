@@ -10,8 +10,8 @@ use service::AppState;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use time::Duration;
-use tower_http::cors::CorsLayer;
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 
 mod controller;
 mod error;
@@ -24,11 +24,12 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
             .db_conn_ref()
             .get_postgres_connection_pool()
             .to_owned(),
-    );
-    // TODO: this put the created session under the tower_sessions/sessions in the DB, do we want this to
-    // be under refactor_platform_rs/user_sessions or something?
-    // See the following for setting the schema/table name pair:
-    // https://docs.rs/tower-sessions/latest/tower_sessions/struct.PostgresStore.html
+    )
+    .with_schema_name("refactor_platform") // FIXME: consolidate all schema strings into a config field with default option
+    .unwrap()
+    .with_table_name("authorized_sessions")
+    .unwrap();
+
     session_store.migrate().await.unwrap();
 
     let deletion_task = tokio::task::spawn(

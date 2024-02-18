@@ -2,6 +2,9 @@
 
 pub mod prelude;
 
-pub mod coaching_relationship;
-pub mod organization;
-pub mod user;
+pub mod actions;
+pub mod agreements;
+pub mod coaching_sessions;
+pub mod notes;
+pub mod overarching_goals;
+pub mod seaql_migrations;
