@@ -10,7 +10,8 @@ version = "0.12" # sea-orm version
 features = [
     "debug-print",
     "runtime-tokio-native-tls",
-    "sqlx-postgres"
+    "sqlx-postgres",
+    "with-uuid"
 ]
 
 [dependencies]

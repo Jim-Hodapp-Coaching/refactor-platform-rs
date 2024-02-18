@@ -76,14 +76,24 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
             email: ActiveValue::Set("james.hodapp@gmail.com".to_owned()),
             first_name: ActiveValue::Set("Jim".to_owned()),
             last_name: ActiveValue::Set("Hodapp".to_owned()),
+            display_name: ActiveValue::Set("Jim H".to_owned()),
             password: ActiveValue::Set(generate_hash("password1").to_owned()),
+            github_username: ActiveValue::Set("jhodapp".to_owned()),
+            github_profile_url: ActiveValue::Set("https://github.com/jhodapp".to_owned()),
+            created_at: ActiveValue::NotSet,
+            updated_at: ActiveValue::NotSet,
         },
         user::ActiveModel {
             id: ActiveValue::NotSet,
             email: ActiveValue::Set("test@gmail.com".to_owned()),
             first_name: ActiveValue::Set("Test First".to_owned()),
             last_name: ActiveValue::Set("Test Last".to_owned()),
+            display_name: ActiveValue::Set("Test User".to_owned()),
             password: ActiveValue::Set(generate_hash("password2").to_owned()),
+            github_username: ActiveValue::Set("test".to_owned()),
+            github_profile_url: ActiveValue::Set("https://github.com/test".to_owned()),
+            created_at: ActiveValue::NotSet,
+            updated_at: ActiveValue::NotSet,
         },
     ];
 
@@ -91,7 +101,7 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
         debug!("user: {:?}", user);
 
         // Upserts seeded user data:
-        let _res = user::Entity::insert(user)
+        match user::Entity::insert(user)
             .on_conflict(
                 // on conflict do update
                 sea_query::OnConflict::column(user::Column::Email)
@@ -101,6 +111,10 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
                     .to_owned(),
             )
             .exec(db)
-            .await;
+            .await
+        {
+            Ok(_) => info!("Succeeded in seeding user data."),
+            Err(e) => error!("Failed to insert or update user when seeding user data: {e}"),
+        };
     }
 }

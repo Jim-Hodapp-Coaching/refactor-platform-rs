@@ -27,7 +27,8 @@ features = [
     "debug-print",
     "runtime-tokio-native-tls",
     "sea-orm-internal",
-    "sqlx-postgres"
+    "sqlx-postgres",
+    "with-uuid"
 ]
 
 [features]

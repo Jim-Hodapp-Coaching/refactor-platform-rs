@@ -13,37 +13,31 @@ The platform itself is useful for professional independent coaches, informal men
 
 ## Running the Database Setup Script
 
-1. Ensure you have PostgreSQL installed and running on your machine. If you're using macOS, you can install it with Homebrew:
+1. Ensure you have PostgreSQL installed and running on your machine. If you're using macOS, you can use
+[Postgres.app](https://postgresapp.com/) or install it with Homebrew:
 
     ```shell
     brew install postgresql
-    brew services start postgresql
     ```
 
 2. Make sure you have the `dbml2sql` tool installed. You can install it with npm:
 
     ```shell
-    npm install -g dbml2sql
+    npm install -g @dbml/cli
     ```
 
-3. Make the script executable:
+3. Run the script with default settings:
 
     ```shell
-    chmod +x rebuild_db.sh
-    ```
-
-4. Run the script with default settings:
-
-    ```shell
-    ./rebuild_db.sh
+    ./scripts/rebuild_db.sh
     ```
 
     This will create a database named `refactor_platform`, a user named `refactor`, and a schema named `refactor_platform`.
 
-5. If you want to use different settings, you can provide them as arguments to the script:
+4. If you want to use different settings, you can provide them as arguments to the script:
 
     ```shell
-    ./rebuild_db.sh my_database my_user my_schema
+    ./scripts/rebuild_db.sh my_database my_user my_schema
     ```
 
     This will create a database named `my_database`, a user named `my_user`, and a schema named `my_schema`.

@@ -28,14 +28,14 @@ impl MigrationTrait for Migration {
         Ok(())
     }
 
-    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+    async fn down(&self, _manager: &SchemaManager) -> Result<(), DbErr> {
         Ok(())
     }
 }
 
 // format sql as valid sql statements
 fn process_sql(sql: &str) -> String {
-    sql.replace(";", ";\n")
+    sql.replace(';', ";\n")
         .lines()
         .filter(|line| !line.trim().starts_with("--"))
         .collect::<Vec<_>>()

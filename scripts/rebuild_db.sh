@@ -10,11 +10,18 @@ echo "Database Name: $DB_NAME"
 echo "Database User: $DB_USER"
 echo "Schema Name: $SCHEMA_NAME"
 
-# Check if postgres is installed with homebrew and if not print message saying to install postgres with homebrew and exit
-brew list postgresql > /dev/null 2>&1 || { echo "Postgres is not installed with homebrew. Please install postgres with homebrew and try again"; exit 1; }
+# Check if postgres is installed with its client CLI
+[ -f $(which postgres) ] &&
+[ -f $(which pg_ctl ) ] &&
+[ -f $(which psql) ] > /dev/null 2>&1 ||
+    { echo "Postgres and psql are not completely installed. Please install postgres with your package manager or Postgres.app and try again"; exit 1; }
+
+if [[ -z "${PGDATA}" ]]; then
+    echo 'Environment variable PGDATA unset. See `pg_ctl --help for more information.'
+fi
 
 # Ensure postgres is running and start postgres with homebrew if it is not running 
-pg_ctl status > /dev/null 2>&1 || { echo "Starting Postgres..."; brew services start postgresql; }
+pg_ctl status > /dev/null 2>&1 || { echo "Starting Postgres..."; pg_ctl -w -t 15 start; }
 
 # Check if the postgres database exists and create it if it doesn't
 POSTGRES_DB_EXISTS=$(psql -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='postgres'")

@@ -10,8 +10,8 @@ use service::AppState;
 use std::net::SocketAddr;
 use std::str::FromStr;
 use time::Duration;
-use tower_http::cors::CorsLayer;
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 
 mod controller;
 mod error;

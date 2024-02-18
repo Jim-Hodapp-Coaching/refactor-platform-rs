@@ -2,86 +2,85 @@
 // Docs: https://dbml.dbdiagram.io/docs
 
 Table refactor_platform.organizations {
-  id uuid [primary key, unique, not null]
+  id uuid [primary key, unique, not null, default: `gen_random_uuid()`]
   name varchar [note: 'The name of the organization that the coach <--> coachee belong to']
   logo varchar [note: 'A URI pointing to the organization\'s logo icon file']
-  created_at timestamp
-  updated_at timestamp [note: 'The last date and time fields were changed']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
 }
 
 // Coaching relationship type belonging to the refactor_platform schema
 // from the perspective of the coach
 Table refactor_platform.coaching_relationships {
-  id uuid [primary key, unique, not null]
+  id uuid [primary key, unique, not null, default: `gen_random_uuid()`]
   organization_id uuid [not null, note: 'The organization associated with this coaching relationship']
   coach_id uuid [not null, note: 'The coach associated with this coaching relationship']
   coachee_id uuid [not null, note: 'The coachee associated with this coaching relationship']
-  created_at timestamp 
-  updated_at timestamp [note: 'The last date and time fields were changed']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
 }
 
 Table refactor_platform.users {
-  id uuid [primary key, unique, not null]
-  email varchar
+  id uuid [primary key, unique, not null, default: `gen_random_uuid()`]
+  email varchar [unique, not null]
   first_name varchar
   last_name varchar
   display_name varchar [note: 'If a user wants to go by something other than first & last names']
   password varchar
-  timezone varchar
   github_username varchar // Specifically GH for now, can generalize later
   github_profile_url varchar
-  created_at timestamp
-  updated_at timestamp [note: 'The last date and time fields were changed']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
 }
 
 Table refactor_platform.coaching_sessions {
-  id uuid [primary key, unique, not null]
+  id uuid [primary key, unique, not null, default: `gen_random_uuid()`]
   coaching_relationship_id uuid [not null, note: 'The coaching relationship (i.e. what coach & coachee under what organization) associated with this coaching session']
   date timestamp [note: 'The date and time of a session']
   timezone varchar [note: 'The baseline timezone used for the `date` field']
-  created_at timestamp
-  updated_at timestamp [note: 'The last date and time fields were changed']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
 }
 
 Table refactor_platform.overarching_goals {
-  id uuid [primary key, unique, not null]
+  id uuid [primary key, unique, not null, default: `gen_random_uuid()`]
   coaching_session_id uuid [note: 'The coaching session that an overarching goal is associated with']
   title varchar [note: 'A short description of an overarching goal']
   details varchar [note: 'A long description of an overarching goal']
-  completed_at timestamp [note: 'The date and time an overarching goal was completed']
-  created_at timestamp
-  updated_at timestamp [note: 'The last date and time fields were changed']
+  completed_at timestamptz [note: 'The date and time an overarching goal was completed']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time fields were changed']
 }
 
 Table refactor_platform.notes {
-  id uuid [primary key, unique, not null]
+  id uuid [primary key, unique, not null, default: `gen_random_uuid()`]
   coaching_session_id uuid [not null]
   body varchar [note: 'Main text of the note supporting Markdown']
   user_id uuid [not null, note: 'User that created (owns) the note']
-  created_at timestamp
-  updated_at timestamp [note: 'The last date and time an overarching note\'s fields were changed']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time an overarching note\'s fields were changed']
 }
 
 Table refactor_platform.agreements {
-  id uuid [primary key, unique, not null]
+  id uuid [primary key, unique, not null, default: `gen_random_uuid()`]
   coaching_session_id uuid [not null]
   details varchar [note: 'Either a short or long description of an agreement reached between coach and coachee in a coaching session']
   user_id uuid [not null, note: 'User that created (owns) the agreement']
-  created_at timestamp
-  updated_at timestamp [note: 'The last date and time an overarching agreement\'s fields were changed']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`, note: 'The last date and time an overarching agreement\'s fields were changed']
 }
 
 Table refactor_platform.actions {
-  id uuid [primary key, unique, not null]
+  id uuid [primary key, unique, not null, default: `gen_random_uuid()`]
   // The first session where this action was created
   // It will carry forward to every future session until
   // its due_by is passed or it was completed by the coachee
   coaching_session_id uuid [not null]
-  due_by timestamp
+  due_by timestamptz
   completed boolean // May be unnecessary if there's a valid completed_at timestamp
-  completed_at timestamp
-  created_at timestamp
-  updated_at timestamp
+  completed_at timestamptz
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
 }
 
 // coaching_relationships relationships

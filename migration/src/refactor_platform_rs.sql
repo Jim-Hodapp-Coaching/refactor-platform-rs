@@ -1,84 +1,83 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-02-17T18:41:48.352Z
+-- Generated at: 2024-02-18T00:58:44.704Z
 
 
 CREATE TABLE "refactor_platform"."organizations" (
-  "id" uuid UNIQUE PRIMARY KEY NOT NULL,
+  "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "name" varchar,
   "logo" varchar,
-  "created_at" timestamp,
-  "updated_at" timestamp
+  "created_at" timestamptz DEFAULT (now()),
+  "updated_at" timestamptz DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."coaching_relationships" (
-  "id" uuid UNIQUE PRIMARY KEY NOT NULL,
+  "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "organization_id" uuid NOT NULL,
   "coach_id" uuid NOT NULL,
   "coachee_id" uuid NOT NULL,
-  "created_at" timestamp,
-  "updated_at" timestamp
+  "created_at" timestamptz DEFAULT (now()),
+  "updated_at" timestamptz DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."users" (
-  "id" uuid UNIQUE PRIMARY KEY NOT NULL,
-  "email" varchar,
+  "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
+  "email" varchar UNIQUE NOT NULL,
   "first_name" varchar,
   "last_name" varchar,
   "display_name" varchar,
   "password" varchar,
-  "timezone" varchar,
   "github_username" varchar,
   "github_profile_url" varchar,
-  "created_at" timestamp,
-  "updated_at" timestamp
+  "created_at" timestamptz DEFAULT (now()),
+  "updated_at" timestamptz DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."coaching_sessions" (
-  "id" uuid UNIQUE PRIMARY KEY NOT NULL,
+  "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_relationship_id" uuid NOT NULL,
   "date" timestamp,
   "timezone" varchar,
-  "created_at" timestamp,
-  "updated_at" timestamp
+  "created_at" timestamptz DEFAULT (now()),
+  "updated_at" timestamptz DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."overarching_goals" (
-  "id" uuid UNIQUE PRIMARY KEY NOT NULL,
+  "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_session_id" uuid,
   "title" varchar,
   "details" varchar,
-  "completed_at" timestamp,
-  "created_at" timestamp,
-  "updated_at" timestamp
+  "completed_at" timestamptz,
+  "created_at" timestamptz DEFAULT (now()),
+  "updated_at" timestamptz DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."notes" (
-  "id" uuid UNIQUE PRIMARY KEY NOT NULL,
+  "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_session_id" uuid NOT NULL,
   "body" varchar,
   "user_id" uuid NOT NULL,
-  "created_at" timestamp,
-  "updated_at" timestamp
+  "created_at" timestamptz DEFAULT (now()),
+  "updated_at" timestamptz DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."agreements" (
-  "id" uuid UNIQUE PRIMARY KEY NOT NULL,
+  "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_session_id" uuid NOT NULL,
   "details" varchar,
   "user_id" uuid NOT NULL,
-  "created_at" timestamp,
-  "updated_at" timestamp
+  "created_at" timestamptz DEFAULT (now()),
+  "updated_at" timestamptz DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."actions" (
-  "id" uuid UNIQUE PRIMARY KEY NOT NULL,
+  "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_session_id" uuid NOT NULL,
-  "due_by" timestamp,
+  "due_by" timestamptz,
   "completed" boolean,
-  "completed_at" timestamp,
-  "created_at" timestamp,
-  "updated_at" timestamp
+  "completed_at" timestamptz,
+  "created_at" timestamp DEFAULT (now()),
+  "updated_at" timestamp DEFAULT (now())
 );
 
 COMMENT ON COLUMN "refactor_platform"."organizations"."name" IS 'The name of the organization that the coach <--> coachee belong to';
