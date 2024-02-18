@@ -1,10 +1,6 @@
 ## Entity Schema Diagram - Definitions and Relationships
 
-![refactor_entity_schema](https://github.com/Jim-Hodapp-Coaching/refactor-platform-rs/assets/3219120/1656ee0f-da18-41fb-9472-379fcca29500)
-
-## Example Data - A Journey with Multiple Steps
-
-![refactor_entity_example_multiple_journey_steps](https://github.com/Jim-Hodapp-Coaching/refactor-platform-rs/assets/3219120/e933a0f5-8651-4638-8d72-e4903b54d026)
+![refactor_entity_schema](https://github.com/Jim-Hodapp-Coaching/refactor-platform-rs/assets/3219120/d8e25a4d-376e-40aa-99de-532f8be06fb0)
 
 ## Example Data - A User as a Coach and Coachee in Two Different Organizations
 
