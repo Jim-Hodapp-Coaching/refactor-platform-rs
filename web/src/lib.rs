@@ -1,3 +1,4 @@
+use axum::http::{HeaderValue, Method};
 use axum_login::{
     tower_sessions::{ExpiredDeletion, Expiry, PostgresStore, SessionManagerLayer},
     AuthManagerLayerBuilder,
@@ -56,10 +57,21 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     info!("Server starting... listening for connections on http://{host}:{port}");
 
     let listener = TcpListener::bind(listen_addr).await.unwrap();
+    let cors_layer = CorsLayer::new()
+        .allow_methods([
+            Method::DELETE,
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::PATCH,
+        ])
+        .allow_credentials(true)
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
+
     axum::serve(
         listener,
         router::define_routes(app_state)
-            .layer(CorsLayer::permissive()) // FIXME: permissive for early development convenience
+            .layer(cors_layer)
             .layer(auth_layer)
             .into_make_service(),
     )
