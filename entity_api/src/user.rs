@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use axum_login::{AuthnBackend, UserId};
-use entity::user::{self, Column, Model};
+use entity::users::*;
 use log::*;
 use password_auth::{generate_hash, verify_password};
 use sea_orm::{entity::prelude::*, sea_query, ActiveValue, DatabaseConnection};
@@ -59,7 +59,7 @@ impl AuthnBackend for Backend {
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         debug!("** get_user(): {:?}", *user_id);
 
-        let user: Option<Self::User> = entity::user::Entity::find_by_id(*user_id)
+        let user: Option<Self::User> = entity::users::Entity::find_by_id(*user_id)
             .one(self.db.as_ref())
             .await?;
 
@@ -73,9 +73,10 @@ pub type AuthSession = axum_login::AuthSession<Backend>;
 
 pub(crate) async fn seed_database(db: &DatabaseConnection) {
     let users = vec![
-        user::ActiveModel {
+        ActiveModel {
             id: ActiveValue::NotSet,
             email: ActiveValue::Set("james.hodapp@gmail.com".to_owned()),
+            external_id: ActiveValue::Set(uuid::Uuid::new_v4()),
             first_name: ActiveValue::Set("Jim".to_owned()),
             last_name: ActiveValue::Set("Hodapp".to_owned()),
             display_name: ActiveValue::Set("Jim H".to_owned()),
@@ -85,9 +86,10 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
             created_at: ActiveValue::NotSet,
             updated_at: ActiveValue::NotSet,
         },
-        user::ActiveModel {
+        ActiveModel {
             id: ActiveValue::NotSet,
             email: ActiveValue::Set("test@gmail.com".to_owned()),
+            external_id: ActiveValue::Set(uuid::Uuid::new_v4()),
             first_name: ActiveValue::Set("Test First".to_owned()),
             last_name: ActiveValue::Set("Test Last".to_owned()),
             display_name: ActiveValue::Set("Test User".to_owned()),
@@ -103,13 +105,13 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
         debug!("user: {:?}", user);
 
         // Upserts seeded user data:
-        match user::Entity::insert(user)
+        match users::Entity::insert(user)
             .on_conflict(
                 // on conflict do update
-                sea_query::OnConflict::column(user::Column::Email)
-                    .update_column(user::Column::FirstName)
-                    .update_column(user::Column::LastName)
-                    .update_column(user::Column::Password)
+                sea_query::OnConflict::column(Column::Email)
+                    .update_column(Column::FirstName)
+                    .update_column(Column::LastName)
+                    .update_column(Column::Password)
                     .to_owned(),
             )
             .exec(db)

@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-02-18T13:46:48.698Z
+-- Generated at: 2024-02-23T18:01:40.740Z
 
 
 CREATE TABLE "refactor_platform"."organizations" (
@@ -29,7 +29,7 @@ CREATE TABLE "refactor_platform"."users" (
   "first_name" varchar,
   "last_name" varchar,
   "display_name" varchar,
-  "password" varchar,
+  "password" varchar NOT NULL,
   "github_username" varchar,
   "github_profile_url" varchar,
   "created_at" timestamptz DEFAULT (now()),

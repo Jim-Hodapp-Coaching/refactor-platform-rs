@@ -1,6 +1,6 @@
 use super::error::{EntityApiErrorCode, Error};
-use entity::{organization, Id};
-use organization::{ActiveModel, Entity, Model};
+use entity::{organizations, Id};
+use organizations::{ActiveModel, Entity, Model};
 use sea_orm::{
     entity::prelude::*, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
     TryIntoModel,
@@ -34,7 +34,11 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
 
             let active_model: ActiveModel = ActiveModel {
                 id: Unchanged(organization.id),
+                external_id: Set(Uuid::new_v4()),
+                logo: Set(model.logo),
                 name: Set(model.name),
+                updated_at: Set(OffsetDateTime::now_utc()),
+                created_at: Unchanged(organization.created_at),
             };
             Ok(active_model.update(db).await?.try_into_model()?)
         }
@@ -84,16 +88,16 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
     ];
 
     for name in organization_names {
-        let organization = organization::ActiveModel::from_json(json!({
+        let organization = organizations::ActiveModel::from_json(json!({
             "name": name,
         }))
         .unwrap();
 
         assert_eq!(
             organization,
-            organization::ActiveModel {
+            organizations::ActiveModel {
                 id: ActiveValue::NotSet,
-                name: ActiveValue::Set(name.to_owned()),
+                name: ActiveValue::Set(Some(name.to_owned())),
             }
         );
 

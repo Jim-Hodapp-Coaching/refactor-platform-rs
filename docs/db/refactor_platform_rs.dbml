@@ -29,7 +29,7 @@ Table refactor_platform.users {
   first_name varchar
   last_name varchar
   display_name varchar [note: 'If a user wants to go by something other than first & last names']
-  password varchar
+  password varchar [not null]
   github_username varchar // Specifically GH for now, can generalize later
   github_profile_url varchar
   created_at timestamptz [default: `now()`]
