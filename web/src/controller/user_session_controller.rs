@@ -1,8 +1,4 @@
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Redirect},
-    Form, Json,
-};
+use axum::{http::StatusCode, response::IntoResponse, Form, Json};
 use entity_api::user as UserApi;
 use log::*;
 use serde::Deserialize;
@@ -73,7 +69,7 @@ impl UserSessionController {
     pub async fn logout(mut auth_session: UserApi::AuthSession) -> impl IntoResponse {
         debug!("UserSessionController::logout()");
         match auth_session.logout().await {
-            Ok(_) => Redirect::to("/login").into_response(),
+            Ok(_) => StatusCode::OK.into_response(),
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
