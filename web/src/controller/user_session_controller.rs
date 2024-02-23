@@ -58,17 +58,12 @@ impl UserSessionController {
             return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
         }
 
-        if let Some(ref next) = creds.next {
-            debug!("Redirecting to next: {next}");
-            Ok(Redirect::to(next).into_response())
-        } else {
-            let response_json = Json(
-                json!({"first_name": user.first_name, "last_name": user.last_name, 
-                    "email": user.email, "display_name": user.display_name}),
-            );
-            debug!("JSON response with 200 OK: {:?}", response_json);
-            Ok(response_json.into_response())
-        }
+        let response_json = Json(
+            json!({"first_name": user.first_name, "last_name": user.last_name, 
+                "email": user.email, "display_name": user.display_name}),
+        );
+        debug!("JSON response with 200 OK: {:?}", response_json);
+        Ok(response_json.into_response())
     }
 
     /// Logs the user out of the platform by destroying their session.
@@ -76,6 +71,7 @@ impl UserSessionController {
     /// --header "Cookie: id=07bbbe54-bd35-425f-8e63-618a8d8612df" \
     /// --request GET http://localhost:4000/logout
     pub async fn logout(mut auth_session: UserApi::AuthSession) -> impl IntoResponse {
+        debug!("UserSessionController::logout()");
         match auth_session.logout().await {
             Ok(_) => Redirect::to("/login").into_response(),
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),

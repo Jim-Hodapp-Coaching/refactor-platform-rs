@@ -35,13 +35,12 @@ pub fn organization_routes(app_state: AppState) -> Router {
 pub fn protected_routes() -> Router {
     Router::new()
         .route("/protected", get(UserSessionController::protected))
+        .route("/logout", get(UserSessionController::logout))
         .route_layer(login_required!(Backend, login_url = "/login"))
 }
 
 pub fn session_routes() -> Router {
-    Router::new()
-        .route("/login", post(UserSessionController::login))
-        .route("/logout", get(UserSessionController::logout))
+    Router::new().route("/login", post(UserSessionController::login))
 }
 
 // This will serve static files that we can use as a "fallback" for when the server panics
