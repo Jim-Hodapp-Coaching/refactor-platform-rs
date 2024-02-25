@@ -31,9 +31,9 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(app_config: Config, db: DatabaseConnection) -> Self {
+    pub fn new(app_config: Config, db: &Arc<DatabaseConnection>) -> Self {
         Self {
-            database_connection: Arc::new(db),
+            database_connection: Arc::clone(db),
             config: app_config,
         }
     }

@@ -55,18 +55,27 @@ pub fn static_routes() -> Router {
 #[cfg(feature = "mock")]
 mod organization_endpoints_tests {
     use super::*;
-    use entity::organization;
-    use log::LevelFilter;
+    use axum_login::{
+        tower_sessions::{Expiry, MemoryStore, SessionManagerLayer},
+        AuthManagerLayerBuilder,
+    };
+    use chrono::Utc;
+    use entity::{organization, user};
+    use entity_api::user::Backend;
+    use log::{debug, LevelFilter};
+    use password_auth::generate_hash;
     use reqwest::Url;
-    use sea_orm::{DatabaseBackend, MockDatabase, MockExecResult};
+    use sea_orm::{DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult};
     use serde_json::json;
     use service::{config::Config, logging::Logger};
     use std::net::SocketAddr;
+    use std::sync::Arc;
+    use time::Duration;
     use tokio::net::TcpListener;
 
     // Enable and call this at the start of a particular test to turn on TRACE
     // level logging output used to debug a new or existing test.
-    fn _enable_test_logging(config: &mut Config) {
+    fn enable_test_logging(config: &mut Config) {
         config.log_level_filter = LevelFilter::Trace;
         Logger::init_logger(&config);
     }
@@ -82,15 +91,27 @@ mod organization_endpoints_tests {
     }
 
     impl TestClientServer {
-        pub async fn new(router: Router) -> anyhow::Result<Self> {
+        pub async fn new(router: Router, db: &Arc<DatabaseConnection>) -> anyhow::Result<Self> {
+            let session_store = MemoryStore::default();
+
+            let session_layer = SessionManagerLayer::new(session_store)
+                .with_secure(false)
+                .with_expiry(Expiry::OnInactivity(Duration::days(1)));
+
+            // Auth service
+            let backend = Backend::new(db);
+            let auth_layer = AuthManagerLayerBuilder::new(backend, session_layer).build();
+
             let listener = TcpListener::bind("0.0.0.0:0".parse::<SocketAddr>()?).await?;
             let addr = listener.local_addr()?;
 
             tokio::spawn(async move {
-                axum::serve(listener, router).await.unwrap();
+                axum::serve(listener, router.layer(auth_layer).into_make_service())
+                    .await
+                    .unwrap();
             });
 
-            let client = reqwest::Client::new();
+            let client = reqwest::Client::builder().cookie_store(true).build()?;
 
             Ok(Self {
                 client,
@@ -109,33 +130,77 @@ mod organization_endpoints_tests {
     // retrieve it by a specific ID and as expected and valid JSON.
     #[tokio::test]
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
-        let mut app_state = AppState::new(Config::default());
+        let now = Utc::now();
+        let user_results1 = [vec![user::Model {
+            id: 1,
+            email: "test@domain.com".to_string(),
+            first_name: "".to_string(),
+            last_name: "".to_string(),
+            display_name: "".to_string(),
+            password: generate_hash("password2").to_owned(),
+            github_username: "".to_string(),
+            github_profile_url: "".to_string(),
+            created_at: now,
+            updated_at: now,
+        }]];
 
-        let organizations = [vec![organization::Model {
+        let organization_results = [vec![organization::Model {
             id: 1,
             name: "Organization One".to_owned(),
         }]];
 
-        let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(organizations.clone())
-            .into_connection();
+        let mut config = Config::default();
+        enable_test_logging(&mut config);
 
-        app_state.set_db_conn(db);
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results(user_results1.clone())
+                // The user used in the axum-login AuthSession has to be identical and unique, otherwise
+                // it'll fail to verify the session when calling other protected endpoints
+                .append_query_results(user_results1.clone())
+                .append_query_results(organization_results.clone())
+                .into_connection(),
+        );
 
-        let test_client_server = TestClientServer::new(define_routes(app_state))
+        let app_state = AppState::new(config, &db);
+
+        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
+
+        let creds = [("email", "test@domain.com"), ("password", "password2")];
+        let response = test_client_server
+            .client
+            .post(test_client_server.url("/login").unwrap())
+            .form(&creds)
+            .send()
+            .await?;
+
+        let response_text = response.text().await?;
+        debug!("response_text: {:?}", response_text);
+        let user_model = &user_results1[0][0];
+        assert_eq!(
+            response_text,
+            json!({
+                "display_name": user_model.display_name,
+                "email": user_model.email,
+                "first_name": user_model.first_name,
+                "last_name": user_model.last_name,
+            })
+            .to_string()
+        );
 
         let response = test_client_server
             .client
             .get(test_client_server.url("/organizations/1").unwrap())
             .send()
-            .await?
-            .text()
             .await?;
 
-        let organization_model1 = &organizations[0][0];
-        assert_eq!(response, json!(organization_model1).to_string());
+        let response_text = response.text().await?;
+        debug!("response_text: {:?}", response_text);
+
+        let organization_model1 = &organization_results[0][0];
+        assert_eq!(response_text, json!(organization_model1).to_string());
 
         Ok(())
     }
@@ -144,8 +209,6 @@ mod organization_endpoints_tests {
     // retrieve all of them as expected and valid JSON without specifying any particular ID.
     #[tokio::test]
     async fn read_returns_all_organizations() -> anyhow::Result<()> {
-        let mut app_state = AppState::new(Config::default());
-
         // Note: for entity_api::organization::find_all() to be able to return
         // the correct query_results for the assert_eq!() below, they must all
         // be grouped together in the same inner vector.
@@ -164,13 +227,15 @@ mod organization_endpoints_tests {
             },
         ]];
 
-        let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(organizations.clone())
-            .into_connection();
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results(organizations.clone())
+                .into_connection(),
+        );
 
-        app_state.set_db_conn(db);
+        let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state))
+        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
 
@@ -203,8 +268,6 @@ mod organization_endpoints_tests {
     // the appropriate endpoint deletes instances specified by distinct IDs.
     #[tokio::test]
     async fn delete_an_organization_specified_by_id() -> anyhow::Result<()> {
-        let mut app_state = AppState::new(Config::default());
-
         let organizations = [
             vec![organization::Model {
                 id: 2,
@@ -227,14 +290,16 @@ mod organization_endpoints_tests {
             },
         ];
 
-        let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(organizations.clone())
-            .append_exec_results(exec_results)
-            .into_connection();
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results(organizations.clone())
+                .append_exec_results(exec_results)
+                .into_connection(),
+        );
 
-        app_state.set_db_conn(db);
+        let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state))
+        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
         {
@@ -284,8 +349,6 @@ mod organization_endpoints_tests {
     // the post endpoint supplying the appropriate instance as a JSON payload.
     #[tokio::test]
     async fn create_new_organizations_successfully() -> anyhow::Result<()> {
-        let mut app_state = AppState::new(Config::default());
-
         let organizations = [
             vec![organization::Model {
                 id: 5,
@@ -308,14 +371,16 @@ mod organization_endpoints_tests {
             },
         ];
 
-        let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(organizations.clone())
-            .append_exec_results(exec_results)
-            .into_connection();
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results(organizations.clone())
+                .append_exec_results(exec_results)
+                .into_connection(),
+        );
 
-        app_state.set_db_conn(db);
+        let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state))
+        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
         {
@@ -355,8 +420,6 @@ mod organization_endpoints_tests {
     // the appropriate endpoint updates an instance specified by an ID.
     #[tokio::test]
     async fn update_an_organization_specified_by_id() -> anyhow::Result<()> {
-        let mut app_state = AppState::new(Config::default());
-
         let organizations = [
             vec![organization::Model {
                 id: 2,
@@ -373,14 +436,16 @@ mod organization_endpoints_tests {
             rows_affected: 1,
         }];
 
-        let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(organizations.clone())
-            .append_exec_results(exec_results)
-            .into_connection();
+        let db = Arc::new(
+            MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results(organizations.clone())
+                .append_exec_results(exec_results)
+                .into_connection(),
+        );
 
-        app_state.set_db_conn(db);
+        let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state))
+        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
 
