@@ -55,6 +55,7 @@ pub fn static_routes() -> Router {
 #[cfg(feature = "mock")]
 mod organization_endpoints_tests {
     use super::*;
+    use anyhow::Ok;
     use axum_login::{
         tower_sessions::{Expiry, MemoryStore, SessionManagerLayer},
         AuthManagerLayerBuilder,
@@ -75,7 +76,7 @@ mod organization_endpoints_tests {
 
     // Enable and call this at the start of a particular test to turn on TRACE
     // level logging output used to debug a new or existing test.
-    fn enable_test_logging(config: &mut Config) {
+    fn _enable_test_logging(config: &mut Config) {
         config.log_level_filter = LevelFilter::Trace;
         Logger::init_logger(&config);
     }
@@ -124,71 +125,84 @@ mod organization_endpoints_tests {
             let url = base.join(path.as_ref())?;
             Ok(url.as_str().to_string())
         }
+
+        /// Logs into a new AuthSession with a session cookie. The cookie will be
+        /// cached by the client Reqwest instance because we constructed the client
+        /// with it turned on (i.e. `cookie_store(true)`).
+        ///
+        /// This is meant to be reused by all tests that sit behind a protected route.
+        pub async fn login(&mut self, user: &user::Model) -> anyhow::Result<()> {
+            let creds = [("email", "test@domain.com"), ("password", "password2")];
+            let response = self
+                .client
+                .post(self.url("/login").unwrap())
+                .form(&creds)
+                .send()
+                .await?;
+
+            let response_text = response.text().await?;
+            debug!("response_text: {:?}", response_text);
+            assert_eq!(
+                response_text,
+                json!({
+                    "display_name": user.display_name,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                })
+                .to_string()
+            );
+
+            Ok(())
+        }
+
+        /// Creates a test user::Model entity instance that can be used by tests to
+        /// log in to the /login endpoint and create a valid AuthSession.
+        pub fn get_user() -> anyhow::Result<user::Model> {
+            let now = Utc::now();
+            Ok(user::Model {
+                id: 1,
+                email: "test@domain.com".to_string(),
+                first_name: "".to_string(),
+                last_name: "".to_string(),
+                display_name: "".to_string(),
+                password: generate_hash("password2").to_owned(),
+                github_username: "".to_string(),
+                github_profile_url: "".to_string(),
+                created_at: now,
+                updated_at: now,
+            })
+        }
     }
 
     // Purpose: adds an Organization instance to a mock DB and tests the API to successfully
     // retrieve it by a specific ID and as expected and valid JSON.
     #[tokio::test]
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
-        let now = Utc::now();
-        let user_results1 = [vec![user::Model {
-            id: 1,
-            email: "test@domain.com".to_string(),
-            first_name: "".to_string(),
-            last_name: "".to_string(),
-            display_name: "".to_string(),
-            password: generate_hash("password2").to_owned(),
-            github_username: "".to_string(),
-            github_profile_url: "".to_string(),
-            created_at: now,
-            updated_at: now,
-        }]];
+        let user = TestClientServer::get_user().expect("Creating a new test user failed");
+        let user_results1 = [vec![user.clone()]];
 
         let organization_results = [vec![organization::Model {
             id: 1,
             name: "Organization One".to_owned(),
         }]];
 
-        let mut config = Config::default();
-        enable_test_logging(&mut config);
-
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
                 .append_query_results(user_results1.clone())
-                // The user used in the axum-login AuthSession has to be identical and unique, otherwise
-                // it'll fail to verify the session when calling other protected endpoints
                 .append_query_results(user_results1.clone())
                 .append_query_results(organization_results.clone())
                 .into_connection(),
         );
 
-        let app_state = AppState::new(config, &db);
+        let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
+        let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
 
-        let creds = [("email", "test@domain.com"), ("password", "password2")];
-        let response = test_client_server
-            .client
-            .post(test_client_server.url("/login").unwrap())
-            .form(&creds)
-            .send()
-            .await?;
-
-        let response_text = response.text().await?;
-        debug!("response_text: {:?}", response_text);
-        let user_model = &user_results1[0][0];
-        assert_eq!(
-            response_text,
-            json!({
-                "display_name": user_model.display_name,
-                "email": user_model.email,
-                "first_name": user_model.first_name,
-                "last_name": user_model.last_name,
-            })
-            .to_string()
-        );
+        let response = test_client_server.login(&user).await?;
+        assert_eq!(response, ()); // Make sure we get a 200 OK response
 
         let response = test_client_server
             .client
@@ -197,10 +211,9 @@ mod organization_endpoints_tests {
             .await?;
 
         let response_text = response.text().await?;
-        debug!("response_text: {:?}", response_text);
 
-        let organization_model1 = &organization_results[0][0];
-        assert_eq!(response_text, json!(organization_model1).to_string());
+        let organization1 = &organization_results[0][0];
+        assert_eq!(response_text, json!(organization1).to_string());
 
         Ok(())
     }
@@ -209,6 +222,9 @@ mod organization_endpoints_tests {
     // retrieve all of them as expected and valid JSON without specifying any particular ID.
     #[tokio::test]
     async fn read_returns_all_organizations() -> anyhow::Result<()> {
+        let user = TestClientServer::get_user().expect("Creating a new test user failed");
+        let user_results1 = [vec![user.clone()]];
+
         // Note: for entity_api::organization::find_all() to be able to return
         // the correct query_results for the assert_eq!() below, they must all
         // be grouped together in the same inner vector.
@@ -229,15 +245,20 @@ mod organization_endpoints_tests {
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results(user_results1.clone())
+                .append_query_results(user_results1.clone())
                 .append_query_results(organizations.clone())
                 .into_connection(),
         );
 
         let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
+        let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
+
+        let response = test_client_server.login(&user).await?;
+        assert_eq!(response, ());
 
         let response = test_client_server
             .client
@@ -247,18 +268,13 @@ mod organization_endpoints_tests {
             .text()
             .await?;
 
-        let organization_model1 = &organizations[0][0];
-        let organization_model2 = &organizations[0][1];
-        let organization_model3 = &organizations[0][2];
+        let organization1 = &organizations[0][0];
+        let organization2 = &organizations[0][1];
+        let organization3 = &organizations[0][2];
 
         assert_eq!(
             response,
-            json!([
-                organization_model1,
-                organization_model2,
-                organization_model3
-            ])
-            .to_string()
+            json!([organization1, organization2, organization3]).to_string()
         );
 
         Ok(())
@@ -268,40 +284,49 @@ mod organization_endpoints_tests {
     // the appropriate endpoint deletes instances specified by distinct IDs.
     #[tokio::test]
     async fn delete_an_organization_specified_by_id() -> anyhow::Result<()> {
-        let organizations = [
-            vec![organization::Model {
-                id: 2,
-                name: "Organization Two".to_owned(),
-            }],
-            vec![organization::Model {
-                id: 3,
-                name: "Organization Three".to_owned(),
-            }],
-        ];
+        let user = TestClientServer::get_user().expect("Creating a new test user failed");
+        let user_results1 = [vec![user.clone()]];
 
-        let exec_results = [
-            MockExecResult {
-                last_insert_id: 2,
-                rows_affected: 1,
-            },
-            MockExecResult {
-                last_insert_id: 3,
-                rows_affected: 1,
-            },
-        ];
+        let organization_results1 = [vec![organization::Model {
+            id: 2,
+            name: "Organization Two".to_owned(),
+        }]];
+        let organization_results2 = [vec![organization::Model {
+            id: 3,
+            name: "Organization Three".to_owned(),
+        }]];
+
+        let exec_results1 = [MockExecResult {
+            last_insert_id: 2,
+            rows_affected: 1,
+        }];
+
+        let exec_results2 = [MockExecResult {
+            last_insert_id: 3,
+            rows_affected: 1,
+        }];
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
-                .append_query_results(organizations.clone())
-                .append_exec_results(exec_results)
+                .append_query_results(user_results1.clone()) // For the initial login auth check
+                .append_query_results(user_results1.clone()) // For the AuthSession check done with the next endpoint call
+                .append_query_results(organization_results1.clone()) // For comparing the first organization query results with
+                .append_exec_results(exec_results1) // For comparing the first organization query execution results with
+                .append_query_results(user_results1.clone()) // For the AuthSession check done with the next endpoint call
+                .append_query_results(organization_results1.clone()) // For compare the second organization query results with
+                .append_exec_results(exec_results2) // For comparing the second organization query execution results with
                 .into_connection(),
         );
 
         let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
+        let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
+
+        let response = test_client_server.login(&user).await?;
+        assert_eq!(response, ());
+
         {
             let response = test_client_server
                 .client
@@ -311,12 +336,12 @@ mod organization_endpoints_tests {
                 .text()
                 .await?;
 
-            let organization_model2 = &organizations[0][0];
+            let organization2 = &organization_results1[0][0];
 
             assert_eq!(
                 response,
                 json!({
-                    "id": organization_model2.id,
+                    "id": organization2.id,
                 })
                 .to_string()
             );
@@ -331,12 +356,12 @@ mod organization_endpoints_tests {
                 .text()
                 .await?;
 
-            let organization_model3 = &organizations[1][0];
+            let organization3 = &organization_results2[0][0];
 
             assert_eq!(
                 response,
                 json!({
-                    "id": organization_model3.id,
+                    "id": organization3.id,
                 })
                 .to_string()
             );
@@ -349,68 +374,78 @@ mod organization_endpoints_tests {
     // the post endpoint supplying the appropriate instance as a JSON payload.
     #[tokio::test]
     async fn create_new_organizations_successfully() -> anyhow::Result<()> {
-        let organizations = [
-            vec![organization::Model {
-                id: 5,
-                name: "New Organization Five".to_owned(),
-            }],
-            vec![organization::Model {
-                id: 6,
-                name: "Second Organization Six".to_owned(),
-            }],
-        ];
+        let user = TestClientServer::get_user().expect("Creating a new test user failed");
+        let user_results1 = [vec![user.clone()]];
 
-        let exec_results = [
-            MockExecResult {
-                last_insert_id: 5,
-                rows_affected: 1,
-            },
-            MockExecResult {
-                last_insert_id: 6,
-                rows_affected: 1,
-            },
-        ];
+        let organization_results1 = [vec![organization::Model {
+            id: 5,
+            name: "New Organization Five".to_owned(),
+        }]];
+
+        let organization_results2 = [vec![organization::Model {
+            id: 6,
+            name: "Second Organization Six".to_owned(),
+        }]];
+
+        let exec_results1 = [MockExecResult {
+            last_insert_id: 5,
+            rows_affected: 1,
+        }];
+
+        let exec_results2 = [MockExecResult {
+            last_insert_id: 6,
+            rows_affected: 1,
+        }];
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
-                .append_query_results(organizations.clone())
-                .append_exec_results(exec_results)
+                .append_query_results(user_results1.clone())
+                .append_query_results(user_results1.clone())
+                .append_query_results(organization_results1.clone())
+                .append_exec_results(exec_results1)
+                .append_query_results(user_results1.clone())
+                .append_query_results(organization_results2.clone())
+                .append_exec_results(exec_results2)
                 .into_connection(),
         );
 
         let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
+        let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
+
+        let response = test_client_server.login(&user).await?;
+        assert_eq!(response, ());
+
         {
-            let organization_model5 = &organizations[0][0];
+            let organization5 = &organization_results1[0][0];
 
             let response = test_client_server
                 .client
                 .post(test_client_server.url("/organizations").unwrap())
-                .json(&organization_model5)
+                .json(&organization5)
                 .send()
                 .await?
                 .text()
                 .await?;
 
-            assert_eq!(response, json!(organization_model5).to_string());
+            assert_eq!(response, json!(organization5).to_string());
         }
 
         {
-            let organization_model6 = &organizations[1][0];
+            let organization6 = &organization_results2[0][0];
 
             let response = test_client_server
                 .client
                 .post(test_client_server.url("/organizations").unwrap())
-                .json(&organization_model6)
+                .json(&organization6)
                 .send()
                 .await?
                 .text()
                 .await?;
 
-            assert_eq!(response, json!(organization_model6).to_string());
+            assert_eq!(response, json!(organization6).to_string());
         }
 
         Ok(())
@@ -420,6 +455,9 @@ mod organization_endpoints_tests {
     // the appropriate endpoint updates an instance specified by an ID.
     #[tokio::test]
     async fn update_an_organization_specified_by_id() -> anyhow::Result<()> {
+        let user = TestClientServer::get_user().expect("Creating a new test user failed");
+        let user_results1 = [vec![user.clone()]];
+
         let organizations = [
             vec![organization::Model {
                 id: 2,
@@ -438,6 +476,8 @@ mod organization_endpoints_tests {
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
+                .append_query_results(user_results1.clone())
+                .append_query_results(user_results1.clone())
                 .append_query_results(organizations.clone())
                 .append_exec_results(exec_results)
                 .into_connection(),
@@ -445,11 +485,14 @@ mod organization_endpoints_tests {
 
         let app_state = AppState::new(Config::default(), &db);
 
-        let test_client_server = TestClientServer::new(define_routes(app_state), &db)
+        let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
 
-        let updated_organization_model2 = organization::Model {
+        let response = test_client_server.login(&user).await?;
+        assert_eq!(response, ());
+
+        let updated_organization2 = organization::Model {
             id: 2,
             name: "Updated Organization Two".to_owned(),
         };
@@ -457,13 +500,13 @@ mod organization_endpoints_tests {
         let response = test_client_server
             .client
             .put(test_client_server.url("/organizations/2").unwrap())
-            .json(&updated_organization_model2)
+            .json(&updated_organization2)
             .send()
             .await?
             .text()
             .await?;
 
-        assert_eq!(response, json!(updated_organization_model2).to_string());
+        assert_eq!(response, json!(updated_organization2).to_string());
 
         Ok(())
     }
