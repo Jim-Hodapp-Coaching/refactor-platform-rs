@@ -20,10 +20,12 @@ pub struct Credentials {
 }
 
 impl Backend {
-    pub fn new(db: &DatabaseConnection) -> Self {
+    pub fn new(db: &Arc<DatabaseConnection>) -> Self {
         info!("** Backend::new()");
         Self {
-            db: Arc::new(db.clone()),
+            // Arc is cloned, but the inner DatabaseConnection refers to the same instance
+            // as the one passed in to new() (see the Arc documentation for more info)
+            db: Arc::clone(db),
         }
     }
 }

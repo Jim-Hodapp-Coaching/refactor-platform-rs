@@ -25,6 +25,7 @@
 
 use log::*;
 use service::{config::Config, logging::Logger, AppState};
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
@@ -33,9 +34,9 @@ async fn main() {
 
     info!("Starting up...");
 
-    let db = service::init_database(config.database_uri()).await.unwrap();
+    let db = Arc::new(service::init_database(config.database_uri()).await.unwrap());
 
-    let app_state = AppState::new(config, db);
+    let app_state = AppState::new(config, &db);
 
     entity_api::seed_database(app_state.db_conn_ref()).await;
 
