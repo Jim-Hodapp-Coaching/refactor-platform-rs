@@ -2,7 +2,7 @@ use crate::{AppState, Error};
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;
-use entity::{organization, Id};
+use entity::{organizations, Id};
 use entity_api::organization as OrganizationApi;
 use serde_json::json;
 
@@ -34,7 +34,7 @@ impl OrganizationController {
     ) -> Result<impl IntoResponse, Error> {
         debug!("GET Organization by id: {}", id);
 
-        let organization: Option<organization::Model> =
+        let organization: Option<organizations::Model> =
             OrganizationApi::find_by_id(app_state.db_conn_ref(), id).await?;
 
         Ok(Json(organization))
@@ -47,11 +47,11 @@ impl OrganizationController {
     /// http://localhost:4000/organizations
     pub async fn create(
         State(app_state): State<AppState>,
-        Json(organization_model): Json<organization::Model>,
+        Json(organization_model): Json<organizations::Model>,
     ) -> Result<impl IntoResponse, Error> {
-        debug!("CREATE new Organization: {}", organization_model.name);
+        debug!("CREATE new Organization: {:?}", organization_model.name);
 
-        let organization: organization::Model =
+        let organization: organizations::Model =
             OrganizationApi::create(app_state.db_conn_ref(), organization_model).await?;
 
         debug!("Newly Created Organization: {:?}", &organization);
@@ -66,14 +66,14 @@ impl OrganizationController {
     pub async fn update(
         State(app_state): State<AppState>,
         Path(id): Path<Id>,
-        Json(organization_model): Json<organization::Model>,
+        Json(organization_model): Json<organizations::Model>,
     ) -> Result<impl IntoResponse, Error> {
         debug!(
-            "UPDATE the entire Organization by id: {}, new name: {}",
+            "UPDATE the entire Organization by id: {:?}, new name: {:?}",
             id, organization_model.name
         );
 
-        let updated_organization: organization::Model =
+        let updated_organization: organizations::Model =
             OrganizationApi::update(app_state.db_conn_ref(), id, organization_model).await?;
 
         Ok(Json(updated_organization))

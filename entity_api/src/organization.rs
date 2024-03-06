@@ -37,7 +37,7 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
                 external_id: Set(Uuid::new_v4()),
                 logo: Set(model.logo),
                 name: Set(model.name),
-                updated_at: Set(OffsetDateTime::now_utc()),
+                updated_at: Unchanged(organization.updated_at),
                 created_at: Unchanged(organization.created_at),
             };
             Ok(active_model.update(db).await?.try_into_model()?)
@@ -98,6 +98,10 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
             organizations::ActiveModel {
                 id: ActiveValue::NotSet,
                 name: ActiveValue::Set(Some(name.to_owned())),
+                external_id: ActiveValue::Set(Uuid::new_v4()),
+                logo: ActiveValue::NotSet,
+                created_at: ActiveValue::NotSet,
+                updated_at: ActiveValue::NotSet,
             }
         );
 
@@ -112,18 +116,26 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
-    use sea_orm::{DatabaseBackend, MockDatabase};
+    use sea_orm::{prelude::Uuid, DatabaseBackend, MockDatabase};
 
     #[tokio::test]
     async fn find_all_returns_a_list_of_records_when_present() -> Result<(), Error> {
         let organizations = vec![vec![
-            organization::Model {
+            organizations::Model {
                 id: 1,
-                name: "Organization One".to_owned(),
+                name: Some("Organization One".to_owned()),
+                created_at: None,
+                updated_at: None,
+                logo: None,
+                external_id: Uuid::new_v4(),
             },
-            organization::Model {
+            organizations::Model {
                 id: 2,
-                name: "Organization One".to_owned(),
+                name: Some("Organization One".to_owned()),
+                created_at: None,
+                updated_at: None,
+                logo: None,
+                external_id: Uuid::new_v4(),
             },
         ]];
         let db = MockDatabase::new(DatabaseBackend::Postgres)

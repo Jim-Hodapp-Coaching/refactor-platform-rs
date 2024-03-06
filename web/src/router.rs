@@ -61,12 +61,14 @@ mod organization_endpoints_tests {
         AuthManagerLayerBuilder,
     };
     use chrono::Utc;
-    use entity::{organization, user};
+    use entity::{organizations, users};
     use entity_api::user::Backend;
     use log::{debug, LevelFilter};
     use password_auth::generate_hash;
     use reqwest::Url;
-    use sea_orm::{DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult};
+    use sea_orm::{
+        prelude::Uuid, DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult,
+    };
     use serde_json::json;
     use service::{config::Config, logging::Logger};
     use std::net::SocketAddr;
@@ -131,7 +133,7 @@ mod organization_endpoints_tests {
         /// with it turned on (i.e. `cookie_store(true)`).
         ///
         /// This is meant to be reused by all tests that sit behind a protected route.
-        pub async fn login(&mut self, user: &user::Model) -> anyhow::Result<()> {
+        pub async fn login(&mut self, user: &users::Model) -> anyhow::Result<()> {
             let creds = [("email", "test@domain.com"), ("password", "password2")];
             let response = self
                 .client
@@ -158,19 +160,20 @@ mod organization_endpoints_tests {
 
         /// Creates a test user::Model entity instance that can be used by tests to
         /// log in to the /login endpoint and create a valid AuthSession.
-        pub fn get_user() -> anyhow::Result<user::Model> {
+        pub fn get_user() -> anyhow::Result<users::Model> {
             let now = Utc::now();
-            Ok(user::Model {
+            Ok(users::Model {
                 id: 1,
                 email: "test@domain.com".to_string(),
-                first_name: "".to_string(),
-                last_name: "".to_string(),
-                display_name: "".to_string(),
+                first_name: Some("".to_string()),
+                last_name: Some("".to_string()),
+                display_name: Some("".to_string()),
                 password: generate_hash("password2").to_owned(),
-                github_username: "".to_string(),
-                github_profile_url: "".to_string(),
-                created_at: now,
-                updated_at: now,
+                github_username: None,
+                github_profile_url: None,
+                created_at: Some(now.into()),
+                updated_at: Some(now.into()),
+                external_id: Uuid::new_v4(),
             })
         }
     }
@@ -182,9 +185,13 @@ mod organization_endpoints_tests {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
-        let organization_results = [vec![organization::Model {
+        let organization_results = [vec![organizations::Model {
             id: 1,
-            name: "Organization One".to_owned(),
+            name: Some("Organization One".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
 
         let db = Arc::new(
@@ -229,17 +236,29 @@ mod organization_endpoints_tests {
         // the correct query_results for the assert_eq!() below, they must all
         // be grouped together in the same inner vector.
         let organizations = [vec![
-            organization::Model {
+            organizations::Model {
                 id: 1,
-                name: "Organization One".to_owned(),
+                name: Some("Organization One".to_owned()),
+                created_at: None,
+                updated_at: None,
+                logo: None,
+                external_id: Uuid::new_v4(),
             },
-            organization::Model {
+            organizations::Model {
                 id: 2,
-                name: "Organization Two".to_owned(),
+                name: Some("Organization Two".to_owned()),
+                created_at: None,
+                updated_at: None,
+                logo: None,
+                external_id: Uuid::new_v4(),
             },
-            organization::Model {
+            organizations::Model {
                 id: 3,
-                name: "Organization Three".to_owned(),
+                name: Some("Organization Three".to_owned()),
+                created_at: None,
+                updated_at: None,
+                logo: None,
+                external_id: Uuid::new_v4(),
             },
         ]];
 
@@ -287,13 +306,21 @@ mod organization_endpoints_tests {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
-        let organization_results1 = [vec![organization::Model {
+        let organization_results1 = [vec![organizations::Model {
             id: 2,
-            name: "Organization Two".to_owned(),
+            name: Some("Organization Two".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
-        let organization_results2 = [vec![organization::Model {
+        let organization_results2 = [vec![organizations::Model {
             id: 3,
-            name: "Organization Three".to_owned(),
+            name: Some("Organization Three".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
 
         let exec_results1 = [MockExecResult {
@@ -377,14 +404,22 @@ mod organization_endpoints_tests {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
-        let organization_results1 = [vec![organization::Model {
+        let organization_results1 = [vec![organizations::Model {
             id: 5,
-            name: "New Organization Five".to_owned(),
+            name: Some("New Organization Five".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
 
-        let organization_results2 = [vec![organization::Model {
+        let organization_results2 = [vec![organizations::Model {
             id: 6,
-            name: "Second Organization Six".to_owned(),
+            name: Some("Second Organization Six".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
 
         let exec_results1 = [MockExecResult {
@@ -459,13 +494,21 @@ mod organization_endpoints_tests {
         let user_results1 = [vec![user.clone()]];
 
         let organizations = [
-            vec![organization::Model {
+            vec![organizations::Model {
                 id: 2,
-                name: "Organization Two".to_owned(),
+                name: Some("Organization Two".to_owned()),
+                created_at: None,
+                updated_at: None,
+                logo: None,
+                external_id: Uuid::new_v4(),
             }],
-            vec![organization::Model {
+            vec![organizations::Model {
                 id: 2,
-                name: "Updated Organization Two".to_owned(),
+                name: Some("Updated Organization Two".to_owned()),
+                created_at: None,
+                updated_at: None,
+                logo: None,
+                external_id: Uuid::new_v4(),
             }],
         ];
 
@@ -492,9 +535,13 @@ mod organization_endpoints_tests {
         let response = test_client_server.login(&user).await?;
         assert_eq!(response, ());
 
-        let updated_organization2 = organization::Model {
+        let updated_organization2 = organizations::Model {
             id: 2,
-            name: "Updated Organization Two".to_owned(),
+            name: Some("Updated Organization Two".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
         };
 
         let response = test_client_server

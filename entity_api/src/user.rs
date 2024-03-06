@@ -3,9 +3,11 @@ use axum_login::{AuthnBackend, UserId};
 use entity::users::*;
 use log::*;
 use password_auth::{generate_hash, verify_password};
-use sea_orm::{entity::prelude::*, sea_query, ActiveValue, DatabaseConnection};
+use sea_orm::{entity::prelude::*, prelude::Uuid, sea_query, ActiveValue, DatabaseConnection};
 use serde::Deserialize;
 use std::sync::Arc;
+
+use crate::user::Entity;
 
 #[derive(Debug, Clone)]
 pub struct Backend {
@@ -42,7 +44,7 @@ impl AuthnBackend for Backend {
     ) -> Result<Option<Self::User>, Self::Error> {
         debug!("** authenticate(): {:?}:{:?}", creds.email, creds.password);
 
-        let user: Option<Self::User> = entity::user::Entity::find()
+        let user: Option<Self::User> = Entity::find()
             .filter(Column::Email.contains(creds.email))
             .one(self.db.as_ref())
             .await?;
@@ -59,9 +61,7 @@ impl AuthnBackend for Backend {
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         debug!("** get_user(): {:?}", *user_id);
 
-        let user: Option<Self::User> = entity::users::Entity::find_by_id(*user_id)
-            .one(self.db.as_ref())
-            .await?;
+        let user: Option<Self::User> = Entity::find_by_id(*user_id).one(self.db.as_ref()).await?;
 
         debug!("Get user result: {:?}", user);
 
@@ -76,26 +76,26 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
         ActiveModel {
             id: ActiveValue::NotSet,
             email: ActiveValue::Set("james.hodapp@gmail.com".to_owned()),
-            external_id: ActiveValue::Set(uuid::Uuid::new_v4()),
-            first_name: ActiveValue::Set("Jim".to_owned()),
-            last_name: ActiveValue::Set("Hodapp".to_owned()),
-            display_name: ActiveValue::Set("Jim H".to_owned()),
+            external_id: ActiveValue::Set(Uuid::new_v4()),
+            first_name: ActiveValue::Set(Some("Jim".to_owned())),
+            last_name: ActiveValue::Set(Some("Hodapp".to_owned())),
+            display_name: ActiveValue::Set(Some("Jim H".to_owned())),
             password: ActiveValue::Set(generate_hash("password1").to_owned()),
-            github_username: ActiveValue::Set("jhodapp".to_owned()),
-            github_profile_url: ActiveValue::Set("https://github.com/jhodapp".to_owned()),
+            github_username: ActiveValue::Set(Some("jhodapp".to_owned())),
+            github_profile_url: ActiveValue::Set(Some("https://github.com/jhodapp".to_owned())),
             created_at: ActiveValue::NotSet,
             updated_at: ActiveValue::NotSet,
         },
         ActiveModel {
             id: ActiveValue::NotSet,
             email: ActiveValue::Set("test@gmail.com".to_owned()),
-            external_id: ActiveValue::Set(uuid::Uuid::new_v4()),
-            first_name: ActiveValue::Set("Test First".to_owned()),
-            last_name: ActiveValue::Set("Test Last".to_owned()),
-            display_name: ActiveValue::Set("Test User".to_owned()),
+            first_name: ActiveValue::Set(Some("Test First".to_owned())),
+            external_id: ActiveValue::Set(Uuid::new_v4()),
+            last_name: ActiveValue::Set(Some("Test Last".to_owned())),
+            display_name: ActiveValue::Set(Some("Test User".to_owned())),
             password: ActiveValue::Set(generate_hash("password2").to_owned()),
-            github_username: ActiveValue::Set("test".to_owned()),
-            github_profile_url: ActiveValue::Set("https://github.com/test".to_owned()),
+            github_username: ActiveValue::Set(Some("test".to_owned())),
+            github_profile_url: ActiveValue::Set(Some("https://github.com/test".to_owned())),
             created_at: ActiveValue::NotSet,
             updated_at: ActiveValue::NotSet,
         },
@@ -105,7 +105,7 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
         debug!("user: {:?}", user);
 
         // Upserts seeded user data:
-        match users::Entity::insert(user)
+        match Entity::insert(user)
             .on_conflict(
                 // on conflict do update
                 sea_query::OnConflict::column(Column::Email)
