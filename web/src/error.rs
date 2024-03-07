@@ -41,6 +41,11 @@ impl IntoResponse for Error {
 
                 (StatusCode::UNPROCESSABLE_ENTITY, "UNPROCESSABLE ENTITY").into_response()
             }
+            EntityApiErrorCode::RecordUnauthenticated => {
+                debug!("Error: {:#?}, mapping to UNAUTHORIZED", self);
+
+                (StatusCode::UNAUTHORIZED, "UNAUTHORIZED").into_response()
+            }
         }
     }
 }

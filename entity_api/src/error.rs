@@ -23,6 +23,8 @@ pub enum EntityApiErrorCode {
     RecordNotFound,
     // Record not updated
     RecordNotUpdated,
+    // Record not authenticated
+    RecordUnauthenticated,
     // Errors related to interactions with the database itself. Ex DbError::Conn
     SystemError,
 }

@@ -87,7 +87,7 @@ mod organization_endpoints_tests {
     // endpoints and a Reqwest-based http client used to call the backend server.
     //
     // Adapted from: https://blog.sedrik.se/posts/secure-axum/
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct TestClientServer {
         pub client: reqwest::Client,
         addr: String,
@@ -143,7 +143,9 @@ mod organization_endpoints_tests {
                 .await?;
 
             let response_text = response.text().await?;
+
             debug!("response_text: {:?}", response_text);
+
             assert_eq!(
                 response_text,
                 json!({
@@ -165,9 +167,9 @@ mod organization_endpoints_tests {
             Ok(users::Model {
                 id: 1,
                 email: "test@domain.com".to_string(),
-                first_name: Some("".to_string()),
-                last_name: Some("".to_string()),
-                display_name: Some("".to_string()),
+                first_name: Some("test".to_string()),
+                last_name: Some("login".to_string()),
+                display_name: Some("test login".to_string()),
                 password: generate_hash("password2").to_owned(),
                 github_username: None,
                 github_profile_url: None,
@@ -183,7 +185,6 @@ mod organization_endpoints_tests {
     #[tokio::test]
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
-        let user_results1 = [vec![user.clone()]];
 
         let organization_results = [vec![organizations::Model {
             id: 1,
@@ -196,8 +197,7 @@ mod organization_endpoints_tests {
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
-                .append_query_results(user_results1.clone())
-                .append_query_results(user_results1.clone())
+                .append_query_results([vec![user.clone()]])
                 .append_query_results(organization_results.clone())
                 .into_connection(),
         );
@@ -209,6 +209,7 @@ mod organization_endpoints_tests {
             .unwrap();
 
         let response = test_client_server.login(&user).await?;
+
         assert_eq!(response, ()); // Make sure we get a 200 OK response
 
         let response = test_client_server

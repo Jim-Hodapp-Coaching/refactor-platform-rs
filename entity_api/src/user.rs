@@ -1,3 +1,4 @@
+use super::error::{EntityApiErrorCode, Error};
 use async_trait::async_trait;
 use axum_login::{AuthnBackend, UserId};
 use entity::users::*;
@@ -8,6 +9,31 @@ use serde::Deserialize;
 use std::sync::Arc;
 
 use crate::user::Entity;
+
+
+pub async fn find_by_email(db: &DatabaseConnection, email: &str) -> Result<Option<Model>, Error> {
+    let user: Option<Model> = Entity::find()
+        .filter(Column::Email.contains(email))
+        .one(db)
+        .await?;
+
+    debug!("User find_by_email result: {:?}", user);
+
+    Ok(user)
+}
+
+async fn authenticate_user(
+    creds: Credentials,
+    user: Model,
+) -> Result<Option<Model>, Error> {
+   match verify_password(&creds.password, &user.password)  {
+    Ok(_) => Ok(Some(user)),
+    Err(_) => Err(Error {
+        inner: None,
+        error_code: EntityApiErrorCode::RecordUnauthenticated,
+    }),
+   }
+}
 
 #[derive(Debug, Clone)]
 pub struct Backend {
@@ -36,7 +62,7 @@ impl Backend {
 impl AuthnBackend for Backend {
     type User = Model;
     type Credentials = Credentials;
-    type Error = crate::error::Error;
+    type Error = Error;
 
     async fn authenticate(
         &self,
@@ -44,18 +70,14 @@ impl AuthnBackend for Backend {
     ) -> Result<Option<Self::User>, Self::Error> {
         debug!("** authenticate(): {:?}:{:?}", creds.email, creds.password);
 
-        let user: Option<Self::User> = Entity::find()
-            .filter(Column::Email.contains(creds.email))
-            .one(self.db.as_ref())
-            .await?;
-
-        debug!("Get user result: {:?}", user);
-
-        Ok(user.filter(|user| {
-            verify_password(creds.password, &user.password)
-                .ok()
-                .is_some()
-        }))
+        match find_by_email(&self.db, &creds.email).await? {
+            Some(user) => authenticate_user(creds, user).await,
+            None => Err(Error {
+                inner: None,
+                error_code: EntityApiErrorCode::RecordUnauthenticated,
+            }),
+        }
+    
     }
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
