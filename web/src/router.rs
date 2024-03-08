@@ -71,16 +71,20 @@ mod organization_endpoints_tests {
     };
     use serde_json::json;
     use service::{config::Config, logging::Logger};
-    use std::net::SocketAddr;
-    use std::sync::Arc;
+    use std::{net::SocketAddr, sync::Arc, sync::Once};
     use time::Duration;
     use tokio::net::TcpListener;
 
-    // Enable and call this at the start of a particular test to turn on TRACE
+    static INIT: Once = Once::new();
+
+    // Enable and call this at the start of a particular test to turn on DEBUG
     // level logging output used to debug a new or existing test.
-    fn _enable_test_logging(config: &mut Config) {
-        config.log_level_filter = LevelFilter::Trace;
-        Logger::init_logger(&config);
+    // Change to Trace to see all output.
+    fn enable_test_logging(config: &mut Config) {
+        INIT.call_once(|| {
+            config.log_level_filter = LevelFilter::Debug;
+            Logger::init_logger(&config);
+        });
     }
 
     // A test wrapper that sets up both an http server instance with the router backend
@@ -184,6 +188,9 @@ mod organization_endpoints_tests {
     // retrieve it by a specific ID and as expected and valid JSON.
     #[tokio::test]
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
 
         let organization_results = [vec![organizations::Model {
@@ -202,7 +209,7 @@ mod organization_endpoints_tests {
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
@@ -230,6 +237,9 @@ mod organization_endpoints_tests {
     // retrieve all of them as expected and valid JSON without specifying any particular ID.
     #[tokio::test]
     async fn read_returns_all_organizations() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
@@ -271,7 +281,7 @@ mod organization_endpoints_tests {
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
@@ -304,6 +314,9 @@ mod organization_endpoints_tests {
     // the appropriate endpoint deletes instances specified by distinct IDs.
     #[tokio::test]
     async fn delete_an_organization_specified_by_id() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
@@ -346,7 +359,7 @@ mod organization_endpoints_tests {
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
@@ -402,6 +415,9 @@ mod organization_endpoints_tests {
     // the post endpoint supplying the appropriate instance as a JSON payload.
     #[tokio::test]
     async fn create_new_organizations_successfully() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
@@ -445,7 +461,7 @@ mod organization_endpoints_tests {
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
@@ -491,6 +507,9 @@ mod organization_endpoints_tests {
     // the appropriate endpoint updates an instance specified by an ID.
     #[tokio::test]
     async fn update_an_organization_specified_by_id() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
@@ -527,7 +546,7 @@ mod organization_endpoints_tests {
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
