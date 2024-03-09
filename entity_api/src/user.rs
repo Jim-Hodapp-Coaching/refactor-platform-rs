@@ -10,7 +10,6 @@ use std::sync::Arc;
 
 use crate::user::Entity;
 
-
 pub async fn find_by_email(db: &DatabaseConnection, email: &str) -> Result<Option<Model>, Error> {
     let user: Option<Model> = Entity::find()
         .filter(Column::Email.contains(email))
@@ -22,17 +21,14 @@ pub async fn find_by_email(db: &DatabaseConnection, email: &str) -> Result<Optio
     Ok(user)
 }
 
-async fn authenticate_user(
-    creds: Credentials,
-    user: Model,
-) -> Result<Option<Model>, Error> {
-   match verify_password(&creds.password, &user.password)  {
-    Ok(_) => Ok(Some(user)),
-    Err(_) => Err(Error {
-        inner: None,
-        error_code: EntityApiErrorCode::RecordUnauthenticated,
-    }),
-   }
+async fn authenticate_user(creds: Credentials, user: Model) -> Result<Option<Model>, Error> {
+    match verify_password(&creds.password, &user.password) {
+        Ok(_) => Ok(Some(user)),
+        Err(_) => Err(Error {
+            inner: None,
+            error_code: EntityApiErrorCode::RecordUnauthenticated,
+        }),
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -77,7 +73,6 @@ impl AuthnBackend for Backend {
                 error_code: EntityApiErrorCode::RecordUnauthenticated,
             }),
         }
-    
     }
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {

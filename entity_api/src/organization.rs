@@ -1,9 +1,9 @@
 use super::error::{EntityApiErrorCode, Error};
-use entity::{Id, organizations::*};
 use crate::organization::Entity;
+use entity::{organizations::*, Id};
 use sea_orm::{
-    entity::prelude::*, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
-    sea_query, TryIntoModel,
+    entity::prelude::*, sea_query, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged,
+    DatabaseConnection, TryIntoModel,
 };
 use serde_json::json;
 
@@ -118,7 +118,9 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
             .await
         {
             Ok(_) => info!("Succeeded in seeding new organization entity."),
-            Err(e) => error!("Failed to insert or update organization entity when seeding user data: {e}"),
+            Err(e) => {
+                error!("Failed to insert or update organization entity when seeding user data: {e}")
+            }
         };
     }
 }
