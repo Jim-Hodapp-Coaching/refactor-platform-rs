@@ -1,9 +1,9 @@
 use super::error::{EntityApiErrorCode, Error};
-use entity::{organizations, Id};
-use organizations::{ActiveModel, Entity, Model};
+use entity::{Id, organizations::*};
+use crate::organization::Entity;
 use sea_orm::{
     entity::prelude::*, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
-    TryIntoModel,
+    sea_query, TryIntoModel,
 };
 use serde_json::json;
 
@@ -86,26 +86,40 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
         "Caleb Coaching",
         "Enterprise Software",
     ];
+    let uuid = Uuid::new_v4();
 
     for name in organization_names {
-        let organization = organizations::ActiveModel::from_json(json!({
+        let organization = entity::organizations::ActiveModel::from_json(json!({
             "name": name,
+            "external_id": uuid,
         }))
         .unwrap();
 
         assert_eq!(
             organization,
-            organizations::ActiveModel {
+            entity::organizations::ActiveModel {
                 id: ActiveValue::NotSet,
                 name: ActiveValue::Set(Some(name.to_owned())),
-                external_id: ActiveValue::Set(Uuid::new_v4()),
+                external_id: ActiveValue::Set(uuid),
                 logo: ActiveValue::NotSet,
                 created_at: ActiveValue::NotSet,
                 updated_at: ActiveValue::NotSet,
             }
         );
 
-        organization.insert(db).await.unwrap();
+        match Entity::insert(organization)
+            .on_conflict(
+                // on conflict do update
+                sea_query::OnConflict::column(Column::ExternalId)
+                    .update_column(Column::Name)
+                    .to_owned(),
+            )
+            .exec(db)
+            .await
+        {
+            Ok(_) => info!("Succeeded in seeding new organization entity."),
+            Err(e) => error!("Failed to insert or update organization entity when seeding user data: {e}"),
+        };
     }
 }
 

@@ -139,8 +139,8 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
             .exec(db)
             .await
         {
-            Ok(_) => info!("Succeeded in seeding user data."),
-            Err(e) => error!("Failed to insert or update user when seeding user data: {e}"),
+            Ok(_) => info!("Succeeded in seeding user entity."),
+            Err(e) => error!("Failed to insert or update user entity when seeding user data: {e}"),
         };
     }
 }
