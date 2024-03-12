@@ -22,7 +22,7 @@ pub async fn find_by_email(db: &DatabaseConnection, email: &str) -> Result<Optio
 }
 
 async fn authenticate_user(creds: Credentials, user: Model) -> Result<Option<Model>, Error> {
-    match verify_password(&creds.password, &user.password) {
+    match verify_password(creds.password, &user.password) {
         Ok(_) => Ok(Some(user)),
         Err(_) => Err(Error {
             inner: None,

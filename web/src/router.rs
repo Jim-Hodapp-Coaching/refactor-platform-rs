@@ -192,18 +192,22 @@ mod organization_endpoints_tests {
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
-
-        let organization_results = [vec![organizations::Model {
+        let organization = organizations::Model {
             id: 1,
             name: Some("Organization One".to_owned()),
             created_at: None,
             updated_at: None,
             logo: None,
             external_id: Uuid::new_v4(),
-        }]];
+        };
+
+        let organization_results = [vec![organization.clone()]];
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
+                // initial login auth check
+                .append_query_results([vec![user.clone()]])
+                // check auth for the next endpoint call
                 .append_query_results([vec![user.clone()]])
                 .append_query_results(organization_results.clone())
                 .into_connection(),
@@ -225,10 +229,14 @@ mod organization_endpoints_tests {
             .send()
             .await?;
 
-        let response_text = response.text().await?;
+        // We need to parse the values to serde_json::Value to compare them
+        // // so that the attribute order does not matter.
+        let parsed_result: serde_json::Value =
+            serde_json::from_str(&response.text().await?).unwrap();
 
-        let organization1 = &organization_results[0][0];
-        assert_eq!(response_text, json!(organization1).to_string());
+        let organization: serde_json::Value = json!(organization);
+
+        assert_eq!(parsed_result, organization);
 
         Ok(())
     }
@@ -241,42 +249,42 @@ mod organization_endpoints_tests {
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
-        let user_results1 = [vec![user.clone()]];
+        let organization1 = organizations::Model {
+            id: 1,
+            name: Some("Organization One".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
+        };
+        let organization2 = organizations::Model {
+            id: 2,
+            name: Some("Organization Two".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
+        };
+        let organization3 = organizations::Model {
+            id: 3,
+            name: Some("Organization Three".to_owned()),
+            created_at: None,
+            updated_at: None,
+            logo: None,
+            external_id: Uuid::new_v4(),
+        };
 
         // Note: for entity_api::organization::find_all() to be able to return
         // the correct query_results for the assert_eq!() below, they must all
         // be grouped together in the same inner vector.
-        let organizations = [vec![
-            organizations::Model {
-                id: 1,
-                name: Some("Organization One".to_owned()),
-                created_at: None,
-                updated_at: None,
-                logo: None,
-                external_id: Uuid::new_v4(),
-            },
-            organizations::Model {
-                id: 2,
-                name: Some("Organization Two".to_owned()),
-                created_at: None,
-                updated_at: None,
-                logo: None,
-                external_id: Uuid::new_v4(),
-            },
-            organizations::Model {
-                id: 3,
-                name: Some("Organization Three".to_owned()),
-                created_at: None,
-                updated_at: None,
-                logo: None,
-                external_id: Uuid::new_v4(),
-            },
-        ]];
+        let organizations = [vec![organization1, organization2, organization3]];
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
-                .append_query_results(user_results1.clone())
-                .append_query_results(user_results1.clone())
+                //  initial login auth check
+                .append_query_results([vec![user.clone()]])
+                // check auth for the next endpoint call
+                .append_query_results([vec![user.clone()]])
                 .append_query_results(organizations.clone())
                 .into_connection(),
         );
@@ -294,24 +302,21 @@ mod organization_endpoints_tests {
             .client
             .get(test_client_server.url("/organizations").unwrap())
             .send()
-            .await?
-            .text()
             .await?;
 
-        let organization1 = &organizations[0][0];
-        let organization2 = &organizations[0][1];
-        let organization3 = &organizations[0][2];
+        // We need to parse the values to serde_json::Value to compare them
+        // // so that the attribute order does not matter.
+        let parsed_response: serde_json::Value =
+            serde_json::from_str(&response.text().await?).unwrap();
+        let organizations: serde_json::Value = json!(&organizations);
 
-        assert_eq!(
-            response,
-            json!([organization1, organization2, organization3]).to_string()
-        );
+        assert_eq!(parsed_response, organizations[0]);
 
         Ok(())
     }
 
-    // Purpose: adds multiple Organization instances to a mock DB and tests that calling
-    // the appropriate endpoint deletes instances specified by distinct IDs.
+    // // Purpose: adds multiple Organization instances to a mock DB and tests that calling
+    // // the appropriate endpoint deletes instances specified by distinct IDs.
     #[tokio::test]
     async fn delete_an_organization_specified_by_id() -> anyhow::Result<()> {
         let mut config = Config::default();
@@ -411,8 +416,8 @@ mod organization_endpoints_tests {
         Ok(())
     }
 
-    // Purpose: creates multiple new Organization instances to a mock DB by calling
-    // the post endpoint supplying the appropriate instance as a JSON payload.
+    // // Purpose: creates multiple new Organization instances to a mock DB by calling
+    // // the post endpoint supplying the appropriate instance as a JSON payload.
     #[tokio::test]
     async fn create_new_organizations_successfully() -> anyhow::Result<()> {
         let mut config = Config::default();
@@ -473,7 +478,7 @@ mod organization_endpoints_tests {
         {
             let organization5 = &organization_results1[0][0];
 
-            let response = test_client_server
+            let response_text = test_client_server
                 .client
                 .post(test_client_server.url("/organizations").unwrap())
                 .json(&organization5)
@@ -482,13 +487,15 @@ mod organization_endpoints_tests {
                 .text()
                 .await?;
 
-            assert_eq!(response, json!(organization5).to_string());
+            let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+
+            assert_eq!(parsed_response, json!(organization5));
         }
 
         {
             let organization6 = &organization_results2[0][0];
 
-            let response = test_client_server
+            let response_text = test_client_server
                 .client
                 .post(test_client_server.url("/organizations").unwrap())
                 .json(&organization6)
@@ -497,14 +504,18 @@ mod organization_endpoints_tests {
                 .text()
                 .await?;
 
-            assert_eq!(response, json!(organization6).to_string());
+            // We need to parse the values to serde_json::Value to compare them
+            // // so that the attribute order does not matter.
+            let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+
+            assert_eq!(parsed_response, json!(organization6));
         }
 
         Ok(())
     }
 
-    // Purpose: adds multiple Organization instances to a mock DB and tests that calling
-    // the appropriate endpoint updates an instance specified by an ID.
+    // // Purpose: adds multiple Organization instances to a mock DB and tests that calling
+    // // the appropriate endpoint updates an instance specified by an ID.
     #[tokio::test]
     async fn update_an_organization_specified_by_id() -> anyhow::Result<()> {
         let mut config = Config::default();
@@ -512,6 +523,7 @@ mod organization_endpoints_tests {
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
+        let uuid = Uuid::new_v4();
 
         let organizations = [
             vec![organizations::Model {
@@ -520,7 +532,7 @@ mod organization_endpoints_tests {
                 created_at: None,
                 updated_at: None,
                 logo: None,
-                external_id: Uuid::new_v4(),
+                external_id: uuid,
             }],
             vec![organizations::Model {
                 id: 2,
@@ -528,7 +540,7 @@ mod organization_endpoints_tests {
                 created_at: None,
                 updated_at: None,
                 logo: None,
-                external_id: Uuid::new_v4(),
+                external_id: uuid,
             }],
         ];
 
@@ -561,10 +573,10 @@ mod organization_endpoints_tests {
             created_at: None,
             updated_at: None,
             logo: None,
-            external_id: Uuid::new_v4(),
+            external_id: uuid,
         };
 
-        let response = test_client_server
+        let response_text = test_client_server
             .client
             .put(test_client_server.url("/organizations/2").unwrap())
             .json(&updated_organization2)
@@ -573,7 +585,11 @@ mod organization_endpoints_tests {
             .text()
             .await?;
 
-        assert_eq!(response, json!(updated_organization2).to_string());
+        // We need to parse the values to serde_json::Value to compare them
+        // // so that the attribute order does not matter.
+        let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+
+        assert_eq!(parsed_response, json!(updated_organization2));
 
         Ok(())
     }

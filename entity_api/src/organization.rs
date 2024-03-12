@@ -132,6 +132,7 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
+    use entity::organizations;
     use sea_orm::{prelude::Uuid, DatabaseBackend, MockDatabase};
 
     #[tokio::test]
