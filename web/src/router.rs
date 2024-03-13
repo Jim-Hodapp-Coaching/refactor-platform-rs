@@ -231,7 +231,7 @@ mod organization_endpoints_tests {
             .await?;
 
         // We need to parse the values to serde_json::Value to compare them
-        // // so that the attribute order does not matter.
+        // so that the attribute order does not matter.
         let parsed_result: serde_json::Value =
             serde_json::from_str(&response.text().await?).unwrap();
 
@@ -307,7 +307,7 @@ mod organization_endpoints_tests {
             .await?;
 
         // We need to parse the values to serde_json::Value to compare them
-        // // so that the attribute order does not matter.
+        // so that the attribute order does not matter.
         let parsed_response: serde_json::Value =
             serde_json::from_str(&response.text().await?).unwrap();
         let organizations: serde_json::Value = json!(&organizations);
@@ -317,8 +317,8 @@ mod organization_endpoints_tests {
         Ok(())
     }
 
-    // // Purpose: adds multiple Organization instances to a mock DB and tests that calling
-    // // the appropriate endpoint deletes instances specified by distinct IDs.
+    // Purpose: adds multiple Organization instances to a mock DB and tests that calling
+    // the appropriate endpoint deletes instances specified by distinct IDs.
     #[tokio::test]
     async fn delete_an_organization_specified_by_id() -> anyhow::Result<()> {
         let mut config = Config::default();
@@ -419,8 +419,8 @@ mod organization_endpoints_tests {
         Ok(())
     }
 
-    // // Purpose: creates multiple new Organization instances to a mock DB by calling
-    // // the post endpoint supplying the appropriate instance as a JSON payload.
+    // Purpose: creates multiple new Organization instances to a mock DB by calling
+    // the post endpoint supplying the appropriate instance as a JSON payload.
     #[tokio::test]
     async fn create_new_organizations_successfully() -> anyhow::Result<()> {
         let mut config = Config::default();
@@ -509,7 +509,7 @@ mod organization_endpoints_tests {
                 .await?;
 
             // We need to parse the values to serde_json::Value to compare them
-            // // so that the attribute order does not matter.
+            // so that the attribute order does not matter.
             let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
 
             assert_eq!(parsed_response, json!(organization6));
@@ -518,8 +518,8 @@ mod organization_endpoints_tests {
         Ok(())
     }
 
-    // // Purpose: adds multiple Organization instances to a mock DB and tests that calling
-    // // the appropriate endpoint updates an instance specified by an ID.
+    // Purpose: adds multiple Organization instances to a mock DB and tests that calling
+    // the appropriate endpoint updates an instance specified by an ID.
     #[tokio::test]
     async fn update_an_organization_specified_by_id() -> anyhow::Result<()> {
         let mut config = Config::default();
@@ -591,7 +591,7 @@ mod organization_endpoints_tests {
             .await?;
 
         // We need to parse the values to serde_json::Value to compare them
-        // // so that the attribute order does not matter.
+        // so that the attribute order does not matter.
         let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
 
         assert_eq!(parsed_response, json!(updated_organization2));
