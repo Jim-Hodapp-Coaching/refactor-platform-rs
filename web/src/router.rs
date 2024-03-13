@@ -177,8 +177,8 @@ mod organization_endpoints_tests {
                 password: generate_hash("password2").to_owned(),
                 github_username: None,
                 github_profile_url: None,
-                created_at: Some(now.into()),
-                updated_at: Some(now.into()),
+                created_at: now.into(),
+                updated_at: now.into(),
                 external_id: Uuid::new_v4(),
             })
         }
@@ -189,14 +189,15 @@ mod organization_endpoints_tests {
     #[tokio::test]
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
         let mut config = Config::default();
+        let now = Utc::now();
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let organization = organizations::Model {
             id: 1,
             name: Some("Organization One".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: Uuid::new_v4(),
         };
@@ -246,30 +247,31 @@ mod organization_endpoints_tests {
     #[tokio::test]
     async fn read_returns_all_organizations() -> anyhow::Result<()> {
         let mut config = Config::default();
+        let now = Utc::now();
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let organization1 = organizations::Model {
             id: 1,
             name: Some("Organization One".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: Uuid::new_v4(),
         };
         let organization2 = organizations::Model {
             id: 2,
             name: Some("Organization Two".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: Uuid::new_v4(),
         };
         let organization3 = organizations::Model {
             id: 3,
             name: Some("Organization Three".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: Uuid::new_v4(),
         };
@@ -320,6 +322,7 @@ mod organization_endpoints_tests {
     #[tokio::test]
     async fn delete_an_organization_specified_by_id() -> anyhow::Result<()> {
         let mut config = Config::default();
+        let now = Utc::now();
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
@@ -328,16 +331,16 @@ mod organization_endpoints_tests {
         let organization_results1 = [vec![organizations::Model {
             id: 2,
             name: Some("Organization Two".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: Uuid::new_v4(),
         }]];
         let organization_results2 = [vec![organizations::Model {
             id: 3,
             name: Some("Organization Three".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: Uuid::new_v4(),
         }]];
@@ -421,6 +424,7 @@ mod organization_endpoints_tests {
     #[tokio::test]
     async fn create_new_organizations_successfully() -> anyhow::Result<()> {
         let mut config = Config::default();
+        let now = Utc::now();
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
@@ -429,8 +433,8 @@ mod organization_endpoints_tests {
         let organization_results1 = [vec![organizations::Model {
             id: 5,
             name: Some("New Organization Five".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: Uuid::new_v4(),
         }]];
@@ -438,8 +442,8 @@ mod organization_endpoints_tests {
         let organization_results2 = [vec![organizations::Model {
             id: 6,
             name: Some("Second Organization Six".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: Uuid::new_v4(),
         }]];
@@ -519,6 +523,7 @@ mod organization_endpoints_tests {
     #[tokio::test]
     async fn update_an_organization_specified_by_id() -> anyhow::Result<()> {
         let mut config = Config::default();
+        let now = Utc::now();
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
@@ -529,16 +534,16 @@ mod organization_endpoints_tests {
             vec![organizations::Model {
                 id: 2,
                 name: Some("Organization Two".to_owned()),
-                created_at: None,
-                updated_at: None,
+                created_at: now.into(),
+                updated_at: now.into(),
                 logo: None,
                 external_id: uuid,
             }],
             vec![organizations::Model {
                 id: 2,
                 name: Some("Updated Organization Two".to_owned()),
-                created_at: None,
-                updated_at: None,
+                created_at: now.into(),
+                updated_at: now.into(),
                 logo: None,
                 external_id: uuid,
             }],
@@ -570,8 +575,8 @@ mod organization_endpoints_tests {
         let updated_organization2 = organizations::Model {
             id: 2,
             name: Some("Updated Organization Two".to_owned()),
-            created_at: None,
-            updated_at: None,
+            created_at: now.into(),
+            updated_at: now.into(),
             logo: None,
             external_id: uuid,
         };

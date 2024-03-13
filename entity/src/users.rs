@@ -21,8 +21,8 @@ pub struct Model {
     pub password: String,
     pub github_username: Option<String>,
     pub github_profile_url: Option<String>,
-    pub created_at: Option<DateTimeWithTimeZone>,
-    pub updated_at: Option<DateTimeWithTimeZone>,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

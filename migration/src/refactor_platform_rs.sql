@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-03-09T05:36:42.340Z
+-- Generated at: 2024-03-13T14:38:29.944Z
 
 
 CREATE TABLE "refactor_platform"."organizations" (
@@ -8,8 +8,8 @@ CREATE TABLE "refactor_platform"."organizations" (
   "external_id" uuid UNIQUE NOT NULL DEFAULT (gen_random_uuid()),
   "name" varchar,
   "logo" varchar,
-  "created_at" timestamptz DEFAULT (now()),
-  "updated_at" timestamptz DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."coaching_relationships" (
@@ -18,8 +18,8 @@ CREATE TABLE "refactor_platform"."coaching_relationships" (
   "organization_id" integer NOT NULL,
   "coach_id" integer NOT NULL,
   "coachee_id" integer NOT NULL,
-  "created_at" timestamptz DEFAULT (now()),
-  "updated_at" timestamptz DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."users" (
@@ -32,8 +32,8 @@ CREATE TABLE "refactor_platform"."users" (
   "password" varchar NOT NULL,
   "github_username" varchar,
   "github_profile_url" varchar,
-  "created_at" timestamptz DEFAULT (now()),
-  "updated_at" timestamptz DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."coaching_sessions" (
@@ -42,8 +42,8 @@ CREATE TABLE "refactor_platform"."coaching_sessions" (
   "coaching_relationship_id" integer NOT NULL,
   "date" timestamp,
   "timezone" varchar,
-  "created_at" timestamptz DEFAULT (now()),
-  "updated_at" timestamptz DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."overarching_goals" (
@@ -53,8 +53,8 @@ CREATE TABLE "refactor_platform"."overarching_goals" (
   "title" varchar,
   "details" varchar,
   "completed_at" timestamptz,
-  "created_at" timestamptz DEFAULT (now()),
-  "updated_at" timestamptz DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."notes" (
@@ -63,8 +63,8 @@ CREATE TABLE "refactor_platform"."notes" (
   "coaching_session_id" integer NOT NULL,
   "body" varchar,
   "user_id" integer NOT NULL,
-  "created_at" timestamptz DEFAULT (now()),
-  "updated_at" timestamptz DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."agreements" (
@@ -73,8 +73,8 @@ CREATE TABLE "refactor_platform"."agreements" (
   "coaching_session_id" integer NOT NULL,
   "details" varchar,
   "user_id" integer NOT NULL,
-  "created_at" timestamptz DEFAULT (now()),
-  "updated_at" timestamptz DEFAULT (now())
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "refactor_platform"."actions" (
@@ -84,8 +84,8 @@ CREATE TABLE "refactor_platform"."actions" (
   "due_by" timestamptz,
   "completed" boolean,
   "completed_at" timestamptz,
-  "created_at" timestamp DEFAULT (now()),
-  "updated_at" timestamp DEFAULT (now())
+  "created_at" timestamp NOT NULL DEFAULT (now()),
+  "updated_at" timestamp NOT NULL DEFAULT (now())
 );
 
 COMMENT ON COLUMN "refactor_platform"."organizations"."external_id" IS 'The publicly visible identifier for a record';

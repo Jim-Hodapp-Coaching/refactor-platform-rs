@@ -137,20 +137,21 @@ mod tests {
 
     #[tokio::test]
     async fn find_all_returns_a_list_of_records_when_present() -> Result<(), Error> {
+        let now = Utc::now();
         let organizations = vec![vec![
             organizations::Model {
                 id: 1,
                 name: Some("Organization One".to_owned()),
-                created_at: None,
-                updated_at: None,
+                created_at: now.into(),
+                updated_at: now.into(),
                 logo: None,
                 external_id: Uuid::new_v4(),
             },
             organizations::Model {
                 id: 2,
                 name: Some("Organization One".to_owned()),
-                created_at: None,
-                updated_at: None,
+                created_at: now.into(),
+                updated_at: now.into(),
                 logo: None,
                 external_id: Uuid::new_v4(),
             },

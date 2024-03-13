@@ -13,8 +13,8 @@ pub struct Model {
     pub external_id: Uuid,
     pub name: Option<String>,
     pub logo: Option<String>,
-    pub created_at: Option<DateTimeWithTimeZone>,
-    pub updated_at: Option<DateTimeWithTimeZone>,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -17,8 +17,8 @@ pub struct Model {
     pub organization_id: i32,
     pub coach_id: i32,
     pub coachee_id: i32,
-    pub created_at: Option<DateTimeWithTimeZone>,
-    pub updated_at: Option<DateTimeWithTimeZone>,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
