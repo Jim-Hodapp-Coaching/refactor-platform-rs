@@ -1,5 +1,6 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::organization::Entity;
+use chrono::Utc;
 use entity::{organizations::*, Id};
 use sea_orm::{
     entity::prelude::*, sea_query, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged,
@@ -88,10 +89,14 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
     ];
     let uuid = Uuid::new_v4();
 
+    let now = Utc::now();
+
     for name in organization_names {
         let organization = entity::organizations::ActiveModel::from_json(json!({
             "name": name,
             "external_id": uuid,
+            "created_at": now,
+            "updated_at": now,
         }))
         .unwrap();
 
@@ -102,8 +107,8 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
                 name: ActiveValue::Set(Some(name.to_owned())),
                 external_id: ActiveValue::Set(uuid),
                 logo: ActiveValue::NotSet,
-                created_at: ActiveValue::NotSet,
-                updated_at: ActiveValue::NotSet,
+                created_at: ActiveValue::Set(now.into()),
+                updated_at: ActiveValue::Set(now.into()),
             }
         );
 
