@@ -61,31 +61,37 @@ mod organization_endpoints_tests {
         AuthManagerLayerBuilder,
     };
     use chrono::Utc;
-    use entity::{organization, user};
+    use entity::{organizations, users};
     use entity_api::user::Backend;
     use log::{debug, LevelFilter};
     use password_auth::generate_hash;
     use reqwest::Url;
-    use sea_orm::{DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult};
+    use sea_orm::{
+        prelude::Uuid, DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult,
+    };
     use serde_json::json;
     use service::{config::Config, logging::Logger};
-    use std::net::SocketAddr;
-    use std::sync::Arc;
+    use std::{net::SocketAddr, sync::Arc, sync::Once};
     use time::Duration;
     use tokio::net::TcpListener;
 
-    // Enable and call this at the start of a particular test to turn on TRACE
+    static INIT: Once = Once::new();
+
+    // Enable and call this at the start of a particular test to turn on DEBUG
     // level logging output used to debug a new or existing test.
-    fn _enable_test_logging(config: &mut Config) {
-        config.log_level_filter = LevelFilter::Trace;
-        Logger::init_logger(&config);
+    // Change to Trace to see all output.
+    fn enable_test_logging(config: &mut Config) {
+        INIT.call_once(|| {
+            config.log_level_filter = LevelFilter::Debug;
+            Logger::init_logger(&config);
+        });
     }
 
     // A test wrapper that sets up both an http server instance with the router backend
     // endpoints and a Reqwest-based http client used to call the backend server.
     //
     // Adapted from: https://blog.sedrik.se/posts/secure-axum/
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct TestClientServer {
         pub client: reqwest::Client,
         addr: String,
@@ -131,7 +137,7 @@ mod organization_endpoints_tests {
         /// with it turned on (i.e. `cookie_store(true)`).
         ///
         /// This is meant to be reused by all tests that sit behind a protected route.
-        pub async fn login(&mut self, user: &user::Model) -> anyhow::Result<()> {
+        pub async fn login(&mut self, user: &users::Model) -> anyhow::Result<()> {
             let creds = [("email", "test@domain.com"), ("password", "password2")];
             let response = self
                 .client
@@ -141,7 +147,9 @@ mod organization_endpoints_tests {
                 .await?;
 
             let response_text = response.text().await?;
+
             debug!("response_text: {:?}", response_text);
+
             assert_eq!(
                 response_text,
                 json!({
@@ -158,19 +166,20 @@ mod organization_endpoints_tests {
 
         /// Creates a test user::Model entity instance that can be used by tests to
         /// log in to the /login endpoint and create a valid AuthSession.
-        pub fn get_user() -> anyhow::Result<user::Model> {
+        pub fn get_user() -> anyhow::Result<users::Model> {
             let now = Utc::now();
-            Ok(user::Model {
+            Ok(users::Model {
                 id: 1,
                 email: "test@domain.com".to_string(),
-                first_name: "".to_string(),
-                last_name: "".to_string(),
-                display_name: "".to_string(),
+                first_name: Some("test".to_string()),
+                last_name: Some("login".to_string()),
+                display_name: Some("test login".to_string()),
                 password: generate_hash("password2").to_owned(),
-                github_username: "".to_string(),
-                github_profile_url: "".to_string(),
-                created_at: now,
-                updated_at: now,
+                github_username: None,
+                github_profile_url: None,
+                created_at: now.into(),
+                updated_at: now.into(),
+                external_id: Uuid::new_v4(),
             })
         }
     }
@@ -179,29 +188,40 @@ mod organization_endpoints_tests {
     // retrieve it by a specific ID and as expected and valid JSON.
     #[tokio::test]
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
-        let user = TestClientServer::get_user().expect("Creating a new test user failed");
-        let user_results1 = [vec![user.clone()]];
+        let mut config = Config::default();
+        let now = Utc::now();
+        enable_test_logging(&mut config);
 
-        let organization_results = [vec![organization::Model {
+        let user = TestClientServer::get_user().expect("Creating a new test user failed");
+        let organization = organizations::Model {
             id: 1,
-            name: "Organization One".to_owned(),
-        }]];
+            name: Some("Organization One".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: Uuid::new_v4(),
+        };
+
+        let organization_results = [vec![organization.clone()]];
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
-                .append_query_results(user_results1.clone())
-                .append_query_results(user_results1.clone())
+                // initial login auth check
+                .append_query_results([vec![user.clone()]])
+                // check auth for the next endpoint call
+                .append_query_results([vec![user.clone()]])
                 .append_query_results(organization_results.clone())
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
             .unwrap();
 
         let response = test_client_server.login(&user).await?;
+
         assert_eq!(response, ()); // Make sure we get a 200 OK response
 
         let response = test_client_server
@@ -210,10 +230,14 @@ mod organization_endpoints_tests {
             .send()
             .await?;
 
-        let response_text = response.text().await?;
+        // We need to parse the values to serde_json::Value to compare them
+        // so that the attribute order does not matter.
+        let parsed_result: serde_json::Value =
+            serde_json::from_str(&response.text().await?).unwrap();
 
-        let organization1 = &organization_results[0][0];
-        assert_eq!(response_text, json!(organization1).to_string());
+        let organization: serde_json::Value = json!(organization);
+
+        assert_eq!(parsed_result, organization);
 
         Ok(())
     }
@@ -222,36 +246,52 @@ mod organization_endpoints_tests {
     // retrieve all of them as expected and valid JSON without specifying any particular ID.
     #[tokio::test]
     async fn read_returns_all_organizations() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        let now = Utc::now();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
-        let user_results1 = [vec![user.clone()]];
+        let organization1 = organizations::Model {
+            id: 1,
+            name: Some("Organization One".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: Uuid::new_v4(),
+        };
+        let organization2 = organizations::Model {
+            id: 2,
+            name: Some("Organization Two".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: Uuid::new_v4(),
+        };
+        let organization3 = organizations::Model {
+            id: 3,
+            name: Some("Organization Three".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: Uuid::new_v4(),
+        };
 
         // Note: for entity_api::organization::find_all() to be able to return
         // the correct query_results for the assert_eq!() below, they must all
         // be grouped together in the same inner vector.
-        let organizations = [vec![
-            organization::Model {
-                id: 1,
-                name: "Organization One".to_owned(),
-            },
-            organization::Model {
-                id: 2,
-                name: "Organization Two".to_owned(),
-            },
-            organization::Model {
-                id: 3,
-                name: "Organization Three".to_owned(),
-            },
-        ]];
+        let organizations = [vec![organization1, organization2, organization3]];
 
         let db = Arc::new(
             MockDatabase::new(DatabaseBackend::Postgres)
-                .append_query_results(user_results1.clone())
-                .append_query_results(user_results1.clone())
+                //  initial login auth check
+                .append_query_results([vec![user.clone()]])
+                // check auth for the next endpoint call
+                .append_query_results([vec![user.clone()]])
                 .append_query_results(organizations.clone())
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
@@ -264,18 +304,15 @@ mod organization_endpoints_tests {
             .client
             .get(test_client_server.url("/organizations").unwrap())
             .send()
-            .await?
-            .text()
             .await?;
 
-        let organization1 = &organizations[0][0];
-        let organization2 = &organizations[0][1];
-        let organization3 = &organizations[0][2];
+        // We need to parse the values to serde_json::Value to compare them
+        // so that the attribute order does not matter.
+        let parsed_response: serde_json::Value =
+            serde_json::from_str(&response.text().await?).unwrap();
+        let organizations: serde_json::Value = json!(&organizations);
 
-        assert_eq!(
-            response,
-            json!([organization1, organization2, organization3]).to_string()
-        );
+        assert_eq!(parsed_response, organizations[0]);
 
         Ok(())
     }
@@ -284,16 +321,28 @@ mod organization_endpoints_tests {
     // the appropriate endpoint deletes instances specified by distinct IDs.
     #[tokio::test]
     async fn delete_an_organization_specified_by_id() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        let now = Utc::now();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
-        let organization_results1 = [vec![organization::Model {
+        let organization_results1 = [vec![organizations::Model {
             id: 2,
-            name: "Organization Two".to_owned(),
+            name: Some("Organization Two".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
-        let organization_results2 = [vec![organization::Model {
+        let organization_results2 = [vec![organizations::Model {
             id: 3,
-            name: "Organization Three".to_owned(),
+            name: Some("Organization Three".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
 
         let exec_results1 = [MockExecResult {
@@ -318,7 +367,7 @@ mod organization_endpoints_tests {
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
@@ -374,17 +423,29 @@ mod organization_endpoints_tests {
     // the post endpoint supplying the appropriate instance as a JSON payload.
     #[tokio::test]
     async fn create_new_organizations_successfully() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        let now = Utc::now();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
-        let organization_results1 = [vec![organization::Model {
+        let organization_results1 = [vec![organizations::Model {
             id: 5,
-            name: "New Organization Five".to_owned(),
+            name: Some("New Organization Five".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
 
-        let organization_results2 = [vec![organization::Model {
+        let organization_results2 = [vec![organizations::Model {
             id: 6,
-            name: "Second Organization Six".to_owned(),
+            name: Some("Second Organization Six".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: Uuid::new_v4(),
         }]];
 
         let exec_results1 = [MockExecResult {
@@ -409,7 +470,7 @@ mod organization_endpoints_tests {
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
@@ -421,7 +482,7 @@ mod organization_endpoints_tests {
         {
             let organization5 = &organization_results1[0][0];
 
-            let response = test_client_server
+            let response_text = test_client_server
                 .client
                 .post(test_client_server.url("/organizations").unwrap())
                 .json(&organization5)
@@ -430,13 +491,15 @@ mod organization_endpoints_tests {
                 .text()
                 .await?;
 
-            assert_eq!(response, json!(organization5).to_string());
+            let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+
+            assert_eq!(parsed_response, json!(organization5));
         }
 
         {
             let organization6 = &organization_results2[0][0];
 
-            let response = test_client_server
+            let response_text = test_client_server
                 .client
                 .post(test_client_server.url("/organizations").unwrap())
                 .json(&organization6)
@@ -445,7 +508,11 @@ mod organization_endpoints_tests {
                 .text()
                 .await?;
 
-            assert_eq!(response, json!(organization6).to_string());
+            // We need to parse the values to serde_json::Value to compare them
+            // so that the attribute order does not matter.
+            let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+
+            assert_eq!(parsed_response, json!(organization6));
         }
 
         Ok(())
@@ -455,17 +522,30 @@ mod organization_endpoints_tests {
     // the appropriate endpoint updates an instance specified by an ID.
     #[tokio::test]
     async fn update_an_organization_specified_by_id() -> anyhow::Result<()> {
+        let mut config = Config::default();
+        let now = Utc::now();
+        enable_test_logging(&mut config);
+
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
+        let uuid = Uuid::new_v4();
 
         let organizations = [
-            vec![organization::Model {
+            vec![organizations::Model {
                 id: 2,
-                name: "Organization Two".to_owned(),
+                name: Some("Organization Two".to_owned()),
+                created_at: now.into(),
+                updated_at: now.into(),
+                logo: None,
+                external_id: uuid,
             }],
-            vec![organization::Model {
+            vec![organizations::Model {
                 id: 2,
-                name: "Updated Organization Two".to_owned(),
+                name: Some("Updated Organization Two".to_owned()),
+                created_at: now.into(),
+                updated_at: now.into(),
+                logo: None,
+                external_id: uuid,
             }],
         ];
 
@@ -483,7 +563,7 @@ mod organization_endpoints_tests {
                 .into_connection(),
         );
 
-        let app_state = AppState::new(Config::default(), &db);
+        let app_state = AppState::new(config, &db);
 
         let mut test_client_server = TestClientServer::new(define_routes(app_state), &db)
             .await
@@ -492,12 +572,16 @@ mod organization_endpoints_tests {
         let response = test_client_server.login(&user).await?;
         assert_eq!(response, ());
 
-        let updated_organization2 = organization::Model {
+        let updated_organization2 = organizations::Model {
             id: 2,
-            name: "Updated Organization Two".to_owned(),
+            name: Some("Updated Organization Two".to_owned()),
+            created_at: now.into(),
+            updated_at: now.into(),
+            logo: None,
+            external_id: uuid,
         };
 
-        let response = test_client_server
+        let response_text = test_client_server
             .client
             .put(test_client_server.url("/organizations/2").unwrap())
             .json(&updated_organization2)
@@ -506,7 +590,11 @@ mod organization_endpoints_tests {
             .text()
             .await?;
 
-        assert_eq!(response, json!(updated_organization2).to_string());
+        // We need to parse the values to serde_json::Value to compare them
+        // so that the attribute order does not matter.
+        let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+
+        assert_eq!(parsed_response, json!(updated_organization2));
 
         Ok(())
     }

@@ -4,16 +4,19 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
-#[sea_orm(schema_name = "refactor_platform", table_name = "notes")]
+#[sea_orm(
+    schema_name = "refactor_platform",
+    table_name = "coaching_relationships"
+)]
 pub struct Model {
     #[sea_orm(primary_key)]
     #[serde(skip_deserializing)]
     pub id: i32,
     #[sea_orm(unique)]
     pub external_id: Uuid,
-    pub coaching_session_id: i32,
-    pub body: Option<String>,
-    pub user_id: i32,
+    pub organization_id: i32,
+    pub coach_id: i32,
+    pub coachee_id: i32,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }
@@ -21,32 +24,34 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
-        belongs_to = "super::coaching_sessions::Entity",
-        from = "Column::CoachingSessionId",
-        to = "super::coaching_sessions::Column::Id",
+        belongs_to = "super::organizations::Entity",
+        from = "Column::OrganizationId",
+        to = "super::organizations::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    CoachingSessions,
+    Organizations,
     #[sea_orm(
         belongs_to = "super::users::Entity",
-        from = "Column::UserId",
+        from = "Column::CoachId",
         to = "super::users::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    Users,
+    Users2,
+    #[sea_orm(
+        belongs_to = "super::users::Entity",
+        from = "Column::CoacheeId",
+        to = "super::users::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Users1,
 }
 
-impl Related<super::coaching_sessions::Entity> for Entity {
+impl Related<super::organizations::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::CoachingSessions.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
+        Relation::Organizations.def()
     }
 }
 

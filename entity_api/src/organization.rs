@@ -1,9 +1,10 @@
 use super::error::{EntityApiErrorCode, Error};
-use entity::{organization, Id};
-use organization::{ActiveModel, Entity, Model};
+use crate::organization::Entity;
+use chrono::Utc;
+use entity::{organizations::*, Id};
 use sea_orm::{
-    entity::prelude::*, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
-    TryIntoModel,
+    entity::prelude::*, sea_query, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged,
+    DatabaseConnection, TryIntoModel,
 };
 use serde_json::json;
 
@@ -34,7 +35,11 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
 
             let active_model: ActiveModel = ActiveModel {
                 id: Unchanged(organization.id),
+                external_id: Set(Uuid::new_v4()),
+                logo: Set(model.logo),
                 name: Set(model.name),
+                updated_at: Unchanged(organization.updated_at),
+                created_at: Unchanged(organization.created_at),
             };
             Ok(active_model.update(db).await?.try_into_model()?)
         }
@@ -82,22 +87,46 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
         "Caleb Coaching",
         "Enterprise Software",
     ];
+    let uuid = Uuid::new_v4();
+
+    let now = Utc::now();
 
     for name in organization_names {
-        let organization = organization::ActiveModel::from_json(json!({
+        let organization = entity::organizations::ActiveModel::from_json(json!({
             "name": name,
+            "external_id": uuid,
+            "created_at": now,
+            "updated_at": now,
         }))
         .unwrap();
 
         assert_eq!(
             organization,
-            organization::ActiveModel {
+            entity::organizations::ActiveModel {
                 id: ActiveValue::NotSet,
-                name: ActiveValue::Set(name.to_owned()),
+                name: ActiveValue::Set(Some(name.to_owned())),
+                external_id: ActiveValue::Set(uuid),
+                logo: ActiveValue::NotSet,
+                created_at: ActiveValue::Set(now.into()),
+                updated_at: ActiveValue::Set(now.into()),
             }
         );
 
-        organization.insert(db).await.unwrap();
+        match Entity::insert(organization)
+            .on_conflict(
+                // on conflict do update
+                sea_query::OnConflict::column(Column::ExternalId)
+                    .update_column(Column::Name)
+                    .to_owned(),
+            )
+            .exec(db)
+            .await
+        {
+            Ok(_) => info!("Succeeded in seeding new organization entity."),
+            Err(e) => {
+                error!("Failed to insert or update organization entity when seeding user data: {e}")
+            }
+        };
     }
 }
 
@@ -108,18 +137,28 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
-    use sea_orm::{DatabaseBackend, MockDatabase};
+    use entity::organizations;
+    use sea_orm::{prelude::Uuid, DatabaseBackend, MockDatabase};
 
     #[tokio::test]
     async fn find_all_returns_a_list_of_records_when_present() -> Result<(), Error> {
+        let now = Utc::now();
         let organizations = vec![vec![
-            organization::Model {
+            organizations::Model {
                 id: 1,
-                name: "Organization One".to_owned(),
+                name: Some("Organization One".to_owned()),
+                created_at: now.into(),
+                updated_at: now.into(),
+                logo: None,
+                external_id: Uuid::new_v4(),
             },
-            organization::Model {
+            organizations::Model {
                 id: 2,
-                name: "Organization One".to_owned(),
+                name: Some("Organization One".to_owned()),
+                created_at: now.into(),
+                updated_at: now.into(),
+                logo: None,
+                external_id: Uuid::new_v4(),
             },
         ]];
         let db = MockDatabase::new(DatabaseBackend::Postgres)

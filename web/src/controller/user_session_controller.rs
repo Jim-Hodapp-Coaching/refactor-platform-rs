@@ -43,7 +43,6 @@ impl UserSessionController {
         Form(creds): Form<UserApi::Credentials>,
     ) -> impl IntoResponse {
         debug!("UserSessionController::login()");
-
         let user = match auth_session.authenticate(creds.clone()).await {
             Ok(Some(user)) => user,
             Ok(None) => return Err(StatusCode::UNAUTHORIZED.into_response()),

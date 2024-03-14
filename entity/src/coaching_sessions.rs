@@ -14,8 +14,8 @@ pub struct Model {
     pub coaching_relationship_id: i32,
     pub date: Option<DateTime>,
     pub timezone: Option<String>,
-    pub created_at: Option<DateTimeWithTimeZone>,
-    pub updated_at: Option<DateTimeWithTimeZone>,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

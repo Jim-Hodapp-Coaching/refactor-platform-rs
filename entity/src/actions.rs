@@ -15,8 +15,8 @@ pub struct Model {
     pub due_by: Option<DateTimeWithTimeZone>,
     pub completed: Option<bool>,
     pub completed_at: Option<DateTimeWithTimeZone>,
-    pub created_at: Option<DateTime>,
-    pub updated_at: Option<DateTime>,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
