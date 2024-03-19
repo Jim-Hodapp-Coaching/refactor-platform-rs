@@ -19,6 +19,8 @@ pub struct Error {
 
 #[derive(Debug, Serialize)]
 pub enum EntityApiErrorCode {
+    // Invalid search term
+    InvalidQueryTerm,
     // Record not found
     RecordNotFound,
     // Record not updated

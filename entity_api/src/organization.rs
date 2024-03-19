@@ -1,12 +1,13 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::organization::Entity;
 use chrono::Utc;
-use entity::{coaching_relationships, organizations::*, Id};
+use entity::{coaching_relationships, organizations::*, prelude::Organizations, Id};
 use sea_orm::{
     entity::prelude::*, sea_query, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged,
     DatabaseConnection, JoinType, QuerySelect, TryIntoModel,
 };
-use serde_json::json;
+use serde_json::{from_str, json};
+use std::collections::HashMap;
 
 use log::*;
 
@@ -81,18 +82,43 @@ pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>
     Ok(organization)
 }
 
+pub async fn find_by(
+    db: &DatabaseConnection,
+    params: HashMap<String, String>,
+) -> Result<Vec<Model>, Error> {
+    let mut query = Entity::find();
+
+    for (key, value) in params {
+        match key.as_str() {
+            "user_id" => {
+                query = by_user(query, from_str::<Id>(&value).unwrap()).await;
+            }
+            _ => {
+                return Err(Error {
+                    inner: None,
+                    error_code: EntityApiErrorCode::InvalidQueryTerm,
+                });
+            }
+        }
+    }
+
+    Ok(query.all(db).await?)
+}
+
 pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Model>, Error> {
-    let organizations = Entity::find()
+    let organizations = by_user(Entity::find(), user_id).await.all(db).await?;
+
+    Ok(organizations)
+}
+
+async fn by_user(query: Select<Organizations>, user_id: Id) -> Select<Organizations> {
+    query
         .join(JoinType::InnerJoin, Relation::CoachingRelationships.def())
         .filter(
             sea_query::Condition::any()
                 .add(coaching_relationships::Column::CoachId.eq(user_id))
                 .add(coaching_relationships::Column::CoacheeId.eq(user_id)),
         )
-        .all(db)
-        .await?;
-
-    Ok(organizations)
 }
 
 pub(crate) async fn seed_database(db: &DatabaseConnection) {

@@ -1,10 +1,12 @@
-use crate::{custom_extractors::CompareApiVersion, AppState, Error};
-use axum::extract::{Path, State};
+use crate::extractors::compare_api_version::CompareApiVersion;
+use crate::{AppState, Error};
+use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
 use axum::Json;
 use entity::{organizations, Id};
 use entity_api::organization as OrganizationApi;
 use serde_json::json;
+use std::collections::HashMap;
 
 use log::*;
 
@@ -18,9 +20,10 @@ impl OrganizationController {
     pub async fn index(
         CompareApiVersion(_v): CompareApiVersion,
         State(app_state): State<AppState>,
+        Query(params): Query<HashMap<String, String>>,
     ) -> Result<impl IntoResponse, Error> {
         debug!("GET all Organizations");
-        let organizations = OrganizationApi::find_all(app_state.db_conn_ref()).await?;
+        let organizations = OrganizationApi::find_by(app_state.db_conn_ref(), params).await?;
 
         debug!("Found Organizations: {:?}", organizations);
 

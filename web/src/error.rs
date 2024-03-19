@@ -26,6 +26,11 @@ impl std::fmt::Display for Error {
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self.0.error_code {
+            EntityApiErrorCode::InvalidQueryTerm => {
+                debug!("Error: {:#?}, mapping to UNPROCESSABLE_ENTITY", self);
+
+                (StatusCode::UNPROCESSABLE_ENTITY, "UNPROCESSABLE ENTITY").into_response()
+            }
             EntityApiErrorCode::SystemError => {
                 debug!("Error: {:#?}, mapping to INTERNAL_SERVER_ERROR", self);
 
