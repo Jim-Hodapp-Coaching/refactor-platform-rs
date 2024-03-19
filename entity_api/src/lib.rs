@@ -1,5 +1,6 @@
 use sea_orm::DatabaseConnection;
 
+pub mod coaching_relationships;
 pub mod error;
 pub mod organization;
 pub mod user;
