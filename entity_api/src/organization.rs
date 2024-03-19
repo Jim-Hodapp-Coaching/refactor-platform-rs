@@ -1,10 +1,10 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::organization::Entity;
 use chrono::Utc;
-use entity::{organizations::*, Id};
+use entity::{coaching_relationships, organizations::*, Id};
 use sea_orm::{
     entity::prelude::*, sea_query, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged,
-    DatabaseConnection, TryIntoModel,
+    DatabaseConnection, JoinType, QuerySelect, TryIntoModel,
 };
 use serde_json::json;
 
@@ -81,6 +81,20 @@ pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>
     Ok(organization)
 }
 
+pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Model>, Error> {
+    let organizations = Entity::find()
+        .join(JoinType::InnerJoin, Relation::CoachingRelationships.def())
+        .filter(
+            sea_query::Condition::any()
+                .add(coaching_relationships::Column::CoachId.eq(user_id))
+                .add(coaching_relationships::Column::CoacheeId.eq(user_id)),
+        )
+        .all(db)
+        .await?;
+
+    Ok(organizations)
+}
+
 pub(crate) async fn seed_database(db: &DatabaseConnection) {
     let organization_names = [
         "Jim Hodapp Coaching",
@@ -138,7 +152,7 @@ pub(crate) async fn seed_database(db: &DatabaseConnection) {
 mod tests {
     use super::*;
     use entity::organizations;
-    use sea_orm::{prelude::Uuid, DatabaseBackend, MockDatabase};
+    use sea_orm::{prelude::Uuid, DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]
     async fn find_all_returns_a_list_of_records_when_present() -> Result<(), Error> {
@@ -166,6 +180,25 @@ mod tests {
             .into_connection();
 
         assert_eq!(find_all(&db).await?, organizations[0]);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_by_user_returns_all_records_associated_with_user() -> Result<(), Error> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let user_id = 1;
+        let _ = find_by_user(&db, user_id).await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" = $1 OR "coaching_relationships"."coachee_id" = $2"#,
+                [user_id.into(), user_id.into()]
+            )]
+        );
 
         Ok(())
     }

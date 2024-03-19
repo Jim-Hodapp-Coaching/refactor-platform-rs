@@ -26,7 +26,6 @@ pub async fn find_by_user(
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
-    use log::debug;
     use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]
