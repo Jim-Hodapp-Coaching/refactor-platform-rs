@@ -1,4 +1,4 @@
-use crate::{AppState, Error};
+use crate::{custom_extractors::CheckApiVersion, AppState, Error};
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum::Json;
@@ -15,7 +15,10 @@ impl OrganizationController {
     /// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
     /// --request GET \
     /// http://localhost:4000/organizations
-    pub async fn index(State(app_state): State<AppState>) -> Result<impl IntoResponse, Error> {
+    pub async fn index(
+        CheckApiVersion(_v): CheckApiVersion,
+        State(app_state): State<AppState>,
+    ) -> Result<impl IntoResponse, Error> {
         debug!("GET all Organizations");
         let organizations = OrganizationApi::find_all(app_state.db_conn_ref()).await?;
 
@@ -29,6 +32,7 @@ impl OrganizationController {
     /// --request GET \
     /// http://localhost:4000/organizations/<id>
     pub async fn read(
+        CheckApiVersion(_v): CheckApiVersion,
         State(app_state): State<AppState>,
         Path(id): Path<Id>,
     ) -> Result<impl IntoResponse, Error> {
@@ -46,6 +50,7 @@ impl OrganizationController {
     /// --data '{"name":"My New Organization"}' \
     /// http://localhost:4000/organizations
     pub async fn create(
+        CheckApiVersion(_v): CheckApiVersion,
         State(app_state): State<AppState>,
         Json(organization_model): Json<organizations::Model>,
     ) -> Result<impl IntoResponse, Error> {
@@ -64,6 +69,7 @@ impl OrganizationController {
     /// --request PUT  http://localhost:4000/organizations/<id> \
     /// --data '{"name":"My Updated Organization"}'
     pub async fn update(
+        CheckApiVersion(_v): CheckApiVersion,
         State(app_state): State<AppState>,
         Path(id): Path<Id>,
         Json(organization_model): Json<organizations::Model>,
@@ -84,6 +90,7 @@ impl OrganizationController {
     /// --request DELETE \
     /// http://localhost:4000/organizations/<id>
     pub async fn delete(
+        CheckApiVersion(_v): CheckApiVersion,
         State(app_state): State<AppState>,
         Path(id): Path<Id>,
     ) -> Result<impl IntoResponse, Error> {

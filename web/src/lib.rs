@@ -15,6 +15,7 @@ use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
 
 mod controller;
+mod custom_extractors;
 mod error;
 mod router;
 
