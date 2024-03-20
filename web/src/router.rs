@@ -21,8 +21,10 @@ pub fn define_routes(app_state: AppState) -> Router {
 
 pub fn organization_routes(app_state: AppState) -> Router {
     Router::new()
-        // TODO: Add an API versioning scheme and prefix all routes with it
-        // See Router::nest() - https://docs.rs/axum/latest/axum/struct.Router.html#method.nest
+        // The goal will be able to do something like the follow Node.js code does for
+        // versioning: https://www.codemzy.com/blog/nodejs-api-versioning
+        // except we can use axum-extras `or` like is show here:
+        // https://gist.github.com/davidpdrsn/eb4e703e7e068ece3efd975b8f6bc340#file-content_type_or-rs-L17
         .route("/organizations", get(OrganizationController::index))
         .route("/organizations/:id", get(OrganizationController::read))
         .route("/organizations", post(OrganizationController::create))

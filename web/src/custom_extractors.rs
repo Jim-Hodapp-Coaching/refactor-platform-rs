@@ -27,22 +27,15 @@ where
         let state = AppState::from_ref(state);
 
         if let Some(version) = parts.headers.get(X_VERSION) {
-            debug!("API version: {:?}", version);
-            if state.config.api_version == Some(version.to_str().unwrap_or_default().into()) {
-                debug!("Valid API version specified");
-                Ok(CheckApiVersion(version.clone()))
-            } else {
-                error!(
-                    "API version provided is not a valid API version: {:?}",
-                    version
-                );
-                Err((
+            trace!("API version provided by client: {:?}", version);
+            match state.config.api_version == Some(version.to_str().unwrap_or_default().into()) {
+                true => Ok(CheckApiVersion(version.clone())),
+                false => Err((
                     StatusCode::BAD_REQUEST,
                     "`X-Version` header is not a valid API version",
-                ))
+                )),
             }
         } else {
-            error!("API version header not provided");
             Err((StatusCode::BAD_REQUEST, "`X-Version` header is missing"))
         }
     }
