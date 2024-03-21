@@ -28,10 +28,15 @@ where
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let state = AppState::from_ref(state);
         let version = get_x_version(parts)?;
-        let api_version = HeaderValue::from_str(&state.config.api_version.unwrap_or_default()).ok().unwrap();
+        let api_version = HeaderValue::from_str(&state.config.api_version.unwrap_or_default())
+            .ok()
+            .unwrap_or_else(|| HeaderValue::from_static("0.0.0"));
 
         trace!("API version provided by client: {:?}", version);
-        trace!("API version set in AppState.config.api_version: {:?}", version);
+        trace!(
+            "API version set in AppState.config.api_version: {:?}",
+            version
+        );
 
         Ok(is_current_api_version(version, api_version)?)
     }
@@ -45,7 +50,10 @@ fn get_x_version(parts: &mut Parts) -> Result<HeaderValue, RejectionType> {
     }
 }
 
-fn is_current_api_version(version: HeaderValue, api_version: HeaderValue) -> Result<CheckApiVersion, RejectionType> {
+fn is_current_api_version(
+    version: HeaderValue,
+    api_version: HeaderValue,
+) -> Result<CheckApiVersion, RejectionType> {
     if version == api_version {
         Ok(CheckApiVersion(version))
     } else {
