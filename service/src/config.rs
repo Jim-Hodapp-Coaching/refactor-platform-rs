@@ -57,6 +57,12 @@ impl Config {
         Config::parse()
     }
 
+    pub fn api_version(&self) -> &str {
+        self.api_version
+            .as_ref()
+            .expect("No API version string provided")
+    }
+
     pub fn set_database_uri(mut self, database_uri: String) -> Self {
         self.database_uri = Some(database_uri);
         self

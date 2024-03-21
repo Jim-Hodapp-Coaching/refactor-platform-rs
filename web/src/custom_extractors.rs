@@ -5,6 +5,7 @@ use axum::{
     http::{header::HeaderValue, request::Parts, StatusCode},
 };
 use log::*;
+use service::config::DEFAULT_API_VERSION;
 
 type RejectionType = (StatusCode, &'static str);
 
@@ -27,10 +28,12 @@ where
     // successfully.
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let state = AppState::from_ref(state);
+        // Provided by the client in the HTTP header
         let version = get_x_version(parts)?;
-        let api_version = HeaderValue::from_str(&state.config.api_version.unwrap_or_default())
+        // Provided as part of the AppState environment configuration
+        let api_version = HeaderValue::from_str(state.config.api_version())
             .ok()
-            .unwrap_or_else(|| HeaderValue::from_static("0.0.0"));
+            .unwrap_or_else(|| HeaderValue::from_static(DEFAULT_API_VERSION));
 
         trace!("API version provided by client: {:?}", version);
         trace!(
