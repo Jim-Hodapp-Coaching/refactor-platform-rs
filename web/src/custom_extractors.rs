@@ -38,7 +38,7 @@ where
         trace!("API version provided by client: {:?}", version);
         trace!(
             "API version set in AppState.config.api_version: {:?}",
-            version
+            api_version
         );
 
         Ok(is_current_api_version(version, api_version)?)
