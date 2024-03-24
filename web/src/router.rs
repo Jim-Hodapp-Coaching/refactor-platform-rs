@@ -8,6 +8,8 @@ use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
 use utoipa::OpenApi;
+use utoipa_rapidoc::RapiDoc;
+use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
 
 #[derive(OpenApi)]
@@ -38,6 +40,10 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(protected_routes())
         // FIXME: protect this endpoint
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .merge(Redoc::with_url("/redoc", ApiDoc::openapi()))
+        // There is no need to create `RapiDoc::with_openapi` because the OpenApi is served
+        // via SwaggerUi instead we only make rapidoc to point to the existing doc.
+        .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
         .fallback_service(static_routes())
 }
 

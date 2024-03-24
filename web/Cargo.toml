@@ -22,6 +22,8 @@ tower-sessions = { version = "0.9", features = ["postgres-store", "deletion-task
 time = "0.3.31"
 utoipa = { version = "4.2.0", features = ["axum_extras", "uuid"] }
 utoipa-swagger-ui = { version = "6.0.0", features = ["axum"] }
+utoipa-rapidoc = { version = "3.0.0", features = ["axum"] }
+utoipa-redoc = { version = "3.0.0", features = ["axum"] }
 
 [dependencies.sea-orm]
 version = "0.12" # sea-orm version
