@@ -7,15 +7,37 @@ use axum_login::login_required;
 use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
-use crate::controller::{
-    organization_controller::OrganizationController, user_session_controller::UserSessionController,
-};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
+
+#[derive(OpenApi)]
+#[openapi(
+        paths(
+            organization_controller::index,
+            organization_controller::read,
+        ),
+        components(
+            schemas(
+                entity::organizations::Model,
+                entity::users::Model,
+            )
+        ),
+        // modifiers(&SecurityAddon),
+        tags(
+            (name = "refactor_platform", description = "Refactor Coaching & Mentorship API")
+        )
+    )]
+struct ApiDoc;
+
+use crate::controller::{organization_controller, user_session_controller};
 
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
         .merge(organization_routes(app_state))
         .merge(session_routes())
         .merge(protected_routes())
+        // FIXME: protect this endpoint
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .fallback_service(static_routes())
 }
 
@@ -25,24 +47,27 @@ pub fn organization_routes(app_state: AppState) -> Router {
         // versioning: https://www.codemzy.com/blog/nodejs-api-versioning
         // except we can use axum-extras `or` like is show here:
         // https://gist.github.com/davidpdrsn/eb4e703e7e068ece3efd975b8f6bc340#file-content_type_or-rs-L17
-        .route("/organizations", get(OrganizationController::index))
-        .route("/organizations/:id", get(OrganizationController::read))
-        .route("/organizations", post(OrganizationController::create))
-        .route("/organizations/:id", put(OrganizationController::update))
-        .route("/organizations/:id", delete(OrganizationController::delete))
+        .route("/organizations", get(organization_controller::index))
+        .route("/organizations/:id", get(organization_controller::read))
+        .route("/organizations", post(organization_controller::create))
+        .route("/organizations/:id", put(organization_controller::update))
+        .route(
+            "/organizations/:id",
+            delete(organization_controller::delete),
+        )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
 
 pub fn protected_routes() -> Router {
     Router::new()
-        .route("/protected", get(UserSessionController::protected))
-        .route("/logout", get(UserSessionController::logout))
+        .route("/protected", get(user_session_controller::protected))
+        .route("/logout", get(user_session_controller::logout))
         .route_layer(login_required!(Backend, login_url = "/login"))
 }
 
 pub fn session_routes() -> Router {
-    Router::new().route("/login", post(UserSessionController::login))
+    Router::new().route("/login", post(user_session_controller::login))
 }
 
 // This will serve static files that we can use as a "fallback" for when the server panics
