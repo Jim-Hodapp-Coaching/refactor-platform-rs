@@ -8,17 +8,17 @@ use serde_json::json;
 
 use log::*;
 
-/// GET all Organizations
-/// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
-/// --request GET \
-/// http://localhost:4000/organizations
+/// GET all Organizations.
 #[utoipa::path(
         get,
         path = "/organizations",
         responses(
-            (status = 200, description = "List all Organizations successfully", body = [entity::organizations::Model]),
+            (status = 200, description = "Successfully retrieved all Organizations", body = [entity::organizations::Model]),
             (status = 401, description = "Unauthorized"),
-            (status = 405, description = "Method not allowed (CORS)")
+            (status = 405, description = "Method not allowed")
+        ),
+        security(
+            ("cookie_auth" = [])
         )
     )]
 pub async fn index(
@@ -33,22 +33,22 @@ pub async fn index(
     Ok(Json(organizations))
 }
 
-/// GET a particular Organization entity specified by its primary key
-/// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
-/// --request GET \
-/// http://localhost:4000/organizations/<id>
+/// GET a particular Organization specified by its primary key.
 #[utoipa::path(
-get,
-path = "/organizations/{id}",
-params(
-    ("id" = Id, Path, description = "Organization id")
-),
-responses(
-    (status = 200, description = "Got a particular Organization entity by its id successfully", body = [entity::organizations::Model]),
-    (status = 404, description = "Organization not found"),
-    (status = 401, description = "Unauthorized"),
-    (status = 405, description = "Method not allowed (CORS)")
-)
+    get,
+    path = "/organizations/{id}",
+    params(
+        ("id" = i32, Path, description = "Organization id to retrieve")
+    ),
+    responses(
+        (status = 200, description = "Successfully retrieved a certain Organization by its id", body = [entity::organizations::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Organization not found"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
 )]
 pub async fn read(
     CompareApiVersion(_v): CompareApiVersion,
@@ -63,11 +63,20 @@ pub async fn read(
     Ok(Json(organization))
 }
 
-/// CREATE a new Organization entity
-/// Test this with curl: curl --header "Content-Type: application/json" \
-/// --request POST \
-/// --data '{"name":"My New Organization"}' \
-/// http://localhost:4000/organizations
+/// CREATE a new Organization.
+#[utoipa::path(
+    post,
+    path = "/organizations",
+    request_body = entity::organizations::Model,
+    responses(
+        (status = 200, description = "Successfully created a new Organization", body = [entity::organizations::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+    )]
 pub async fn create(
     CompareApiVersion(_v): CompareApiVersion,
     State(app_state): State<AppState>,
@@ -83,15 +92,29 @@ pub async fn create(
     Ok(Json(organization))
 }
 
-/// UPDATE a particular Organization entity specified by its primary key
-/// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
-/// --request PUT  http://localhost:4000/organizations/<id> \
-/// --data '{"name":"My Updated Organization"}'
+/// UPDATE a particular Organization specified by its primary key.
+#[utoipa::path(
+    put,
+    path = "/organizations/{id}",
+    params(
+        ("id" = i32, Path, description = "Organization id to update")
+    ),
+    request_body = entity::organizations::Model,
+    responses(
+        (status = 200, description = "Successfully updated a certain Organization by its id", body = [entity::organizations::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Organization not found"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
 pub async fn update(
     CompareApiVersion(_v): CompareApiVersion,
     State(app_state): State<AppState>,
     Path(id): Path<Id>,
-    Json(organization_model): Json<organizations::Model>,
+    Json(organization_model): Json<entity::organizations::Model>,
 ) -> Result<impl IntoResponse, Error> {
     debug!(
         "UPDATE the entire Organization by id: {:?}, new name: {:?}",
@@ -104,10 +127,23 @@ pub async fn update(
     Ok(Json(updated_organization))
 }
 
-/// DELETE an Organization entity specified by its primary key
-/// Test this with curl: curl --header "Content-Type: application/json" \                                                                                         in zsh at 12:03:06
-/// --request DELETE \
-/// http://localhost:4000/organizations/<id>
+/// DELETE an Organization specified by its primary key.
+#[utoipa::path(
+    delete,
+    path = "/organizations/{id}",
+    params(
+        ("id" = i32, Path, description = "Organization id to update")
+    ),
+    responses(
+        (status = 200, description = "Successfully deleted a certain Organization by its id", body = [i32]),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Organization not found"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
 pub async fn delete(
     CompareApiVersion(_v): CompareApiVersion,
     State(app_state): State<AppState>,

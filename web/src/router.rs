@@ -7,29 +7,61 @@ use axum_login::login_required;
 use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
-use utoipa::OpenApi;
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
 use utoipa_rapidoc::RapiDoc;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_swagger_ui::SwaggerUi;
 
+// This is the global definition of our OpenAPI spec. To be a part
+// of the rendered spec, a path and schema must be listed here.
 #[derive(OpenApi)]
 #[openapi(
+        info(
+            title = "Refactor Platform API"
+        ),
         paths(
             organization_controller::index,
             organization_controller::read,
+            organization_controller::create,
+            organization_controller::update,
+            organization_controller::delete,
+            user_session_controller::login,
+            user_session_controller::logout,
         ),
         components(
             schemas(
                 entity::organizations::Model,
                 entity::users::Model,
+                entity_api::user::Credentials,
             )
         ),
-        // modifiers(&SecurityAddon),
+        modifiers(&SecurityAddon),
         tags(
             (name = "refactor_platform", description = "Refactor Coaching & Mentorship API")
         )
     )]
 struct ApiDoc;
+
+struct SecurityAddon;
+
+// Defines our cookie session based authentication requirement for gaining access to our
+// API endpoints for OpenAPI.
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "cookie_auth",
+                SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::with_description(
+                    "id",
+                    "Session id value returned from successful login via Set-Cookie header",
+                ))),
+            )
+        }
+    }
+}
 
 use crate::controller::{organization_controller, user_session_controller};
 
@@ -38,7 +70,7 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(organization_routes(app_state))
         .merge(session_routes())
         .merge(protected_routes())
-        // FIXME: protect this endpoint
+        // FIXME: protect the OpenAPI web UI endpoint we end up choosing to go with
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .merge(Redoc::with_url("/redoc", ApiDoc::openapi()))
         // There is no need to create `RapiDoc::with_openapi` because the OpenApi is served

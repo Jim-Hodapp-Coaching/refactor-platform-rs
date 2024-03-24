@@ -25,9 +25,7 @@ pub async fn protected(auth_session: UserApi::AuthSession) -> impl IntoResponse 
     }
 }
 
-/// curl -v --header "Content-Type: application/x-www-form-urlencoded" \
-/// --data "username=james.hodapp@gmail.com&password=password1&next=organizations" \
-/// http://localhost:4000/login
+/// Logs the user into the platform and returns a new session cookie.
 ///
 /// Successful login will return a session cookie with id, e.g.:
 /// set-cookie: id=07bbbe54-bd35-425f-8e63-618a8d8612df; HttpOnly; SameSite=Strict; Path=/; Max-Age=86399
@@ -35,6 +33,19 @@ pub async fn protected(auth_session: UserApi::AuthSession) -> impl IntoResponse 
 /// After logging in successfully, you must pass the session id back to the server for
 /// every API call, e.g.:
 /// curl -v --header "Cookie: id=07bbbe54-bd35-425f-8e63-618a8d8612df" --request GET http://localhost:4000/organizations
+#[utoipa::path(
+    post,
+    path = "/login",
+    request_body(content = entity_api::user::Credentials, content_type = "application/x-www-form-urlencoded"),
+    responses(
+        (status = 200, description = "Logs in and returns session authentication cookie"),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
 pub async fn login(
     mut auth_session: UserApi::AuthSession,
     Form(creds): Form<UserApi::Credentials>,
@@ -62,6 +73,18 @@ pub async fn login(
 /// Test this with curl: curl -v \
 /// --header "Cookie: id=07bbbe54-bd35-425f-8e63-618a8d8612df" \
 /// --request GET http://localhost:4000/logout
+#[utoipa::path(
+get,
+path = "/logout",
+responses(
+    (status = 200, description = "Successfully logged out"),
+    (status = 401, description = "Unauthorized"),
+    (status = 405, description = "Method not allowed")
+),
+security(
+    ("cookie_auth" = [])
+)
+)]
 pub async fn logout(mut auth_session: UserApi::AuthSession) -> impl IntoResponse {
     debug!("UserSessionController::logout()");
     match auth_session.logout().await {

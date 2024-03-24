@@ -7,6 +7,7 @@ use password_auth::{generate_hash, verify_password};
 use sea_orm::{entity::prelude::*, prelude::Uuid, sea_query, ActiveValue, DatabaseConnection};
 use serde::Deserialize;
 use std::sync::Arc;
+use utoipa::ToSchema;
 
 use crate::user::Entity;
 
@@ -36,7 +37,8 @@ pub struct Backend {
     db: Arc<DatabaseConnection>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, ToSchema, Deserialize)]
+#[schema(as = entity_api::user::Credentials)] // OpenAPI schema
 pub struct Credentials {
     pub email: String,
     pub password: String,
