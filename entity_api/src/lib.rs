@@ -5,6 +5,7 @@ use serde_json::json;
 use entity::coaching_relationships;
 use entity::organizations;
 use entity::users;
+use log::*;
 
 pub mod coaching_relationship;
 pub mod error;
@@ -13,6 +14,9 @@ pub mod user;
 
 pub async fn seed_database(db: &DatabaseConnection) {
     let now = Utc::now();
+
+    info!("Seeding database with initial data");
+    info!("Creating Users");
 
     let jim_hodapp_params = json!({
         "email": "james.hodapp@gmail.com",
@@ -59,6 +63,8 @@ pub async fn seed_database(db: &DatabaseConnection) {
     let caleb_bourg = user::create(db, caleb_bourg_active_model).await.unwrap();
     let other_user = user::create(db, other_user_active_model).await.unwrap();
 
+    info!("Creating Organizations");
+
     let jim_hodapp_coaching_params = json!({
         "name": "Jim Hodapp's Coaching",
         "external_id": Uuid::new_v4(),
@@ -84,6 +90,8 @@ pub async fn seed_database(db: &DatabaseConnection) {
     let jim_hodapp_other_org = organization::create(db, jim_hodapp_other_org_active_model)
         .await
         .unwrap();
+
+    info!("Creating Coaching Relationships");
 
     let jim_hodapp_coaching_coaching_relationship_params = json!({
         "coach_id": jim_hodapp.id,
