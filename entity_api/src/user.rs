@@ -4,7 +4,7 @@ use axum_login::{AuthnBackend, UserId};
 use entity::users::*;
 use log::*;
 use password_auth::{generate_hash, verify_password};
-use sea_orm::{entity::prelude::*, DatabaseConnection};
+use sea_orm::{entity::prelude::*, DatabaseConnection, Set};
 use serde::Deserialize;
 use std::sync::Arc;
 
@@ -12,12 +12,16 @@ use crate::user::Entity;
 
 pub async fn create(
     db: &DatabaseConnection,
-    user_active_model: ActiveModel,
+    mut user_active_model: ActiveModel,
 ) -> Result<Model, Error> {
     debug!(
         "New User Relationship ActiveModel to be inserted: {:?}",
         user_active_model
     );
+
+    // TODO: we need to find a more robust way of doing this
+    let password_hash = generate_hash(user_active_model.password.as_ref());
+    user_active_model.password = Set(password_hash);
 
     Ok(user_active_model.insert(db).await?)
 }
