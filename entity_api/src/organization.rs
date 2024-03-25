@@ -1,21 +1,19 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::organization::Entity;
-use chrono::Utc;
 use entity::{coaching_relationships, organizations::*, prelude::Organizations, Id};
 use sea_orm::{
-    entity::prelude::*, sea_query, ActiveValue, ActiveValue::Set, ActiveValue::Unchanged,
-    DatabaseConnection, JoinType, QuerySelect, TryIntoModel,
+    entity::prelude::*, sea_query, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
+    JoinType, QuerySelect, TryIntoModel,
 };
-use serde_json::{from_str, json};
+use serde_json::from_str;
 use std::collections::HashMap;
 
 use log::*;
 
-pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Result<Model, Error> {
-    let organization_active_model: ActiveModel = ActiveModel {
-        name: Set(organization_model.name.to_owned()),
-        ..Default::default()
-    };
+pub async fn create(
+    db: &DatabaseConnection,
+    organization_active_model: ActiveModel,
+) -> Result<Model, Error> {
     debug!(
         "New Organization ActiveModel to be inserted: {:?}",
         organization_active_model
@@ -119,55 +117,6 @@ async fn by_user(query: Select<Organizations>, user_id: Id) -> Select<Organizati
                 .add(coaching_relationships::Column::CoachId.eq(user_id))
                 .add(coaching_relationships::Column::CoacheeId.eq(user_id)),
         )
-}
-
-pub(crate) async fn seed_database(db: &DatabaseConnection) {
-    let organization_names = [
-        "Jim Hodapp Coaching",
-        "Caleb Coaching",
-        "Enterprise Software",
-    ];
-    let uuid = Uuid::new_v4();
-
-    let now = Utc::now();
-
-    for name in organization_names {
-        let organization = entity::organizations::ActiveModel::from_json(json!({
-            "name": name,
-            "external_id": uuid,
-            "created_at": now,
-            "updated_at": now,
-        }))
-        .unwrap();
-
-        assert_eq!(
-            organization,
-            entity::organizations::ActiveModel {
-                id: ActiveValue::NotSet,
-                name: ActiveValue::Set(Some(name.to_owned())),
-                external_id: ActiveValue::Set(uuid),
-                logo: ActiveValue::NotSet,
-                created_at: ActiveValue::Set(now.into()),
-                updated_at: ActiveValue::Set(now.into()),
-            }
-        );
-
-        match Entity::insert(organization)
-            .on_conflict(
-                // on conflict do update
-                sea_query::OnConflict::column(Column::ExternalId)
-                    .update_column(Column::Name)
-                    .to_owned(),
-            )
-            .exec(db)
-            .await
-        {
-            Ok(_) => info!("Succeeded in seeding new organization entity."),
-            Err(e) => {
-                error!("Failed to insert or update organization entity when seeding user data: {e}")
-            }
-        };
-    }
 }
 
 #[cfg(test)]

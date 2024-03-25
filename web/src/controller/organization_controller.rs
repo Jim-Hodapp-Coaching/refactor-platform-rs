@@ -5,6 +5,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use entity::{organizations, Id};
 use entity_api::organization as OrganizationApi;
+use sea_orm::IntoActiveModel;
 use serde_json::json;
 use std::collections::HashMap;
 
@@ -59,8 +60,11 @@ impl OrganizationController {
     ) -> Result<impl IntoResponse, Error> {
         debug!("CREATE new Organization: {:?}", organization_model.name);
 
-        let organization: organizations::Model =
-            OrganizationApi::create(app_state.db_conn_ref(), organization_model).await?;
+        let organization: organizations::Model = OrganizationApi::create(
+            app_state.db_conn_ref(),
+            organization_model.into_active_model(),
+        )
+        .await?;
 
         debug!("Newly Created Organization: {:?}", &organization);
 

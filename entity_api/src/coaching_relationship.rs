@@ -1,22 +1,26 @@
 use super::error::Error;
-use entity::{coaching_relationships, coaching_relationships::Model, Id};
-use sea_orm::{ActiveValue::Set, entity::prelude::*, Condition, DatabaseConnection};
+use entity::{
+    coaching_relationships,
+    coaching_relationships::{ActiveModel, Model},
+    Id,
+};
+use sea_orm::{entity::prelude::*, Condition, DatabaseConnection};
 
-pub async fn create(db: &DatabaseConnection, coach_id: Id, coachee_id: Id, organization_id: Id) ->  Result<Model, Error> {
-    let coaching_relationship = coaching_relationships::ActiveModel {
-        coach_id: Set(coach_id),
-        coachee_id: Set(coachee_id),
-        organization_id: Set(organization_id),
-        ..Default::default()
-    };
+use log::*;
 
-    Ok(coaching_relationship.insert(db).await?)
+pub async fn create(
+    db: &DatabaseConnection,
+    coaching_relationship_active_model: ActiveModel,
+) -> Result<Model, Error> {
+    debug!(
+        "New Coaching Relationship ActiveModel to be inserted: {:?}",
+        coaching_relationship_active_model
+    );
+
+    Ok(coaching_relationship_active_model.insert(db).await?)
 }
 
-pub async fn find_by_user(
-    db: &DatabaseConnection,
-    user_id: Id,
-) -> Result<Vec<Model>, Error> {
+pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Model>, Error> {
     let coaching_relationships: Vec<coaching_relationships::Model> =
         coaching_relationships::Entity::find()
             .filter(
