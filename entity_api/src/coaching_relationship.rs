@@ -1,21 +1,34 @@
 use super::error::Error;
+use chrono::Utc;
 use entity::{
     coaching_relationships,
     coaching_relationships::{ActiveModel, Model},
     Id,
 };
-use sea_orm::{entity::prelude::*, Condition, DatabaseConnection};
+use sea_orm::{entity::prelude::*, Condition, DatabaseConnection, Set};
 
 use log::*;
 
 pub async fn create(
     db: &DatabaseConnection,
-    coaching_relationship_active_model: ActiveModel,
+    coaching_relationship_model: Model,
 ) -> Result<Model, Error> {
     debug!(
-        "New Coaching Relationship ActiveModel to be inserted: {:?}",
-        coaching_relationship_active_model
+        "New Coaching Relationship Model to be inserted: {:?}",
+        coaching_relationship_model
     );
+
+    let now = Utc::now();
+
+    let coaching_relationship_active_model: ActiveModel = ActiveModel {
+        external_id: Set(Uuid::new_v4()),
+        organization_id: Set(coaching_relationship_model.organization_id),
+        coach_id: Set(coaching_relationship_model.coach_id),
+        coachee_id: Set(coaching_relationship_model.coachee_id),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    };
 
     Ok(coaching_relationship_active_model.insert(db).await?)
 }

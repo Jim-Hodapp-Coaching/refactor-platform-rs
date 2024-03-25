@@ -1,5 +1,6 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::organization::Entity;
+use chrono::Utc;
 use entity::{coaching_relationships, organizations::*, prelude::Organizations, Id};
 use sea_orm::{
     entity::prelude::*, sea_query, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
@@ -10,14 +11,22 @@ use std::collections::HashMap;
 
 use log::*;
 
-pub async fn create(
-    db: &DatabaseConnection,
-    organization_active_model: ActiveModel,
-) -> Result<Model, Error> {
+pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Result<Model, Error> {
     debug!(
-        "New Organization ActiveModel to be inserted: {:?}",
-        organization_active_model
+        "New Organization Model to be inserted: {:?}",
+        organization_model
     );
+
+    let now = Utc::now();
+
+    let organization_active_model: ActiveModel = ActiveModel {
+        external_id: Set(Uuid::new_v4()),
+        logo: Set(organization_model.logo),
+        name: Set(organization_model.name),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    };
 
     Ok(organization_active_model.insert(db).await?)
 }

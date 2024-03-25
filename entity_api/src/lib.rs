@@ -1,5 +1,5 @@
 use chrono::Utc;
-use sea_orm::{prelude::Uuid, ActiveModelTrait, DatabaseConnection};
+use sea_orm::{prelude::Uuid, ActiveModelTrait, DatabaseConnection, TryIntoModel};
 use serde_json::json;
 
 use entity::coaching_relationships;
@@ -55,13 +55,22 @@ pub async fn seed_database(db: &DatabaseConnection) {
         "updated_at": now,
     });
 
-    let jim_hodapp_active_model = users::ActiveModel::from_json(jim_hodapp_params).unwrap();
-    let caleb_bourg_active_model = users::ActiveModel::from_json(caleb_bourg_params).unwrap();
-    let other_user_active_model = users::ActiveModel::from_json(other_user_params).unwrap();
+    let jim_hodapp_model = users::ActiveModel::from_json(jim_hodapp_params)
+        .unwrap()
+        .try_into_model()
+        .unwrap();
+    let caleb_bourg_model = users::ActiveModel::from_json(caleb_bourg_params)
+        .unwrap()
+        .try_into_model()
+        .unwrap();
+    let other_user_model = users::ActiveModel::from_json(other_user_params)
+        .unwrap()
+        .try_into_model()
+        .unwrap();
 
-    let jim_hodapp = user::create(db, jim_hodapp_active_model).await.unwrap();
-    let caleb_bourg = user::create(db, caleb_bourg_active_model).await.unwrap();
-    let other_user = user::create(db, other_user_active_model).await.unwrap();
+    let jim_hodapp = user::create(db, jim_hodapp_model).await.unwrap();
+    let caleb_bourg = user::create(db, caleb_bourg_model).await.unwrap();
+    let other_user = user::create(db, other_user_model).await.unwrap();
 
     info!("Creating Organizations");
 
@@ -79,15 +88,21 @@ pub async fn seed_database(db: &DatabaseConnection) {
         "updated_at": now,
     });
 
-    let jim_hodapp_coaching_active_model =
-        organizations::ActiveModel::from_json(jim_hodapp_coaching_params).unwrap();
-    let jim_hodapp_other_org_active_model =
-        organizations::ActiveModel::from_json(jim_hodapp_other_org_params).unwrap();
+    let jim_hodapp_coaching_model =
+        organizations::ActiveModel::from_json(jim_hodapp_coaching_params)
+            .unwrap()
+            .try_into_model()
+            .unwrap();
+    let jim_hodapp_other_org_model =
+        organizations::ActiveModel::from_json(jim_hodapp_other_org_params)
+            .unwrap()
+            .try_into_model()
+            .unwrap();
 
-    let jim_hodapp_coaching = organization::create(db, jim_hodapp_coaching_active_model)
+    let jim_hodapp_coaching = organization::create(db, jim_hodapp_coaching_model)
         .await
         .unwrap();
-    let jim_hodapp_other_org = organization::create(db, jim_hodapp_other_org_active_model)
+    let jim_hodapp_other_org = organization::create(db, jim_hodapp_other_org_model)
         .await
         .unwrap();
 
@@ -111,21 +126,29 @@ pub async fn seed_database(db: &DatabaseConnection) {
         "updated_at": now,
     });
 
-    let jim_hodapp_coaching_coaching_relationship_active_model =
+    let jim_hodapp_coaching_coaching_relationship_model =
         coaching_relationships::ActiveModel::from_json(
             jim_hodapp_coaching_coaching_relationship_params,
         )
+        .unwrap()
+        .try_into_model()
         .unwrap();
-    let jim_hodapp_other_org_coaching_relationship_active_model =
+    let jim_hodapp_other_org_coaching_relationship_model =
         coaching_relationships::ActiveModel::from_json(
             jim_hodapp_other_org_coaching_relationship_params,
         )
+        .unwrap()
+        .try_into_model()
         .unwrap();
 
-    coaching_relationship::create(db, jim_hodapp_coaching_coaching_relationship_active_model)
+    coaching_relationship::create(db, jim_hodapp_coaching_coaching_relationship_model)
         .await
+        .unwrap()
+        .try_into_model()
         .unwrap();
-    coaching_relationship::create(db, jim_hodapp_other_org_coaching_relationship_active_model)
+    coaching_relationship::create(db, jim_hodapp_other_org_coaching_relationship_model)
         .await
+        .unwrap()
+        .try_into_model()
         .unwrap();
 }

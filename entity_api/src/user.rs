@@ -1,6 +1,7 @@
 use super::error::{EntityApiErrorCode, Error};
 use async_trait::async_trait;
 use axum_login::{AuthnBackend, UserId};
+use chrono::Utc;
 use entity::users::*;
 use log::*;
 use password_auth::{generate_hash, verify_password};
@@ -10,18 +11,27 @@ use std::sync::Arc;
 
 use crate::user::Entity;
 
-pub async fn create(
-    db: &DatabaseConnection,
-    mut user_active_model: ActiveModel,
-) -> Result<Model, Error> {
+pub async fn create(db: &DatabaseConnection, user_model: Model) -> Result<Model, Error> {
     debug!(
-        "New User Relationship ActiveModel to be inserted: {:?}",
-        user_active_model
+        "New User Relationship Model to be inserted: {:?}",
+        user_model
     );
 
-    // TODO: we need to find a more robust way of doing this
-    let password_hash = generate_hash(user_active_model.password.as_ref());
-    user_active_model.password = Set(password_hash);
+    let now = Utc::now();
+
+    let user_active_model: ActiveModel = ActiveModel {
+        external_id: Set(Uuid::new_v4()),
+        email: Set(user_model.email),
+        first_name: Set(user_model.first_name),
+        last_name: Set(user_model.last_name),
+        display_name: Set(user_model.display_name),
+        password: Set(generate_hash(user_model.password)),
+        github_username: Set(user_model.github_username),
+        github_profile_url: Set(user_model.github_profile_url),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    };
 
     Ok(user_active_model.insert(db).await?)
 }
