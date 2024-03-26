@@ -11,10 +11,10 @@ type RejectionType = (StatusCode, &'static str);
 
 pub static X_VERSION: &str = "x-version";
 
-pub struct CheckApiVersion(pub HeaderValue);
+pub struct CompareApiVersion(pub HeaderValue);
 
 #[async_trait]
-impl<S> FromRequestParts<S> for CheckApiVersion
+impl<S> FromRequestParts<S> for CompareApiVersion
 where
     AppState: FromRef<S>,
     S: Send + Sync,
@@ -56,9 +56,9 @@ fn get_x_version(parts: &mut Parts) -> Result<HeaderValue, RejectionType> {
 fn is_current_api_version(
     version: HeaderValue,
     api_version: HeaderValue,
-) -> Result<CheckApiVersion, RejectionType> {
+) -> Result<CompareApiVersion, RejectionType> {
     if version == api_version {
-        Ok(CheckApiVersion(version))
+        Ok(CompareApiVersion(version))
     } else {
         Err((
             StatusCode::BAD_REQUEST,
