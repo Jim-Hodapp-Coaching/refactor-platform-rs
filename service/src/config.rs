@@ -2,9 +2,22 @@ use clap::builder::TypedValueParser as _;
 use clap::Parser;
 use log::LevelFilter;
 
+pub const DEFAULT_API_VERSION: &str = "0.0.1";
+// Expand this array to include all valid API versions. Versions that have been
+// completely removed should be removed from this list - they're no longer valid.
+pub const API_VERSIONS: [&str; 1] = [DEFAULT_API_VERSION];
+
 #[derive(Clone, Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Config {
+    /// Set the current semantic version of the endpoint API to expose to clients. All
+    /// endpoints not contained in the specified version will not be exposed by the router.
+    #[arg(short, long, env, default_value = DEFAULT_API_VERSION,
+        value_parser = clap::builder::PossibleValuesParser::new(API_VERSIONS)
+            .map(|s| s.parse::<String>().unwrap()),
+        )]
+    pub api_version: Option<String>,
+
     /// Sets the Postgresql database URI to connect to
     #[arg(
         short,
@@ -42,6 +55,12 @@ impl Default for Config {
 impl Config {
     pub fn new() -> Self {
         Config::parse()
+    }
+
+    pub fn api_version(&self) -> &str {
+        self.api_version
+            .as_ref()
+            .expect("No API version string provided")
     }
 
     pub fn set_database_uri(mut self, database_uri: String) -> Self {
