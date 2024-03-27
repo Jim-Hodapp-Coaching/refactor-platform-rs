@@ -1,4 +1,7 @@
-use crate::extractors::compare_api_version::CompareApiVersion;
+use crate::extractors::{
+    compare_api_version::CompareApiVersion,
+    authenticated_user::AuthenticatedUser,
+};
 use crate::{AppState, Error};
 use axum::extract::{Path, Query, State};
 use axum::response::IntoResponse;
@@ -19,6 +22,9 @@ impl OrganizationController {
     /// http://localhost:4000/organizations
     pub async fn index(
         CompareApiVersion(_v): CompareApiVersion,
+        AuthenticatedUser(_user): AuthenticatedUser,
+        // TODO: create a new Extractor to authorize the user to access
+        // the data requested
         State(app_state): State<AppState>,
         Query(params): Query<HashMap<String, String>>,
     ) -> Result<impl IntoResponse, Error> {

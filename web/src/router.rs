@@ -56,7 +56,7 @@ pub fn static_routes() -> Router {
 // see https://github.com/SeaQL/sea-orm/issues/830
 #[cfg(feature = "mock")]
 mod organization_endpoints_tests {
-    use crate::custom_extractors::X_VERSION;
+    use crate::extractors::compare_api_version::X_VERSION;
 
     use super::*;
     use anyhow::Ok;
