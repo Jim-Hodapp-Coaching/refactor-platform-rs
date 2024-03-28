@@ -1,3 +1,4 @@
+use crate::extractors::RejectionType;
 use crate::AppState;
 use axum::{
     async_trait,
@@ -6,8 +7,6 @@ use axum::{
 };
 use log::*;
 use service::config::DEFAULT_API_VERSION;
-
-type RejectionType = (StatusCode, &'static str);
 
 pub static X_VERSION: &str = "x-version";
 

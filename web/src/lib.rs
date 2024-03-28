@@ -15,8 +15,8 @@ use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
 
 mod controller;
-mod custom_extractors;
 mod error;
+pub(crate) mod extractors;
 mod router;
 
 pub async fn init_server(app_state: AppState) -> Result<()> {

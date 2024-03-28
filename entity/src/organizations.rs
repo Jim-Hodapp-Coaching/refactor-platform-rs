@@ -11,7 +11,7 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(unique)]
     pub external_id: Uuid,
-    pub name: Option<String>,
+    pub name: String,
     pub logo: Option<String>,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
