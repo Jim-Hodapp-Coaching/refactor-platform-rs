@@ -38,8 +38,6 @@ async fn main() {
 
     let app_state = AppState::new(config, &db);
 
-    entity_api::seed_database(app_state.db_conn_ref()).await;
-
     web::init_server(app_state).await.unwrap();
 }
 

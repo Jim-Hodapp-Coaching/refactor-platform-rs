@@ -1,6 +1,5 @@
 use crate::extractors::{
-    compare_api_version::CompareApiVersion,
-    authenticated_user::AuthenticatedUser,
+    authenticated_user::AuthenticatedUser, compare_api_version::CompareApiVersion,
 };
 use crate::{AppState, Error};
 use axum::extract::{Path, Query, State};
