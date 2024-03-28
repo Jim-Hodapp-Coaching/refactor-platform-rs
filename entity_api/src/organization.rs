@@ -144,7 +144,7 @@ mod tests {
         let organizations = vec![vec![
             organizations::Model {
                 id: 1,
-                name: Some("Organization One".to_owned()),
+                name: "Organization One".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
@@ -152,7 +152,7 @@ mod tests {
             },
             organizations::Model {
                 id: 2,
-                name: Some("Organization One".to_owned()),
+                name: "Organization One".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,

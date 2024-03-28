@@ -209,7 +209,7 @@ mod organization_endpoints_tests {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let organization = organizations::Model {
             id: 1,
-            name: Some("Organization One".to_owned()),
+            name: "Organization One".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -267,7 +267,7 @@ mod organization_endpoints_tests {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let organization1 = organizations::Model {
             id: 1,
-            name: Some("Organization One".to_owned()),
+            name: "Organization One".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -275,7 +275,7 @@ mod organization_endpoints_tests {
         };
         let organization2 = organizations::Model {
             id: 2,
-            name: Some("Organization Two".to_owned()),
+            name: "Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -283,7 +283,7 @@ mod organization_endpoints_tests {
         };
         let organization3 = organizations::Model {
             id: 3,
-            name: Some("Organization Three".to_owned()),
+            name: "Organization Three".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -344,7 +344,7 @@ mod organization_endpoints_tests {
 
         let organization_results1 = [vec![organizations::Model {
             id: 2,
-            name: Some("Organization Two".to_owned()),
+            name: "Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -352,7 +352,7 @@ mod organization_endpoints_tests {
         }]];
         let organization_results2 = [vec![organizations::Model {
             id: 3,
-            name: Some("Organization Three".to_owned()),
+            name: "Organization Three".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -446,7 +446,7 @@ mod organization_endpoints_tests {
 
         let organization_results1 = [vec![organizations::Model {
             id: 5,
-            name: Some("New Organization Five".to_owned()),
+            name: "New Organization Five".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -455,7 +455,7 @@ mod organization_endpoints_tests {
 
         let organization_results2 = [vec![organizations::Model {
             id: 6,
-            name: Some("Second Organization Six".to_owned()),
+            name: "Second Organization Six".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -547,7 +547,7 @@ mod organization_endpoints_tests {
         let organizations = [
             vec![organizations::Model {
                 id: 2,
-                name: Some("Organization Two".to_owned()),
+                name: "Organization Two".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
@@ -555,7 +555,7 @@ mod organization_endpoints_tests {
             }],
             vec![organizations::Model {
                 id: 2,
-                name: Some("Updated Organization Two".to_owned()),
+                name: "Updated Organization Two".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
@@ -588,7 +588,7 @@ mod organization_endpoints_tests {
 
         let updated_organization2 = organizations::Model {
             id: 2,
-            name: Some("Updated Organization Two".to_owned()),
+            name: "Updated Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
