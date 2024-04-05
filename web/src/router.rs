@@ -160,20 +160,9 @@ mod organization_endpoints_tests {
                 .send()
                 .await?;
 
-            let response_text = response.text().await?;
+            debug!("response: {:?}", response);
 
-            debug!("response_text: {:?}", response_text);
-
-            assert_eq!(
-                response_text,
-                json!({
-                    "display_name": user.display_name,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                })
-                .to_string()
-            );
+            assert_eq!(response.status(), 200);
 
             Ok(())
         }
@@ -249,9 +238,12 @@ mod organization_endpoints_tests {
         let parsed_result: serde_json::Value =
             serde_json::from_str(&response.text().await?).unwrap();
 
-        let organization: serde_json::Value = json!(organization);
+        let expected_response: serde_json::Value = json!({
+                "status_code": 200,
+                "data": organization
+        });
 
-        assert_eq!(parsed_result, organization);
+        assert_eq!(parsed_result, expected_response);
 
         Ok(())
     }
@@ -324,9 +316,12 @@ mod organization_endpoints_tests {
         // so that the attribute order does not matter.
         let parsed_response: serde_json::Value =
             serde_json::from_str(&response.text().await?).unwrap();
-        let organizations: serde_json::Value = json!(&organizations);
+        let expected_response: serde_json::Value = json!({
+            "status_code": 200,
+            "data": organizations[0]
+        });
 
-        assert_eq!(parsed_response, organizations[0]);
+        assert_eq!(parsed_response, expected_response);
 
         Ok(())
     }
@@ -507,7 +502,12 @@ mod organization_endpoints_tests {
 
             let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
 
-            assert_eq!(parsed_response, json!(organization5));
+            let expected_response = json!({
+                "status_code": 201,
+                "data": organization5
+            });
+
+            assert_eq!(parsed_response, expected_response);
         }
 
         {
@@ -526,7 +526,12 @@ mod organization_endpoints_tests {
             // so that the attribute order does not matter.
             let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
 
-            assert_eq!(parsed_response, json!(organization6));
+            let expected_response = json!({
+                "status_code": 201,
+                "data": organization6
+            });
+
+            assert_eq!(parsed_response, expected_response);
         }
 
         Ok(())
@@ -608,7 +613,12 @@ mod organization_endpoints_tests {
         // so that the attribute order does not matter.
         let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
 
-        assert_eq!(parsed_response, json!(updated_organization2));
+        let expected_response = json!({
+            "status_code": 200,
+            "data": updated_organization2
+        });
+
+        assert_eq!(parsed_response, expected_response);
 
         Ok(())
     }

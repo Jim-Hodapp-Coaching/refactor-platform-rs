@@ -1,8 +1,10 @@
+use crate::controller::ApiResponse;
 use crate::extractors::{
     authenticated_user::AuthenticatedUser, compare_api_version::CompareApiVersion,
 };
 use crate::{AppState, Error};
 use axum::extract::{Path, Query, State};
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use entity::{organizations, Id};
@@ -32,7 +34,10 @@ impl OrganizationController {
 
         debug!("Found Organizations: {:?}", organizations);
 
-        Ok(Json(organizations))
+        Ok(Json(ApiResponse::new(
+            StatusCode::OK.as_u16(),
+            organizations,
+        )))
     }
 
     /// GET a particular Organization entity specified by its primary key
@@ -49,7 +54,7 @@ impl OrganizationController {
         let organization: Option<organizations::Model> =
             OrganizationApi::find_by_id(app_state.db_conn_ref(), id).await?;
 
-        Ok(Json(organization))
+        Ok(Json(ApiResponse::new(StatusCode::OK.into(), organization)))
     }
 
     /// CREATE a new Organization entity
@@ -69,7 +74,10 @@ impl OrganizationController {
 
         debug!("Newly Created Organization: {:?}", &organization);
 
-        Ok(Json(organization))
+        Ok(Json(ApiResponse::new(
+            StatusCode::CREATED.into(),
+            organization,
+        )))
     }
 
     /// UPDATE a particular Organization entity specified by its primary key
@@ -90,7 +98,10 @@ impl OrganizationController {
         let updated_organization: organizations::Model =
             OrganizationApi::update(app_state.db_conn_ref(), id, organization_model).await?;
 
-        Ok(Json(updated_organization))
+        Ok(Json(ApiResponse::new(
+            StatusCode::OK.into(),
+            updated_organization,
+        )))
     }
 
     /// DELETE an Organization entity specified by its primary key
