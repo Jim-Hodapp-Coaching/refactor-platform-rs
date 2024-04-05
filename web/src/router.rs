@@ -8,15 +8,28 @@ use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
 use crate::controller::{
-    organization_controller::OrganizationController, user_session_controller::UserSessionController,
+    coaching_relationships_controller::CoachingRelationshipsController,
+    organization_controller::OrganizationController,
+    user_session_controller::UserSessionController,
 };
 
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
-        .merge(organization_routes(app_state))
+        .merge(organization_routes(app_state.clone()))
+        .merge(coaching_relationship_routes(app_state.clone()))
         .merge(session_routes())
         .merge(protected_routes())
         .fallback_service(static_routes())
+}
+
+fn coaching_relationship_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route(
+            "/coaching_relationships",
+            get(CoachingRelationshipsController::index),
+        )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
 }
 
 pub fn organization_routes(app_state: AppState) -> Router {

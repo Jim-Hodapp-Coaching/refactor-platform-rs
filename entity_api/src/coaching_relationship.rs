@@ -1,4 +1,4 @@
-use super::error::Error;
+use super::error::{EntityApiErrorCode, Error};
 use chrono::Utc;
 use entity::{
     coaching_relationships,
@@ -6,6 +6,7 @@ use entity::{
     Id,
 };
 use sea_orm::{entity::prelude::*, Condition, DatabaseConnection, Set};
+use serde_json::from_str;
 
 use log::*;
 
@@ -45,6 +46,36 @@ pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Mo
             .await?;
 
     Ok(coaching_relationships)
+}
+
+pub async fn find_by(
+    db: &DatabaseConnection,
+    params: std::collections::HashMap<String, String>,
+) -> Result<Vec<Model>, Error> {
+    let mut query = coaching_relationships::Entity::find();
+
+    for (key, value) in params.iter() {
+        match key.as_str() {
+            "organization_id" => {
+                query = by_organization(query, from_str::<Id>(&value).unwrap()).await;
+            }
+            _ => {
+                return Err(Error {
+                    inner: None,
+                    error_code: EntityApiErrorCode::InvalidQueryTerm,
+                });
+            }
+        }
+    }
+
+    Ok(query.all(db).await?)
+}
+
+async fn by_organization(
+    query: Select<coaching_relationships::Entity>,
+    organization_id: Id,
+) -> Select<coaching_relationships::Entity> {
+    query.filter(coaching_relationships::Column::OrganizationId.eq(organization_id))
 }
 
 #[cfg(test)]
