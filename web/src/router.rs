@@ -117,8 +117,6 @@ pub fn static_routes() -> Router {
 // see https://github.com/SeaQL/sea-orm/issues/830
 #[cfg(feature = "mock")]
 mod organization_endpoints_tests {
-    use crate::custom_extractors::X_VERSION;
-
     use super::*;
     use anyhow::Ok;
     use axum_login::{
@@ -130,13 +128,13 @@ mod organization_endpoints_tests {
     use entity_api::user::Backend;
     use log::{debug, LevelFilter};
     use password_auth::generate_hash;
-    use reqwest::{header, Url};
+    use reqwest::{header, header::HeaderValue, Url};
     use sea_orm::{
         prelude::Uuid, DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult,
     };
     use serde_json::json;
     use service::{
-        config::{Config, DEFAULT_API_VERSION},
+        config::{ApiVersion, Config},
         logging::Logger,
     };
     use std::{net::SocketAddr, sync::Arc, sync::Once};
@@ -189,7 +187,10 @@ mod organization_endpoints_tests {
             let mut headers = header::HeaderMap::new();
             // Note: we don't actually need to manually set the server's current AppState.config.api_version
             // since CLAP sets the default value which will always be equal to DEFAULT_API_VERSION.
-            headers.insert(X_VERSION, DEFAULT_API_VERSION.parse().unwrap());
+            headers.insert(
+                ApiVersion::field_name(),
+                HeaderValue::from_static(ApiVersion::default_version()),
+            );
             let client = reqwest::Client::builder()
                 .cookie_store(true)
                 .default_headers(headers)
