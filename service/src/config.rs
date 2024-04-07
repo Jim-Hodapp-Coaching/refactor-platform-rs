@@ -1,11 +1,25 @@
 use clap::builder::TypedValueParser as _;
 use clap::Parser;
 use log::LevelFilter;
+use serde::Deserialize;
+use utoipa::IntoParams;
 
-pub const DEFAULT_API_VERSION: &str = "0.0.1";
+type APiVersionList = [&'static str; 1];
+
+const DEFAULT_API_VERSION: &str = "0.0.1";
 // Expand this array to include all valid API versions. Versions that have been
 // completely removed should be removed from this list - they're no longer valid.
-pub const API_VERSIONS: [&str; 1] = [DEFAULT_API_VERSION];
+const API_VERSIONS: APiVersionList = [DEFAULT_API_VERSION];
+
+static X_VERSION: &str = "x-version";
+
+#[derive(Deserialize, IntoParams)]
+#[into_params(parameter_in = Header)]
+pub struct ApiVersion {
+    /// The version of the API to use for a request.
+    #[param(rename = "x-version", style = Simple, required, example = "0.0.1")]
+    pub version: &'static str,
+}
 
 #[derive(Clone, Debug, Parser)]
 #[command(author, version, about, long_about = None)]
@@ -72,5 +86,37 @@ impl Config {
         self.database_uri
             .as_ref()
             .expect("No Database URI Provided")
+    }
+}
+
+impl ApiVersion {
+    pub fn new(version_str: &'static str) -> Self {
+        ApiVersion {
+            version: version_str,
+        }
+    }
+
+    pub fn default_version() -> &'static str {
+        DEFAULT_API_VERSION
+    }
+
+    pub fn field_name() -> &'static str {
+        X_VERSION
+    }
+
+    pub fn versions() -> APiVersionList {
+        API_VERSIONS
+    }
+
+    pub fn as_str(&self) -> &str {
+        self.version
+    }
+}
+
+impl Default for ApiVersion {
+    fn default() -> Self {
+        ApiVersion {
+            version: DEFAULT_API_VERSION,
+        }
     }
 }

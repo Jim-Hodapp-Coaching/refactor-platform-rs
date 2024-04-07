@@ -5,22 +5,26 @@ use axum::Json;
 use entity::{organizations, Id};
 use entity_api::organization as OrganizationApi;
 use serde_json::json;
+use service::config::ApiVersion;
 
 use log::*;
 
 /// GET all Organizations.
 #[utoipa::path(
-        get,
-        path = "/organizations",
-        responses(
-            (status = 200, description = "Successfully retrieved all Organizations", body = [entity::organizations::Model]),
-            (status = 401, description = "Unauthorized"),
-            (status = 405, description = "Method not allowed")
-        ),
-        security(
-            ("cookie_auth" = [])
-        )
-    )]
+    get,
+    path = "/organizations",
+    params(
+        ApiVersion,
+    ),
+    responses(
+        (status = 200, description = "Successfully retrieved all Organizations", body = [entity::organizations::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
 pub async fn index(
     CompareApiVersion(_v): CompareApiVersion,
     State(app_state): State<AppState>,
@@ -38,6 +42,7 @@ pub async fn index(
     get,
     path = "/organizations/{id}",
     params(
+        ApiVersion,
         ("id" = i32, Path, description = "Organization id to retrieve")
     ),
     responses(
@@ -67,6 +72,9 @@ pub async fn read(
 #[utoipa::path(
     post,
     path = "/organizations",
+    params(
+        ApiVersion,
+    ),
     request_body = entity::organizations::Model,
     responses(
         (status = 200, description = "Successfully created a new Organization", body = [entity::organizations::Model]),
@@ -97,6 +105,7 @@ pub async fn create(
     put,
     path = "/organizations/{id}",
     params(
+        ApiVersion,
         ("id" = i32, Path, description = "Organization id to update")
     ),
     request_body = entity::organizations::Model,
@@ -132,6 +141,7 @@ pub async fn update(
     delete,
     path = "/organizations/{id}",
     params(
+        ApiVersion,
         ("id" = i32, Path, description = "Organization id to update")
     ),
     responses(

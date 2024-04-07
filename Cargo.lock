@@ -2905,11 +2905,13 @@ dependencies = [
  "clap",
  "log",
  "sea-orm",
+ "serde",
  "serde_json",
  "simplelog",
  "sqlx",
  "tokio",
  "tower",
+ "utoipa",
 ]
 
 [[package]]
