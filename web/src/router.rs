@@ -12,7 +12,6 @@ use utoipa::{
     Modify, OpenApi,
 };
 use utoipa_rapidoc::RapiDoc;
-use utoipa_swagger_ui::SwaggerUi;
 
 // This is the global definition of our OpenAPI spec. To be a part
 // of the rendered spec, a path and schema must be listed here.
@@ -69,8 +68,7 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(organization_routes(app_state))
         .merge(session_routes())
         .merge(protected_routes())
-        // FIXME: protect the OpenAPI web UI endpoint we end up choosing to go with
-        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        // FIXME: protect the OpenAPI web UI
         // There is no need to create `RapiDoc::with_openapi` because the OpenApi is served
         // via SwaggerUi instead we only make rapidoc to point to the existing doc.
         .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
