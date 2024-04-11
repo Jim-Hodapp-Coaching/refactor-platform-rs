@@ -3,6 +3,7 @@ use clap::Parser;
 use log::LevelFilter;
 use semver::{BuildMetadata, Prerelease, Version};
 use serde::Deserialize;
+use std::fmt;
 use utoipa::IntoParams;
 
 type APiVersionList = [&'static str; 1];
@@ -114,10 +115,6 @@ impl ApiVersion {
     pub fn versions() -> APiVersionList {
         API_VERSIONS
     }
-
-    pub fn to_string(&self) -> String {
-        self.version.to_string()
-    }
 }
 
 impl Default for ApiVersion {
@@ -131,5 +128,11 @@ impl Default for ApiVersion {
                 build: BuildMetadata::EMPTY,
             }),
         }
+    }
+}
+
+impl fmt::Display for ApiVersion {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.version)
     }
 }
