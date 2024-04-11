@@ -1,6 +1,7 @@
 use clap::builder::TypedValueParser as _;
 use clap::Parser;
 use log::LevelFilter;
+use semver::{BuildMetadata, Prerelease, Version};
 use serde::Deserialize;
 use utoipa::IntoParams;
 
@@ -18,7 +19,7 @@ static X_VERSION: &str = "x-version";
 pub struct ApiVersion {
     /// The version of the API to use for a request.
     #[param(rename = "x-version", style = Simple, required, example = "0.0.1")]
-    pub version: &'static str,
+    pub version: Version,
 }
 
 #[derive(Clone, Debug, Parser)]
@@ -92,7 +93,13 @@ impl Config {
 impl ApiVersion {
     pub fn new(version_str: &'static str) -> Self {
         ApiVersion {
-            version: version_str,
+            version: Version::parse(version_str).unwrap_or(Version {
+                major: 0,
+                minor: 0,
+                patch: 1,
+                pre: Prerelease::EMPTY,
+                build: BuildMetadata::EMPTY,
+            }),
         }
     }
 
@@ -108,15 +115,21 @@ impl ApiVersion {
         API_VERSIONS
     }
 
-    pub fn as_str(&self) -> &str {
-        self.version
+    pub fn to_string(&self) -> String {
+        self.version.to_string()
     }
 }
 
 impl Default for ApiVersion {
     fn default() -> Self {
         ApiVersion {
-            version: DEFAULT_API_VERSION,
+            version: Version::parse(DEFAULT_API_VERSION).unwrap_or(Version {
+                major: 0,
+                minor: 0,
+                patch: 1,
+                pre: Prerelease::EMPTY,
+                build: BuildMetadata::EMPTY,
+            }),
         }
     }
 }
