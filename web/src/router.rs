@@ -8,10 +8,62 @@ use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
 use crate::controller::{
-    coaching_relationships_controller::CoachingRelationshipsController,
-    organization_controller::OrganizationController,
-    user_session_controller::UserSessionController,
+    coaching_relationship_controller, organization_controller, user_session_controller,
 };
+
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
+use utoipa_rapidoc::RapiDoc;
+
+// This is the global definition of our OpenAPI spec. To be a part
+// of the rendered spec, a path and schema must be listed here.
+#[derive(OpenApi)]
+#[openapi(
+        info(
+            title = "Refactor Platform API"
+        ),
+        paths(
+            organization_controller::index,
+            organization_controller::read,
+            organization_controller::create,
+            organization_controller::update,
+            organization_controller::delete,
+            user_session_controller::login,
+            user_session_controller::logout,
+        ),
+        components(
+            schemas(
+                entity::organizations::Model,
+                entity::users::Model,
+                entity_api::user::Credentials,
+            )
+        ),
+        modifiers(&SecurityAddon),
+        tags(
+            (name = "refactor_platform", description = "Refactor Coaching & Mentorship API")
+        )
+    )]
+struct ApiDoc;
+
+struct SecurityAddon;
+
+// Defines our cookie session based authentication requirement for gaining access to our
+// API endpoints for OpenAPI.
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "cookie_auth",
+                SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::with_description(
+                    "id",
+                    "Session id value returned from successful login via Set-Cookie header",
+                ))),
+            )
+        }
+    }
+}
 
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
@@ -19,6 +71,8 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(coaching_relationship_routes(app_state.clone()))
         .merge(session_routes())
         .merge(protected_routes())
+        // FIXME: protect the OpenAPI web UI
+        .merge(RapiDoc::with_openapi("/api-docs/openapi2.json", ApiDoc::openapi()).path("/rapidoc"))
         .fallback_service(static_routes())
 }
 
@@ -26,7 +80,7 @@ fn coaching_relationship_routes(app_state: AppState) -> Router {
     Router::new()
         .route(
             "/coaching_relationships",
-            get(CoachingRelationshipsController::index),
+            get(coaching_relationship_controller::index),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
@@ -38,24 +92,27 @@ pub fn organization_routes(app_state: AppState) -> Router {
         // versioning: https://www.codemzy.com/blog/nodejs-api-versioning
         // except we can use axum-extras `or` like is show here:
         // https://gist.github.com/davidpdrsn/eb4e703e7e068ece3efd975b8f6bc340#file-content_type_or-rs-L17
-        .route("/organizations", get(OrganizationController::index))
-        .route("/organizations/:id", get(OrganizationController::read))
-        .route("/organizations", post(OrganizationController::create))
-        .route("/organizations/:id", put(OrganizationController::update))
-        .route("/organizations/:id", delete(OrganizationController::delete))
+        .route("/organizations", get(organization_controller::index))
+        .route("/organizations/:id", get(organization_controller::read))
+        .route("/organizations", post(organization_controller::create))
+        .route("/organizations/:id", put(organization_controller::update))
+        .route(
+            "/organizations/:id",
+            delete(organization_controller::delete),
+        )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
 
 pub fn protected_routes() -> Router {
     Router::new()
-        .route("/protected", get(UserSessionController::protected))
-        .route("/logout", get(UserSessionController::logout))
+        .route("/protected", get(user_session_controller::protected))
+        .route("/logout", get(user_session_controller::logout))
         .route_layer(login_required!(Backend, login_url = "/login"))
 }
 
 pub fn session_routes() -> Router {
-    Router::new().route("/login", post(UserSessionController::login))
+    Router::new().route("/login", post(user_session_controller::login))
 }
 
 // This will serve static files that we can use as a "fallback" for when the server panics
@@ -69,7 +126,6 @@ pub fn static_routes() -> Router {
 // see https://github.com/SeaQL/sea-orm/issues/830
 #[cfg(feature = "mock")]
 mod organization_endpoints_tests {
-    use crate::extractors::compare_api_version::X_VERSION;
 
     use super::*;
     use anyhow::Ok;
@@ -82,13 +138,13 @@ mod organization_endpoints_tests {
     use entity_api::user::Backend;
     use log::{debug, LevelFilter};
     use password_auth::generate_hash;
-    use reqwest::{header, Url};
+    use reqwest::{header, header::HeaderValue, Url};
     use sea_orm::{
         prelude::Uuid, DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult,
     };
     use serde_json::json;
     use service::{
-        config::{Config, DEFAULT_API_VERSION},
+        config::{ApiVersion, Config},
         logging::Logger,
     };
     use std::{net::SocketAddr, sync::Arc, sync::Once};
@@ -141,7 +197,10 @@ mod organization_endpoints_tests {
             let mut headers = header::HeaderMap::new();
             // Note: we don't actually need to manually set the server's current AppState.config.api_version
             // since CLAP sets the default value which will always be equal to DEFAULT_API_VERSION.
-            headers.insert(X_VERSION, DEFAULT_API_VERSION.parse().unwrap());
+            headers.insert(
+                ApiVersion::field_name(),
+                HeaderValue::from_static(ApiVersion::default_version()),
+            );
             let client = reqwest::Client::builder()
                 .cookie_store(true)
                 .default_headers(headers)
@@ -164,7 +223,7 @@ mod organization_endpoints_tests {
         /// with it turned on (i.e. `cookie_store(true)`).
         ///
         /// This is meant to be reused by all tests that sit behind a protected route.
-        pub async fn login(&mut self, user: &users::Model) -> anyhow::Result<()> {
+        pub async fn login(&mut self, _user: &users::Model) -> anyhow::Result<()> {
             let creds = [("email", "test@domain.com"), ("password", "password2")];
             let response = self
                 .client

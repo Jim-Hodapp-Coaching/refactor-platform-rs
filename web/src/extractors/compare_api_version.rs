@@ -6,9 +6,7 @@ use axum::{
     http::{header::HeaderValue, request::Parts, StatusCode},
 };
 use log::*;
-use service::config::DEFAULT_API_VERSION;
-
-pub static X_VERSION: &str = "x-version";
+use service::config::ApiVersion;
 
 pub struct CompareApiVersion(pub HeaderValue);
 
@@ -32,7 +30,7 @@ where
         // Provided as part of the AppState environment configuration
         let api_version = HeaderValue::from_str(state.config.api_version())
             .ok()
-            .unwrap_or_else(|| HeaderValue::from_static(DEFAULT_API_VERSION));
+            .unwrap_or_else(|| HeaderValue::from_static(ApiVersion::default_version()));
 
         trace!("API version provided by client: {:?}", version);
         trace!(
@@ -45,10 +43,13 @@ where
 }
 
 fn get_x_version(parts: &mut Parts) -> Result<HeaderValue, RejectionType> {
-    if let Some(version) = parts.headers.get(X_VERSION) {
+    if let Some(version) = parts.headers.get(ApiVersion::field_name()) {
         Ok(version.clone())
     } else {
-        Err((StatusCode::BAD_REQUEST, "`X-Version` header is missing"))
+        Err((
+            StatusCode::BAD_REQUEST,
+            format!("`{}` header is missing", ApiVersion::field_name()),
+        ))
     }
 }
 
@@ -61,7 +62,10 @@ fn is_current_api_version(
     } else {
         Err((
             StatusCode::BAD_REQUEST,
-            "`X-Version` header is not a valid API version",
+            format!(
+                "`{}` header is not a valid API version",
+                ApiVersion::field_name()
+            ),
         ))
     }
 }

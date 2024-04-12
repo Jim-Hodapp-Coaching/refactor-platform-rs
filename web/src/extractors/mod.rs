@@ -3,4 +3,4 @@ pub(crate) mod compare_api_version;
 
 use axum::http::StatusCode;
 
-type RejectionType = (StatusCode, &'static str);
+type RejectionType = (StatusCode, String);

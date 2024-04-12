@@ -884,6 +884,7 @@ dependencies = [
  "chrono",
  "sea-orm",
  "serde",
+ "utoipa",
  "uuid",
 ]
 
@@ -902,6 +903,7 @@ dependencies = [
  "serde_json",
  "service",
  "tokio",
+ "utoipa",
 ]
 
 [[package]]
@@ -1524,6 +1526,7 @@ checksum = "d530e1a18b1cb4c484e6e34556a0d948706958449fca0cab753d649f2bce3d1f"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.3",
+ "serde",
 ]
 
 [[package]]
@@ -2781,6 +2784,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "semver"
+version = "1.0.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92d43fe69e652f3df9bdc2b85b2854a0825b86e4fb76bc44d945137d053639ca"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.195"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2840,11 +2852,14 @@ dependencies = [
  "clap",
  "log",
  "sea-orm",
+ "semver",
+ "serde",
  "serde_json",
  "simplelog",
  "sqlx",
  "tokio",
  "tower",
+ "utoipa",
 ]
 
 [[package]]
@@ -3751,6 +3766,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
+name = "utoipa"
+version = "4.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "272ebdfbc99111033031d2f10e018836056e4d2c8e2acda76450ec7974269fa7"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_json",
+ "utoipa-gen",
+]
+
+[[package]]
+name = "utoipa-gen"
+version = "4.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3c9f4d08338c1bfa70dde39412a040a884c6f318b3d09aaaf3437a1e52027fc"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn 2.0.48",
+ "uuid",
+]
+
+[[package]]
+name = "utoipa-rapidoc"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e79a75396496e4fe41359375a67e8fcb9c28444cd1cb5e8ac54f47684e64290"
+dependencies = [
+ "axum",
+ "serde",
+ "serde_json",
+ "utoipa",
+]
+
+[[package]]
 name = "uuid"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3887,6 +3940,8 @@ dependencies = [
  "tower",
  "tower-http",
  "tower-sessions",
+ "utoipa",
+ "utoipa-rapidoc",
 ]
 
 [[package]]
