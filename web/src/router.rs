@@ -69,9 +69,7 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(session_routes())
         .merge(protected_routes())
         // FIXME: protect the OpenAPI web UI
-        // There is no need to create `RapiDoc::with_openapi` because the OpenApi is served
-        // via SwaggerUi instead we only make rapidoc to point to the existing doc.
-        .merge(RapiDoc::new("/api-docs/openapi.json").path("/rapidoc"))
+        .merge(RapiDoc::with_openapi("/api-docs/openapi2.json", ApiDoc::openapi()).path("/rapidoc"))
         .fallback_service(static_routes())
 }
 
