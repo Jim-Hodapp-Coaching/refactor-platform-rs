@@ -67,8 +67,7 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
             Method::PATCH,
         ])
         .allow_credentials(true)
-        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
-        .allow_origin("http://localhost:4000".parse::<HeaderValue>().unwrap());
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
 
     axum::serve(
         listener,
