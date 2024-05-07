@@ -124,18 +124,25 @@ pub async fn find_by_user(
 }
 
 async fn by_user(query: Select<Organizations>, user_id: &ExternalId) -> Select<Organizations> {
-    let user_query = Users::find()
+    // We need to convert the user_id string to type Uuid in order to successfully
+    // compare with the database field which is of type UUID
+    let user_uuid = Uuid::parse_str(user_id).unwrap();
+
+    // subquery to find user matching the given external_id (user_id)
+    let user_subquery = Users::find()
         .select_only()
         .column(users::Column::Id)
-        .filter(users::Column::ExternalId.eq(user_id))
+        .filter(users::Column::ExternalId.eq(user_uuid))
         .into_query();
 
     query
         .join(JoinType::InnerJoin, Relation::CoachingRelationships.def())
         .filter(
             sea_query::Condition::any()
-                .add(coaching_relationships::Column::CoachId.in_subquery(user_query.to_owned()))
-                .add(coaching_relationships::Column::CoacheeId.in_subquery(user_query.to_owned())),
+                .add(coaching_relationships::Column::CoachId.in_subquery(user_subquery.to_owned()))
+                .add(
+                    coaching_relationships::Column::CoacheeId.in_subquery(user_subquery.to_owned()),
+                ),
         )
 }
 
@@ -186,12 +193,14 @@ mod tests {
         let user_id = "a98c3295-0933-44cb-89db-7db0f7250fb1".to_string();
         let _ = find_by_user(&db, &user_id).await;
 
+        let user_uuid = Uuid::parse_str(&user_id).unwrap();
+
         assert_eq!(
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
                 r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" IN (SELECT "users"."id" FROM "refactor_platform"."users" WHERE "users"."external_id" = $1) OR "coaching_relationships"."coachee_id" IN (SELECT "users"."id" FROM "refactor_platform"."users" WHERE "users"."external_id" = $2)"#,
-                [user_id.clone().into(), user_id.into()]
+                [user_uuid.clone().into(), user_uuid.into()]
             )]
         );
 

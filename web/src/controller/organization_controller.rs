@@ -42,6 +42,7 @@ pub async fn index(
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<impl IntoResponse, Error> {
     debug!("GET all Organizations");
+
     let organizations = OrganizationApi::find_by(app_state.db_conn_ref(), params).await?;
 
     debug!("Found Organizations: {:?}", organizations);
