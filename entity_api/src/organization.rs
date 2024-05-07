@@ -1,12 +1,14 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::organization::Entity;
 use chrono::Utc;
-use entity::{coaching_relationships, organizations::*, prelude::Organizations, Id};
+use entity::prelude::Users;
+use entity::{
+    coaching_relationships, organizations::*, prelude::Organizations, users, ExternalId, Id,
+};
 use sea_orm::{
     entity::prelude::*, sea_query, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
-    JoinType, QuerySelect, TryIntoModel,
+    JoinType, QuerySelect, QueryTrait, TryIntoModel,
 };
-use serde_json::from_str;
 use std::collections::HashMap;
 
 use log::*;
@@ -98,7 +100,7 @@ pub async fn find_by(
     for (key, value) in params {
         match key.as_str() {
             "user_id" => {
-                query = by_user(query, from_str::<Id>(&value).unwrap()).await;
+                query = by_user(query, &value).await;
             }
             _ => {
                 return Err(Error {
@@ -112,19 +114,28 @@ pub async fn find_by(
     Ok(query.all(db).await?)
 }
 
-pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Model>, Error> {
+pub async fn find_by_user(
+    db: &DatabaseConnection,
+    user_id: &ExternalId,
+) -> Result<Vec<Model>, Error> {
     let organizations = by_user(Entity::find(), user_id).await.all(db).await?;
 
     Ok(organizations)
 }
 
-async fn by_user(query: Select<Organizations>, user_id: Id) -> Select<Organizations> {
+async fn by_user(query: Select<Organizations>, user_id: &ExternalId) -> Select<Organizations> {
+    let user_query = Users::find()
+        .select_only()
+        .column(users::Column::Id)
+        .filter(users::Column::ExternalId.eq(user_id))
+        .into_query();
+
     query
         .join(JoinType::InnerJoin, Relation::CoachingRelationships.def())
         .filter(
             sea_query::Condition::any()
-                .add(coaching_relationships::Column::CoachId.eq(user_id))
-                .add(coaching_relationships::Column::CoacheeId.eq(user_id)),
+                .add(coaching_relationships::Column::CoachId.in_subquery(user_query.to_owned()))
+                .add(coaching_relationships::Column::CoacheeId.in_subquery(user_query.to_owned())),
         )
 }
 
@@ -172,15 +183,15 @@ mod tests {
     async fn find_by_user_returns_all_records_associated_with_user() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
-        let user_id = 1;
-        let _ = find_by_user(&db, user_id).await;
+        let user_id = "a98c3295-0933-44cb-89db-7db0f7250fb1".to_string();
+        let _ = find_by_user(&db, &user_id).await;
 
         assert_eq!(
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" = $1 OR "coaching_relationships"."coachee_id" = $2"#,
-                [user_id.into(), user_id.into()]
+                r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" IN (SELECT "users"."id" FROM "refactor_platform"."users" WHERE "users"."external_id" = $1) OR "coaching_relationships"."coachee_id" IN (SELECT "users"."id" FROM "refactor_platform"."users" WHERE "users"."external_id" = $2)"#,
+                [user_id.clone().into(), user_id.into()]
             )]
         );
 
