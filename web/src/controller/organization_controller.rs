@@ -8,12 +8,13 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use entity::{organizations, Id};
-use entity_api::organization as OrganizationApi;
+use entity_api::{organization as OrganizationApi};
 use serde_json::json;
 use service::config::ApiVersion;
+
 use std::collections::HashMap;
 
-use log::*;
+use log::debug;
 
 /// GET all Organizations.
 #[utoipa::path(
@@ -21,6 +22,7 @@ use log::*;
     path = "/organizations",
     params(
         ApiVersion,
+        ("user_id" = Option<String>, Query, description = "Filter by user_id")
     ),
     responses(
         (status = 200, description = "Successfully retrieved all Organizations", body = [entity::organizations::Model]),
@@ -45,7 +47,7 @@ pub async fn index(
     debug!("Found Organizations: {:?}", organizations);
 
     Ok(Json(ApiResponse::new(
-        StatusCode::OK.as_u16(),
+        StatusCode::OK.into(),
         organizations,
     )))
 }
