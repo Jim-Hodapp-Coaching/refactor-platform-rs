@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-03-28T13:40:18.317Z
+-- Generated at: 2024-05-07T10:59:18.231Z
 
 
 CREATE TABLE "refactor_platform"."organizations" (

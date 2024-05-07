@@ -16,7 +16,7 @@ use std::collections::HashMap;
 
 use log::debug;
 
-/// GET all Organizations.
+/// GET search Organizations by filtering.
 #[utoipa::path(
     get,
     path = "/organizations",
