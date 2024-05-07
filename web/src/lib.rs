@@ -1,4 +1,4 @@
-use axum::http::{HeaderValue, Method};
+use axum::http::{HeaderName, HeaderValue, Method};
 use axum_login::{
     tower_sessions::{ExpiredDeletion, Expiry, PostgresStore, SessionManagerLayer},
     AuthManagerLayerBuilder,
@@ -7,7 +7,7 @@ use entity_api::user::Backend;
 
 pub use self::error::{Error, Result};
 use log::*;
-use service::AppState;
+use service::{config::ApiVersion, AppState};
 use std::net::SocketAddr;
 use std::str::FromStr;
 use time::Duration;
@@ -67,6 +67,9 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
             Method::PATCH,
         ])
         .allow_credentials(true)
+        // Allow and expose the X-Version header across origins
+        .allow_headers([ApiVersion::field_name().parse::<HeaderName>().unwrap()])
+        .expose_headers([ApiVersion::field_name().parse::<HeaderName>().unwrap()])
         .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
 
     axum::serve(
