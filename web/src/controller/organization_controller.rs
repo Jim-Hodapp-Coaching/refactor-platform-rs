@@ -8,7 +8,7 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use entity::{organizations, Id};
-use entity_api::{organization as OrganizationApi};
+use entity_api::organization as OrganizationApi;
 use serde_json::json;
 use service::config::ApiVersion;
 
@@ -46,10 +46,7 @@ pub async fn index(
 
     debug!("Found Organizations: {:?}", organizations);
 
-    Ok(Json(ApiResponse::new(
-        StatusCode::OK.into(),
-        organizations,
-    )))
+    Ok(Json(ApiResponse::new(StatusCode::OK.into(), organizations)))
 }
 
 /// GET a particular Organization specified by its primary key.

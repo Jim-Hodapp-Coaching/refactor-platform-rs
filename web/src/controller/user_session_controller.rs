@@ -62,7 +62,10 @@ pub async fn login(
         return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
     }
 
-    Ok(Json(ApiResponse::new(StatusCode::OK.into(), user)))
+    Ok(Json(ApiResponse::new(
+        StatusCode::OK.into(),
+        json!({"id": user.external_id}),
+    )))
 }
 
 /// Logs the user out of the platform by destroying their session.
