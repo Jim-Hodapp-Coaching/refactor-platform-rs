@@ -1,4 +1,4 @@
-use axum::http::{HeaderName, HeaderValue, Method};
+use axum::http::{header::CONTENT_TYPE, HeaderName, HeaderValue, Method};
 use axum_login::{
     tower_sessions::{ExpiredDeletion, Expiry, PostgresStore, SessionManagerLayer},
     AuthManagerLayerBuilder,
@@ -68,7 +68,10 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
         ])
         .allow_credentials(true)
         // Allow and expose the X-Version header across origins
-        .allow_headers([ApiVersion::field_name().parse::<HeaderName>().unwrap()])
+        .allow_headers([
+            ApiVersion::field_name().parse::<HeaderName>().unwrap(),
+            CONTENT_TYPE,
+        ])
         .expose_headers([ApiVersion::field_name().parse::<HeaderName>().unwrap()])
         .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
 
