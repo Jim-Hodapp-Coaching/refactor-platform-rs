@@ -57,7 +57,7 @@ pub async fn find_by(
     for (key, value) in params.iter() {
         match key.as_str() {
             "organization_id" => {
-                query = by_organization(query, from_str::<Id>(&value).unwrap()).await;
+                query = by_organization(query, from_str::<Id>(value).unwrap()).await;
             }
             _ => {
                 return Err(Error {
