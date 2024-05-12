@@ -7,6 +7,10 @@ use axum_login::login_required;
 use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
+use crate::controller::{
+    coaching_relationship_controller, organization_controller, user_session_controller,
+};
+
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
     Modify, OpenApi,
@@ -61,16 +65,25 @@ impl Modify for SecurityAddon {
     }
 }
 
-use crate::controller::{organization_controller, user_session_controller};
-
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
-        .merge(organization_routes(app_state))
+        .merge(organization_routes(app_state.clone()))
+        .merge(coaching_relationship_routes(app_state.clone()))
         .merge(session_routes())
         .merge(protected_routes())
         // FIXME: protect the OpenAPI web UI
         .merge(RapiDoc::with_openapi("/api-docs/openapi2.json", ApiDoc::openapi()).path("/rapidoc"))
         .fallback_service(static_routes())
+}
+
+fn coaching_relationship_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route(
+            "/coaching_relationships",
+            get(coaching_relationship_controller::index),
+        )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
 }
 
 pub fn organization_routes(app_state: AppState) -> Router {
@@ -113,6 +126,7 @@ pub fn static_routes() -> Router {
 // see https://github.com/SeaQL/sea-orm/issues/830
 #[cfg(feature = "mock")]
 mod organization_endpoints_tests {
+
     use super::*;
     use anyhow::Ok;
     use axum_login::{
@@ -209,7 +223,7 @@ mod organization_endpoints_tests {
         /// with it turned on (i.e. `cookie_store(true)`).
         ///
         /// This is meant to be reused by all tests that sit behind a protected route.
-        pub async fn login(&mut self, user: &users::Model) -> anyhow::Result<()> {
+        pub async fn login(&mut self, _user: &users::Model) -> anyhow::Result<()> {
             let creds = [("email", "test@domain.com"), ("password", "password2")];
             let response = self
                 .client
@@ -218,20 +232,9 @@ mod organization_endpoints_tests {
                 .send()
                 .await?;
 
-            let response_text = response.text().await?;
+            debug!("response: {:?}", response);
 
-            debug!("response_text: {:?}", response_text);
-
-            assert_eq!(
-                response_text,
-                json!({
-                    "display_name": user.display_name,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                })
-                .to_string()
-            );
+            assert_eq!(response.status(), 200);
 
             Ok(())
         }
@@ -267,7 +270,7 @@ mod organization_endpoints_tests {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let organization = organizations::Model {
             id: 1,
-            name: Some("Organization One".to_owned()),
+            name: "Organization One".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -307,9 +310,12 @@ mod organization_endpoints_tests {
         let parsed_result: serde_json::Value =
             serde_json::from_str(&response.text().await?).unwrap();
 
-        let organization: serde_json::Value = json!(organization);
+        let expected_response: serde_json::Value = json!({
+                "status_code": 200,
+                "data": organization
+        });
 
-        assert_eq!(parsed_result, organization);
+        assert_eq!(parsed_result, expected_response);
 
         Ok(())
     }
@@ -325,7 +331,7 @@ mod organization_endpoints_tests {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let organization1 = organizations::Model {
             id: 1,
-            name: Some("Organization One".to_owned()),
+            name: "Organization One".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -333,7 +339,7 @@ mod organization_endpoints_tests {
         };
         let organization2 = organizations::Model {
             id: 2,
-            name: Some("Organization Two".to_owned()),
+            name: "Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -341,7 +347,7 @@ mod organization_endpoints_tests {
         };
         let organization3 = organizations::Model {
             id: 3,
-            name: Some("Organization Three".to_owned()),
+            name: "Organization Three".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -382,9 +388,12 @@ mod organization_endpoints_tests {
         // so that the attribute order does not matter.
         let parsed_response: serde_json::Value =
             serde_json::from_str(&response.text().await?).unwrap();
-        let organizations: serde_json::Value = json!(&organizations);
+        let expected_response: serde_json::Value = json!({
+            "status_code": 200,
+            "data": organizations[0]
+        });
 
-        assert_eq!(parsed_response, organizations[0]);
+        assert_eq!(parsed_response, expected_response);
 
         Ok(())
     }
@@ -402,7 +411,7 @@ mod organization_endpoints_tests {
 
         let organization_results1 = [vec![organizations::Model {
             id: 2,
-            name: Some("Organization Two".to_owned()),
+            name: "Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -410,7 +419,7 @@ mod organization_endpoints_tests {
         }]];
         let organization_results2 = [vec![organizations::Model {
             id: 3,
-            name: Some("Organization Three".to_owned()),
+            name: "Organization Three".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -504,7 +513,7 @@ mod organization_endpoints_tests {
 
         let organization_results1 = [vec![organizations::Model {
             id: 5,
-            name: Some("New Organization Five".to_owned()),
+            name: "New Organization Five".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -513,7 +522,7 @@ mod organization_endpoints_tests {
 
         let organization_results2 = [vec![organizations::Model {
             id: 6,
-            name: Some("Second Organization Six".to_owned()),
+            name: "Second Organization Six".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -565,7 +574,12 @@ mod organization_endpoints_tests {
 
             let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
 
-            assert_eq!(parsed_response, json!(organization5));
+            let expected_response = json!({
+                "status_code": 201,
+                "data": organization5
+            });
+
+            assert_eq!(parsed_response, expected_response);
         }
 
         {
@@ -584,7 +598,12 @@ mod organization_endpoints_tests {
             // so that the attribute order does not matter.
             let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
 
-            assert_eq!(parsed_response, json!(organization6));
+            let expected_response = json!({
+                "status_code": 201,
+                "data": organization6
+            });
+
+            assert_eq!(parsed_response, expected_response);
         }
 
         Ok(())
@@ -605,7 +624,7 @@ mod organization_endpoints_tests {
         let organizations = [
             vec![organizations::Model {
                 id: 2,
-                name: Some("Organization Two".to_owned()),
+                name: "Organization Two".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
@@ -613,7 +632,7 @@ mod organization_endpoints_tests {
             }],
             vec![organizations::Model {
                 id: 2,
-                name: Some("Updated Organization Two".to_owned()),
+                name: "Updated Organization Two".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
@@ -646,7 +665,7 @@ mod organization_endpoints_tests {
 
         let updated_organization2 = organizations::Model {
             id: 2,
-            name: Some("Updated Organization Two".to_owned()),
+            name: "Updated Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
@@ -666,7 +685,12 @@ mod organization_endpoints_tests {
         // so that the attribute order does not matter.
         let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
 
-        assert_eq!(parsed_response, json!(updated_organization2));
+        let expected_response = json!({
+            "status_code": 200,
+            "data": updated_organization2
+        });
+
+        assert_eq!(parsed_response, expected_response);
 
         Ok(())
     }

@@ -1,3 +1,4 @@
+use crate::controller::ApiResponse;
 use axum::{http::StatusCode, response::IntoResponse, Form, Json};
 use entity_api::user as UserApi;
 use log::*;
@@ -61,12 +62,10 @@ pub async fn login(
         return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
     }
 
-    let response_json = Json(
-        json!({"first_name": user.first_name, "last_name": user.last_name, 
-                "email": user.email, "display_name": user.display_name}),
-    );
-    debug!("JSON response with 200 OK: {:?}", response_json);
-    Ok(response_json.into_response())
+    Ok(Json(ApiResponse::new(
+        StatusCode::OK.into(),
+        json!({"id": user.external_id}),
+    )))
 }
 
 /// Logs the user out of the platform by destroying their session.

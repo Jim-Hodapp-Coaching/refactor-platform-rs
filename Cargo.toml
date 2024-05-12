@@ -3,6 +3,8 @@ name = "refactor_platform_rs"
 version = "0.1.0"
 edition = "2021"
 
+default-run = "refactor_platform_rs"
+
 [workspace]
 members = [".", "entity_api", "entity", "migration", "service", "web"]
 
@@ -15,3 +17,7 @@ clap = { version = "4.4.6", features = ["cargo", "derive", "env"] }
 log = "0.4"
 simplelog = { version = "0.12", features = ["paris"] }
 tokio = "1.33.0"
+
+[[bin]]
+name = "seed_db"
+path = "src/bin/seed_db.rs"

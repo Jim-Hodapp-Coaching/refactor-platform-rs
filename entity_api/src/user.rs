@@ -1,15 +1,41 @@
 use super::error::{EntityApiErrorCode, Error};
 use async_trait::async_trait;
 use axum_login::{AuthnBackend, UserId};
+use chrono::Utc;
 use entity::users::*;
 use log::*;
 use password_auth::{generate_hash, verify_password};
-use sea_orm::{entity::prelude::*, prelude::Uuid, sea_query, ActiveValue, DatabaseConnection};
+use sea_orm::{entity::prelude::*, DatabaseConnection, Set};
 use serde::Deserialize;
 use std::sync::Arc;
 use utoipa::ToSchema;
 
 use crate::user::Entity;
+
+pub async fn create(db: &DatabaseConnection, user_model: Model) -> Result<Model, Error> {
+    debug!(
+        "New User Relationship Model to be inserted: {:?}",
+        user_model
+    );
+
+    let now = Utc::now();
+
+    let user_active_model: ActiveModel = ActiveModel {
+        external_id: Set(Uuid::new_v4()),
+        email: Set(user_model.email),
+        first_name: Set(user_model.first_name),
+        last_name: Set(user_model.last_name),
+        display_name: Set(user_model.display_name),
+        password: Set(generate_hash(user_model.password)),
+        github_username: Set(user_model.github_username),
+        github_profile_url: Set(user_model.github_profile_url),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    };
+
+    Ok(user_active_model.insert(db).await?)
+}
 
 pub async fn find_by_email(db: &DatabaseConnection, email: &str) -> Result<Option<Model>, Error> {
     let user: Option<Model> = Entity::find()
@@ -89,55 +115,3 @@ impl AuthnBackend for Backend {
 }
 
 pub type AuthSession = axum_login::AuthSession<Backend>;
-
-pub(crate) async fn seed_database(db: &DatabaseConnection) {
-    let users = vec![
-        ActiveModel {
-            id: ActiveValue::NotSet,
-            email: ActiveValue::Set("james.hodapp@gmail.com".to_owned()),
-            external_id: ActiveValue::Set(Uuid::new_v4()),
-            first_name: ActiveValue::Set(Some("Jim".to_owned())),
-            last_name: ActiveValue::Set(Some("Hodapp".to_owned())),
-            display_name: ActiveValue::Set(Some("Jim H".to_owned())),
-            password: ActiveValue::Set(generate_hash("password1").to_owned()),
-            github_username: ActiveValue::Set(Some("jhodapp".to_owned())),
-            github_profile_url: ActiveValue::Set(Some("https://github.com/jhodapp".to_owned())),
-            created_at: ActiveValue::NotSet,
-            updated_at: ActiveValue::NotSet,
-        },
-        ActiveModel {
-            id: ActiveValue::NotSet,
-            email: ActiveValue::Set("test@gmail.com".to_owned()),
-            first_name: ActiveValue::Set(Some("Test First".to_owned())),
-            external_id: ActiveValue::Set(Uuid::new_v4()),
-            last_name: ActiveValue::Set(Some("Test Last".to_owned())),
-            display_name: ActiveValue::Set(Some("Test User".to_owned())),
-            password: ActiveValue::Set(generate_hash("password2").to_owned()),
-            github_username: ActiveValue::Set(Some("test".to_owned())),
-            github_profile_url: ActiveValue::Set(Some("https://github.com/test".to_owned())),
-            created_at: ActiveValue::NotSet,
-            updated_at: ActiveValue::NotSet,
-        },
-    ];
-
-    for user in users {
-        debug!("user: {:?}", user);
-
-        // Upserts seeded user data:
-        match Entity::insert(user)
-            .on_conflict(
-                // on conflict do update
-                sea_query::OnConflict::column(Column::Email)
-                    .update_column(Column::FirstName)
-                    .update_column(Column::LastName)
-                    .update_column(Column::Password)
-                    .to_owned(),
-            )
-            .exec(db)
-            .await
-        {
-            Ok(_) => info!("Succeeded in seeding user entity."),
-            Err(e) => error!("Failed to insert or update user entity when seeding user data: {e}"),
-        };
-    }
-}

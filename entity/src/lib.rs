@@ -9,5 +9,8 @@ pub mod organizations;
 pub mod overarching_goals;
 pub mod users;
 
-/// A type alias that represents any Entity's id field data type
+/// A type alias that represents any Entity's internal id field data type
 pub type Id = i32;
+
+/// A type alias that represents any Entity's external id field data type
+pub type ExternalId = String;
