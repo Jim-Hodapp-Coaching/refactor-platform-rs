@@ -91,6 +91,18 @@ pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>
     Ok(organization)
 }
 
+pub async fn find_by_external_id(
+    db: &DatabaseConnection,
+    external_id: &ExternalId,
+) -> Result<Option<Model>, Error> {
+    let organization = Entity::find()
+        .filter(Column::ExternalId.eq(Uuid::parse_str(external_id).unwrap()))
+        .one(db)
+        .await?;
+
+    Ok(organization)
+}
+
 pub async fn find_by(
     db: &DatabaseConnection,
     params: HashMap<String, String>,
@@ -201,6 +213,25 @@ mod tests {
                 DatabaseBackend::Postgres,
                 r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" IN (SELECT "users"."id" FROM "refactor_platform"."users" WHERE "users"."external_id" = $1) OR "coaching_relationships"."coachee_id" IN (SELECT "users"."id" FROM "refactor_platform"."users" WHERE "users"."external_id" = $2)"#,
                 [user_uuid.clone().into(), user_uuid.into()]
+            )]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_by_external_id_queries_by_external_id() -> Result<(), Error> {
+        let external_id = Uuid::new_v4();
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let _ = find_by_external_id(&db, &external_id.to_string()).await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" WHERE "organizations"."external_id" = $1 LIMIT $2"#,
+                [external_id.into(), 1u64.into()]
             )]
         );
 
