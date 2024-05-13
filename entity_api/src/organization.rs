@@ -95,8 +95,13 @@ pub async fn find_by_external_id(
     db: &DatabaseConnection,
     external_id: &ExternalId,
 ) -> Result<Option<Model>, Error> {
+    let uuid = Uuid::parse_str(external_id).map_err(|_| Error {
+        inner: None,
+        error_code: EntityApiErrorCode::InvalidQueryTerm,
+    })?;
+
     let organization = Entity::find()
-        .filter(Column::ExternalId.eq(Uuid::parse_str(external_id).unwrap()))
+        .filter(Column::ExternalId.eq(uuid))
         .one(db)
         .await?;
 
@@ -236,5 +241,14 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    async fn find_by_external_id_returns_error_for_invalid_uuid() {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let external_id = "invalid_uuid".to_string();
+        let result = find_by_external_id(&db, &external_id).await;
+
+        assert!(result.is_err());
     }
 }
