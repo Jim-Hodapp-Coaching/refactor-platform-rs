@@ -265,6 +265,9 @@ mod organization_endpoints_tests {
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
         let mut config = Config::default();
         let now = Utc::now();
+        let external_id = Uuid::new_v4();
+        let endpoint_path = format!("/organizations/{}", external_id);
+
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
@@ -274,7 +277,7 @@ mod organization_endpoints_tests {
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: Uuid::new_v4(),
+            external_id: external_id,
         };
 
         let organization_results = [vec![organization.clone()]];
@@ -301,7 +304,7 @@ mod organization_endpoints_tests {
 
         let response = test_client_server
             .client
-            .get(test_client_server.url("/organizations/1").unwrap())
+            .get(test_client_server.url(endpoint_path).unwrap())
             .send()
             .await?;
 
@@ -323,7 +326,7 @@ mod organization_endpoints_tests {
     // Purpose: adds multiple Organization instances to a mock DB and tests the API to successfully
     // retrieve all of them as expected and valid JSON without specifying any particular ID.
     #[tokio::test]
-    async fn read_returns_all_organizations() -> anyhow::Result<()> {
+    async fn index_returns_all_organizations() -> anyhow::Result<()> {
         let mut config = Config::default();
         let now = Utc::now();
         enable_test_logging(&mut config);

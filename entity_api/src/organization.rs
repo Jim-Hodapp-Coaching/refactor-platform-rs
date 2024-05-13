@@ -91,6 +91,23 @@ pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>
     Ok(organization)
 }
 
+pub async fn find_by_external_id(
+    db: &DatabaseConnection,
+    external_id: &ExternalId,
+) -> Result<Option<Model>, Error> {
+    let uuid = Uuid::parse_str(external_id).map_err(|_| Error {
+        inner: None,
+        error_code: EntityApiErrorCode::InvalidQueryTerm,
+    })?;
+
+    let organization = Entity::find()
+        .filter(Column::ExternalId.eq(uuid))
+        .one(db)
+        .await?;
+
+    Ok(organization)
+}
+
 pub async fn find_by(
     db: &DatabaseConnection,
     params: HashMap<String, String>,
@@ -205,5 +222,33 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_by_external_id_queries_by_external_id() -> Result<(), Error> {
+        let external_id = Uuid::new_v4();
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let _ = find_by_external_id(&db, &external_id.to_string()).await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" WHERE "organizations"."external_id" = $1 LIMIT $2"#,
+                [external_id.into(), 1u64.into()]
+            )]
+        );
+
+        Ok(())
+    }
+
+    async fn find_by_external_id_returns_error_for_invalid_uuid() {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let external_id = "invalid_uuid".to_string();
+        let result = find_by_external_id(&db, &external_id).await;
+
+        assert!(result.is_err());
     }
 }

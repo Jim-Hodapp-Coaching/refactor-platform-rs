@@ -50,16 +50,16 @@ pub async fn index(
     Ok(Json(ApiResponse::new(StatusCode::OK.into(), organizations)))
 }
 
-/// GET a particular Organization specified by its primary key.
+/// GET a particular Organization specified by its external_id.
 #[utoipa::path(
     get,
-    path = "/organizations/{id}",
+    path = "/organizations/{external_id}",
     params(
         ApiVersion,
-        ("id" = i32, Path, description = "Organization id to retrieve")
+        ("external_id" = String, Path, description = "Organization external_id to retrieve")
     ),
     responses(
-        (status = 200, description = "Successfully retrieved a certain Organization by its id", body = [entity::organizations::Model]),
+        (status = 200, description = "Successfully retrieved a certain Organization by its external_id", body = [entity::organizations::Model]),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Organization not found"),
         (status = 405, description = "Method not allowed")
@@ -71,12 +71,12 @@ pub async fn index(
 pub async fn read(
     CompareApiVersion(_v): CompareApiVersion,
     State(app_state): State<AppState>,
-    Path(id): Path<Id>,
+    Path(external_id): Path<String>,
 ) -> Result<impl IntoResponse, Error> {
-    debug!("GET Organization by id: {}", id);
+    debug!("GET Organization by external_id: {}", external_id);
 
     let organization: Option<organizations::Model> =
-        OrganizationApi::find_by_id(app_state.db_conn_ref(), id).await?;
+        OrganizationApi::find_by_external_id(app_state.db_conn_ref(), &external_id).await?;
 
     Ok(Json(ApiResponse::new(StatusCode::OK.into(), organization)))
 }
