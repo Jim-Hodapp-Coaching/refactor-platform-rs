@@ -4,9 +4,9 @@ use chrono::Utc;
 use entity::{
     coaching_relationships,
     coaching_relationships::{ActiveModel, Model},
-    Id,
+    ExternalId, Id,
 };
-use sea_orm::{entity::prelude::*, Condition, DatabaseConnection, Set};
+use sea_orm::{entity::prelude::*, Condition, DatabaseConnection, QuerySelect, QueryTrait, Set};
 
 use log::*;
 
@@ -50,7 +50,7 @@ pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Mo
 
 pub async fn find_by_organization(
     db: &DatabaseConnection,
-    organization_id: String,
+    organization_id: &ExternalId,
 ) -> Result<Vec<Model>, Error> {
     let uuid = uuid_parse_str(&organization_id)?;
 
@@ -86,7 +86,16 @@ async fn by_organization(
     query: Select<coaching_relationships::Entity>,
     organization_id: Uuid,
 ) -> Select<coaching_relationships::Entity> {
-    query.filter(coaching_relationships::Column::OrganizationId.eq(organization_id))
+    let organization_subquery = entity::organizations::Entity::find()
+        .select_only()
+        .column(entity::organizations::Column::Id)
+        .filter(entity::organizations::Column::ExternalId.eq(organization_id))
+        .into_query();
+
+    query.filter(
+        coaching_relationships::Column::OrganizationId
+            .in_subquery(organization_subquery.to_owned()),
+    )
 }
 
 #[cfg(test)]
@@ -113,6 +122,27 @@ mod tests {
                 DatabaseBackend::Postgres,
                 r#"SELECT "coaching_relationships"."id", "coaching_relationships"."external_id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."coach_id" = $1 OR "coaching_relationships"."coachee_id" = $2"#,
                 [user_id.into(), user_id.into()]
+            )]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_by_organization_queries_for_all_records_by_organization() -> Result<(), Error> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let organization_id = "a98c3295-0933-44cb-89db-7db0f7250fb1".to_string();
+        let _ = find_by_organization(&db, &organization_id).await;
+
+        let organization_uuid = uuid_parse_str(&organization_id).unwrap();
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."external_id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."external_id" = $1)"#,
+                [organization_uuid.clone().into()]
             )]
         );
 

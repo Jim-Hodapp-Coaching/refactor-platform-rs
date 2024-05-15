@@ -205,7 +205,7 @@ mod tests {
         let user_id = "a98c3295-0933-44cb-89db-7db0f7250fb1".to_string();
         let _ = find_by_user(&db, &user_id).await;
 
-        let user_uuid = Uuid::parse_str(&user_id).unwrap();
+        let user_uuid = uuid_parse_str(&user_id).unwrap();
 
         assert_eq!(
             db.into_transaction_log(),
