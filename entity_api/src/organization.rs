@@ -1,5 +1,5 @@
 use super::error::{EntityApiErrorCode, Error};
-use crate::organization::Entity;
+use crate::{organization::Entity, uuid_parse_str};
 use chrono::Utc;
 use entity::prelude::Users;
 use entity::{
@@ -95,10 +95,7 @@ pub async fn find_by_external_id(
     db: &DatabaseConnection,
     external_id: &ExternalId,
 ) -> Result<Option<Model>, Error> {
-    let uuid = Uuid::parse_str(external_id).map_err(|_| Error {
-        inner: None,
-        error_code: EntityApiErrorCode::InvalidQueryTerm,
-    })?;
+    let uuid = uuid_parse_str(external_id)?;
 
     let organization = Entity::find()
         .filter(Column::ExternalId.eq(uuid))
@@ -117,7 +114,8 @@ pub async fn find_by(
     for (key, value) in params {
         match key.as_str() {
             "user_id" => {
-                query = by_user(query, &value).await;
+                let user_uuid = uuid_parse_str(&value)?;
+                query = by_user(query, user_uuid).await;
             }
             _ => {
                 return Err(Error {
@@ -135,16 +133,13 @@ pub async fn find_by_user(
     db: &DatabaseConnection,
     user_id: &ExternalId,
 ) -> Result<Vec<Model>, Error> {
-    let organizations = by_user(Entity::find(), user_id).await.all(db).await?;
+    let uuid = uuid_parse_str(user_id)?;
+    let organizations = by_user(Entity::find(), uuid).await.all(db).await?;
 
     Ok(organizations)
 }
 
-async fn by_user(query: Select<Organizations>, user_id: &ExternalId) -> Select<Organizations> {
-    // We need to convert the user_id string to type Uuid in order to successfully
-    // compare with the database field which is of type UUID
-    let user_uuid = Uuid::parse_str(user_id).unwrap();
-
+async fn by_user(query: Select<Organizations>, user_uuid: Uuid) -> Select<Organizations> {
     // subquery to find user matching the given external_id (user_id)
     let user_subquery = Users::find()
         .select_only()
@@ -243,6 +238,7 @@ mod tests {
         Ok(())
     }
 
+    #[tokio::test]
     async fn find_by_external_id_returns_error_for_invalid_uuid() {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 

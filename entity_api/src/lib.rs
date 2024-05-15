@@ -11,6 +11,13 @@ pub mod error;
 pub mod organization;
 pub mod user;
 
+pub(crate) fn uuid_parse_str(uuid_str: &str) -> Result<Uuid, error::Error> {
+    Uuid::parse_str(uuid_str).map_err(|_| error::Error {
+        inner: None,
+        error_code: error::EntityApiErrorCode::InvalidQueryTerm,
+    })
+}
+
 pub async fn seed_database(db: &DatabaseConnection) {
     let now = Utc::now();
 
@@ -112,4 +119,27 @@ pub async fn seed_database(db: &DatabaseConnection) {
     .save(db)
     .await
     .unwrap();
+}
+
+#[cfg(test)]
+// We need to gate seaORM's mock feature behind conditional compilation because
+// the feature removes the Clone trait implementation from seaORM's DatabaseConnection.
+// see https://github.com/SeaQL/sea-orm/issues/830
+#[cfg(feature = "mock")]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn uuid_parse_str_parses_valid_uuid() {
+        let uuid_str = "a98c3295-0933-44cb-89db-7db0f7250fb1";
+        let uuid = uuid_parse_str(uuid_str).unwrap();
+        assert_eq!(uuid.to_string(), uuid_str);
+    }
+
+    #[tokio::test]
+    async fn uuid_parse_str_returns_error_for_invalid_uuid() {
+        let uuid_str = "invalid";
+        let result = uuid_parse_str(uuid_str);
+        assert!(result.is_err());
+    }
 }
