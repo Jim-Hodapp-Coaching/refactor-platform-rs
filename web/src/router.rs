@@ -30,11 +30,13 @@ use utoipa_rapidoc::RapiDoc;
             organization_controller::delete,
             user_session_controller::login,
             user_session_controller::logout,
+            organization::coaching_relationship_controller::index
         ),
         components(
             schemas(
                 entity::organizations::Model,
                 entity::users::Model,
+                entity::coaching_relationships::Model,
                 entity_api::user::Credentials,
             )
         ),
@@ -77,7 +79,7 @@ pub fn define_routes(app_state: AppState) -> Router {
 fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
     Router::new()
         .route(
-            "/:organization_id/coaching_relationships",
+            "/organizations/:organization_id/coaching_relationships",
             get(organization::coaching_relationship_controller::index),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))

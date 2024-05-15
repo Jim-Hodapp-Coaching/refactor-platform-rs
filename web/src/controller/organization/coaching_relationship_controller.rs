@@ -8,8 +8,27 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use entity_api::coaching_relationship as CoachingRelationshipApi;
+use service::config::ApiVersion;
 
 use log::*;
+
+/// GET a particular CoachingRelationship specified by its organization_id.
+#[utoipa::path(
+    get,
+    path = "/organizations/{organization_id}/coaching_relationships",
+    params(
+        ApiVersion,
+        ("organization_id" = String, Path, description = "Organization external_id to retrieve CoachingRelationships")
+    ),
+    responses(
+        (status = 200, description = "Successfully retrieved all CoachingRelationships", body = [entity::coaching_relationships::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
 
 /// GET all CoachingRelationships by organization_id
 pub async fn index(

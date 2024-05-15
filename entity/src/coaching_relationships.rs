@@ -2,8 +2,10 @@
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, ToSchema)]
+#[schema(as = entity::coaching_relationships::Model)] // OpenAPI schema
 #[sea_orm(
     schema_name = "refactor_platform",
     table_name = "coaching_relationships"
@@ -17,7 +19,9 @@ pub struct Model {
     pub organization_id: i32,
     pub coach_id: i32,
     pub coachee_id: i32,
+    #[schema(value_type = String, format = DateTime)] // Applies to OpenAPI schema
     pub created_at: DateTimeWithTimeZone,
+    #[schema(value_type = String, format = DateTime)] // Applies to OpenAPI schema
     pub updated_at: DateTimeWithTimeZone,
 }
 
