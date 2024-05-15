@@ -1,4 +1,5 @@
 use super::error::{EntityApiErrorCode, Error};
+use crate::uuid_parse_str;
 use chrono::Utc;
 use entity::{
     coaching_relationships,
@@ -6,7 +7,6 @@ use entity::{
     Id,
 };
 use sea_orm::{entity::prelude::*, Condition, DatabaseConnection, Set};
-use serde_json::from_str;
 
 use log::*;
 
@@ -48,6 +48,17 @@ pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Mo
     Ok(coaching_relationships)
 }
 
+pub async fn find_by_organization(
+    db: &DatabaseConnection,
+    organization_id: String,
+) -> Result<Vec<Model>, Error> {
+    let uuid = uuid_parse_str(&organization_id)?;
+
+    let query = by_organization(coaching_relationships::Entity::find(), uuid).await;
+
+    Ok(query.all(db).await?)
+}
+
 pub async fn find_by(
     db: &DatabaseConnection,
     params: std::collections::HashMap<String, String>,
@@ -57,7 +68,7 @@ pub async fn find_by(
     for (key, value) in params.iter() {
         match key.as_str() {
             "organization_id" => {
-                query = by_organization(query, from_str::<Id>(value).unwrap()).await;
+                query = by_organization(query, uuid_parse_str(&value)?).await;
             }
             _ => {
                 return Err(Error {
@@ -73,7 +84,7 @@ pub async fn find_by(
 
 async fn by_organization(
     query: Select<coaching_relationships::Entity>,
-    organization_id: Id,
+    organization_id: Uuid,
 ) -> Select<coaching_relationships::Entity> {
     query.filter(coaching_relationships::Column::OrganizationId.eq(organization_id))
 }

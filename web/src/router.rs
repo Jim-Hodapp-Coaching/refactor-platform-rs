@@ -7,9 +7,7 @@ use axum_login::login_required;
 use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
-use crate::controller::{
-    coaching_relationship_controller, organization_controller, user_session_controller,
-};
+use crate::controller::{organization, organization_controller, user_session_controller};
 
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -68,7 +66,7 @@ impl Modify for SecurityAddon {
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
         .merge(organization_routes(app_state.clone()))
-        .merge(coaching_relationship_routes(app_state.clone()))
+        .merge(organization_coaching_relationship_routes(app_state.clone()))
         .merge(session_routes())
         .merge(protected_routes())
         // FIXME: protect the OpenAPI web UI
@@ -76,11 +74,11 @@ pub fn define_routes(app_state: AppState) -> Router {
         .fallback_service(static_routes())
 }
 
-fn coaching_relationship_routes(app_state: AppState) -> Router {
+fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
     Router::new()
         .route(
-            "/coaching_relationships",
-            get(coaching_relationship_controller::index),
+            "/:organization_id/coaching_relationships",
+            get(organization::coaching_relationship_controller::index),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
