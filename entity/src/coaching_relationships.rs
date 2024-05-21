@@ -12,13 +12,11 @@ use utoipa::ToSchema;
 )]
 pub struct Model {
     #[sea_orm(primary_key)]
-    #[serde(skip_deserializing)]
-    pub id: i32,
+    pub id: Uuid,
     #[sea_orm(unique)]
-    pub external_id: Uuid,
-    pub organization_id: i32,
-    pub coach_id: i32,
-    pub coachee_id: i32,
+    pub organization_id: Uuid,
+    pub coach_id: Uuid,
+    pub coachee_id: Uuid,
     #[schema(value_type = String, format = DateTime)] // Applies to OpenAPI schema
     pub created_at: DateTimeWithTimeZone,
     #[schema(value_type = String, format = DateTime)] // Applies to OpenAPI schema

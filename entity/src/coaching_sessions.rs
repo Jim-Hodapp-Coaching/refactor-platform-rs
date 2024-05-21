@@ -7,11 +7,8 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(schema_name = "refactor_platform", table_name = "coaching_sessions")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    #[serde(skip_deserializing)]
-    pub id: i32,
-    #[sea_orm(unique)]
-    pub external_id: Uuid,
-    pub coaching_relationship_id: i32,
+    pub id: Uuid,
+    pub coaching_relationship_id: Uuid,
     pub date: Option<DateTime>,
     pub timezone: Option<String>,
     pub created_at: DateTimeWithTimeZone,

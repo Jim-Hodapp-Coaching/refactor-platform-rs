@@ -7,6 +7,7 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use entity::Id;
 use entity_api::coaching_relationship as CoachingRelationshipApi;
 use service::config::ApiVersion;
 
@@ -18,7 +19,7 @@ use log::*;
     path = "/organizations/{organization_id}/coaching_relationships",
     params(
         ApiVersion,
-        ("organization_id" = String, Path, description = "Organization external_id to retrieve CoachingRelationships")
+        ("organization_id" = Id, Path, description = "Organization id to retrieve CoachingRelationships")
     ),
     responses(
         (status = 200, description = "Successfully retrieved all CoachingRelationships", body = [entity::coaching_relationships::Model]),
@@ -37,11 +38,11 @@ pub async fn index(
     // TODO: create a new Extractor to authorize the user to access
     // the data requested
     State(app_state): State<AppState>,
-    Path(organization_id): Path<String>,
+    Path(organization_id): Path<Id>,
 ) -> Result<impl IntoResponse, Error> {
     debug!("GET all CoachingRelationships");
     let coaching_relationships =
-        CoachingRelationshipApi::find_by_organization(app_state.db_conn_ref(), &organization_id)
+        CoachingRelationshipApi::find_by_organization(app_state.db_conn_ref(), organization_id)
             .await?;
 
     debug!("Found CoachingRelationships: {:?}", coaching_relationships);

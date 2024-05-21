@@ -21,7 +21,6 @@ pub async fn create(db: &DatabaseConnection, user_model: Model) -> Result<Model,
     let now = Utc::now();
 
     let user_active_model: ActiveModel = ActiveModel {
-        external_id: Set(Uuid::new_v4()),
         email: Set(user_model.email),
         first_name: Set(user_model.first_name),
         last_name: Set(user_model.last_name),

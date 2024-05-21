@@ -1,13 +1,10 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::{organization::Entity, uuid_parse_str};
 use chrono::Utc;
-use entity::prelude::Users;
-use entity::{
-    coaching_relationships, organizations::*, prelude::Organizations, users, ExternalId, Id,
-};
+use entity::{coaching_relationships, organizations::*, prelude::Organizations, Id};
 use sea_orm::{
     entity::prelude::*, sea_query, ActiveValue::Set, ActiveValue::Unchanged, DatabaseConnection,
-    JoinType, QuerySelect, QueryTrait, TryIntoModel,
+    JoinType, QuerySelect, TryIntoModel,
 };
 use std::collections::HashMap;
 
@@ -22,7 +19,6 @@ pub async fn create(db: &DatabaseConnection, organization_model: Model) -> Resul
     let now = Utc::now();
 
     let organization_active_model: ActiveModel = ActiveModel {
-        external_id: Set(Uuid::new_v4()),
         logo: Set(organization_model.logo),
         name: Set(organization_model.name),
         created_at: Set(now.into()),
@@ -45,7 +41,6 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
 
             let active_model: ActiveModel = ActiveModel {
                 id: Unchanged(organization.id),
-                external_id: Set(Uuid::new_v4()),
                 logo: Set(model.logo),
                 name: Set(model.name),
                 updated_at: Unchanged(organization.updated_at),
@@ -91,20 +86,6 @@ pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>
     Ok(organization)
 }
 
-pub async fn find_by_external_id(
-    db: &DatabaseConnection,
-    external_id: &ExternalId,
-) -> Result<Option<Model>, Error> {
-    let uuid = uuid_parse_str(external_id)?;
-
-    let organization = Entity::find()
-        .filter(Column::ExternalId.eq(uuid))
-        .one(db)
-        .await?;
-
-    Ok(organization)
-}
-
 pub async fn find_by(
     db: &DatabaseConnection,
     params: HashMap<String, String>,
@@ -129,32 +110,19 @@ pub async fn find_by(
     Ok(query.all(db).await?)
 }
 
-pub async fn find_by_user(
-    db: &DatabaseConnection,
-    user_id: &ExternalId,
-) -> Result<Vec<Model>, Error> {
-    let uuid = uuid_parse_str(user_id)?;
-    let organizations = by_user(Entity::find(), uuid).await.all(db).await?;
+pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Model>, Error> {
+    let organizations = by_user(Entity::find(), user_id).await.all(db).await?;
 
     Ok(organizations)
 }
 
-async fn by_user(query: Select<Organizations>, user_uuid: Uuid) -> Select<Organizations> {
-    // subquery to find user matching the given external_id (user_id)
-    let user_subquery = Users::find()
-        .select_only()
-        .column(users::Column::Id)
-        .filter(users::Column::ExternalId.eq(user_uuid))
-        .into_query();
-
+async fn by_user(query: Select<Organizations>, user_id: Id) -> Select<Organizations> {
     query
         .join(JoinType::InnerJoin, Relation::CoachingRelationships.def())
         .filter(
             sea_query::Condition::any()
-                .add(coaching_relationships::Column::CoachId.in_subquery(user_subquery.to_owned()))
-                .add(
-                    coaching_relationships::Column::CoacheeId.in_subquery(user_subquery.to_owned()),
-                ),
+                .add(coaching_relationships::Column::CoachId.eq(user_id))
+                .add(coaching_relationships::Column::CoacheeId.eq(user_id)),
         )
 }
 
@@ -173,20 +141,18 @@ mod tests {
         let now = Utc::now();
         let organizations = vec![vec![
             organizations::Model {
-                id: 1,
+                id: Uuid::new_v4(),
                 name: "Organization One".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
-                external_id: Uuid::new_v4(),
             },
             organizations::Model {
-                id: 2,
+                id: Uuid::new_v4(),
                 name: "Organization One".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
-                external_id: Uuid::new_v4(),
             },
         ]];
         let db = MockDatabase::new(DatabaseBackend::Postgres)
@@ -202,49 +168,18 @@ mod tests {
     async fn find_by_user_returns_all_records_associated_with_user() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
-        let user_id = "a98c3295-0933-44cb-89db-7db0f7250fb1".to_string();
-        let _ = find_by_user(&db, &user_id).await;
-
-        let user_uuid = uuid_parse_str(&user_id).unwrap();
+        let user_id = Uuid::new_v4();
+        let _ = find_by_user(&db, user_id).await;
 
         assert_eq!(
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" IN (SELECT "users"."id" FROM "refactor_platform"."users" WHERE "users"."external_id" = $1) OR "coaching_relationships"."coachee_id" IN (SELECT "users"."id" FROM "refactor_platform"."users" WHERE "users"."external_id" = $2)"#,
-                [user_uuid.clone().into(), user_uuid.into()]
+                r#"SELECT "organizations"."id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" = $1 OR "coaching_relationships"."coachee_id" = $2"#,
+                [user_id.clone().into(), user_id.into()]
             )]
         );
 
         Ok(())
-    }
-
-    #[tokio::test]
-    async fn find_by_external_id_queries_by_external_id() -> Result<(), Error> {
-        let external_id = Uuid::new_v4();
-        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
-
-        let _ = find_by_external_id(&db, &external_id.to_string()).await;
-
-        assert_eq!(
-            db.into_transaction_log(),
-            [Transaction::from_sql_and_values(
-                DatabaseBackend::Postgres,
-                r#"SELECT "organizations"."id", "organizations"."external_id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" WHERE "organizations"."external_id" = $1 LIMIT $2"#,
-                [external_id.into(), 1u64.into()]
-            )]
-        );
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn find_by_external_id_returns_error_for_invalid_uuid() {
-        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
-
-        let external_id = "invalid_uuid".to_string();
-        let result = find_by_external_id(&db, &external_id).await;
-
-        assert!(result.is_err());
     }
 }

@@ -4,7 +4,7 @@ use chrono::Utc;
 use entity::{
     coaching_relationships,
     coaching_relationships::{ActiveModel, Model},
-    ExternalId, Id,
+    Id,
 };
 use sea_orm::{entity::prelude::*, Condition, DatabaseConnection, QuerySelect, QueryTrait, Set};
 
@@ -22,7 +22,6 @@ pub async fn create(
     let now = Utc::now();
 
     let coaching_relationship_active_model: ActiveModel = ActiveModel {
-        external_id: Set(Uuid::new_v4()),
         organization_id: Set(coaching_relationship_model.organization_id),
         coach_id: Set(coaching_relationship_model.coach_id),
         coachee_id: Set(coaching_relationship_model.coachee_id),
@@ -50,11 +49,9 @@ pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Mo
 
 pub async fn find_by_organization(
     db: &DatabaseConnection,
-    organization_id: &ExternalId,
+    organization_id: Id,
 ) -> Result<Vec<Model>, Error> {
-    let uuid = uuid_parse_str(&organization_id)?;
-
-    let query = by_organization(coaching_relationships::Entity::find(), uuid).await;
+    let query = by_organization(coaching_relationships::Entity::find(), organization_id).await;
 
     Ok(query.all(db).await?)
 }
@@ -89,7 +86,7 @@ async fn by_organization(
     let organization_subquery = entity::organizations::Entity::find()
         .select_only()
         .column(entity::organizations::Column::Id)
-        .filter(entity::organizations::Column::ExternalId.eq(organization_id))
+        .filter(entity::organizations::Column::Id.eq(organization_id))
         .into_query();
 
     query.filter(
@@ -109,18 +106,16 @@ mod tests {
 
     #[tokio::test]
     async fn find_by_user_returns_all_records_associated_with_user() -> Result<(), Error> {
-        let db = MockDatabase::new(DatabaseBackend::Postgres)
-            // .append_query_results(coaching_relationships)
-            .into_connection();
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
-        let user_id = 1;
+        let user_id = Uuid::new_v4();
         let _ = find_by_user(&db, user_id).await;
 
         assert_eq!(
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."external_id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."coach_id" = $1 OR "coaching_relationships"."coachee_id" = $2"#,
+                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."coach_id" = $1 OR "coaching_relationships"."coachee_id" = $2"#,
                 [user_id.into(), user_id.into()]
             )]
         );
@@ -132,17 +127,15 @@ mod tests {
     async fn find_by_organization_queries_for_all_records_by_organization() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
-        let organization_id = "a98c3295-0933-44cb-89db-7db0f7250fb1".to_string();
-        let _ = find_by_organization(&db, &organization_id).await;
-
-        let organization_uuid = uuid_parse_str(&organization_id).unwrap();
+        let organization_id = Uuid::new_v4();
+        let _ = find_by_organization(&db, organization_id).await;
 
         assert_eq!(
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."external_id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."external_id" = $1)"#,
-                [organization_uuid.clone().into()]
+                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."id" = $1)"#,
+                [organization_id.clone().into()]
             )]
         );
 

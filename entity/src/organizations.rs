@@ -9,10 +9,8 @@ use utoipa::ToSchema;
 #[sea_orm(schema_name = "refactor_platform", table_name = "organizations")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    #[serde(skip_serializing, skip_deserializing)]
-    pub id: i32,
+    pub id: Uuid,
     #[sea_orm(unique)]
-    pub external_id: Uuid,
     pub name: String,
     pub logo: Option<String>,
     #[schema(value_type = String, format = DateTime)] // Applies to OpenAPI schema

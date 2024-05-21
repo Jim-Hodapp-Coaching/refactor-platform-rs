@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 pub mod prelude;
 
 pub mod actions;
@@ -10,7 +12,4 @@ pub mod overarching_goals;
 pub mod users;
 
 /// A type alias that represents any Entity's internal id field data type
-pub type Id = i32;
-
-/// A type alias that represents any Entity's external id field data type
-pub type ExternalId = String;
+pub type Id = Uuid;
