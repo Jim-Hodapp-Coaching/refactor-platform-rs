@@ -64,7 +64,7 @@ pub async fn login(
 
     Ok(Json(ApiResponse::new(
         StatusCode::OK.into(),
-        json!({"id": user.external_id}),
+        json!({"id": user.id}),
     )))
 }
 

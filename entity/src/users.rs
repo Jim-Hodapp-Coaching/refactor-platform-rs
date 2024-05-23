@@ -11,10 +11,7 @@ use utoipa::ToSchema;
 #[sea_orm(schema_name = "refactor_platform", table_name = "users")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    #[serde(skip_deserializing)]
     pub id: Id,
-    #[sea_orm(unique)]
-    pub external_id: Uuid,
     #[sea_orm(unique)]
     pub email: String,
     pub first_name: Option<String>,

@@ -7,9 +7,7 @@ use axum_login::login_required;
 use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
-use crate::controller::{
-    coaching_relationship_controller, organization_controller, user_session_controller,
-};
+use crate::controller::{organization, organization_controller, user_session_controller};
 
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -32,11 +30,13 @@ use utoipa_rapidoc::RapiDoc;
             organization_controller::delete,
             user_session_controller::login,
             user_session_controller::logout,
+            organization::coaching_relationship_controller::index
         ),
         components(
             schemas(
                 entity::organizations::Model,
                 entity::users::Model,
+                entity::coaching_relationships::Model,
                 entity_api::user::Credentials,
             )
         ),
@@ -68,7 +68,7 @@ impl Modify for SecurityAddon {
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
         .merge(organization_routes(app_state.clone()))
-        .merge(coaching_relationship_routes(app_state.clone()))
+        .merge(organization_coaching_relationship_routes(app_state.clone()))
         .merge(session_routes())
         .merge(protected_routes())
         // FIXME: protect the OpenAPI web UI
@@ -76,11 +76,11 @@ pub fn define_routes(app_state: AppState) -> Router {
         .fallback_service(static_routes())
 }
 
-fn coaching_relationship_routes(app_state: AppState) -> Router {
+fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
     Router::new()
         .route(
-            "/coaching_relationships",
-            get(coaching_relationship_controller::index),
+            "/organizations/:organization_id/coaching_relationships",
+            get(organization::coaching_relationship_controller::index),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
@@ -134,14 +134,12 @@ mod organization_endpoints_tests {
         AuthManagerLayerBuilder,
     };
     use chrono::Utc;
-    use entity::{organizations, users};
+    use entity::{organizations, users, Id};
     use entity_api::user::Backend;
     use log::{debug, LevelFilter};
     use password_auth::generate_hash;
     use reqwest::{header, header::HeaderValue, Url};
-    use sea_orm::{
-        prelude::Uuid, DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult,
-    };
+    use sea_orm::{DatabaseBackend, DatabaseConnection, MockDatabase, MockExecResult};
     use serde_json::json;
     use service::{
         config::{ApiVersion, Config},
@@ -244,7 +242,7 @@ mod organization_endpoints_tests {
         pub fn get_user() -> anyhow::Result<users::Model> {
             let now = Utc::now();
             Ok(users::Model {
-                id: 1,
+                id: Id::new_v4(),
                 email: "test@domain.com".to_string(),
                 first_name: Some("test".to_string()),
                 last_name: Some("login".to_string()),
@@ -254,7 +252,6 @@ mod organization_endpoints_tests {
                 github_profile_url: None,
                 created_at: now.into(),
                 updated_at: now.into(),
-                external_id: Uuid::new_v4(),
             })
         }
     }
@@ -265,19 +262,18 @@ mod organization_endpoints_tests {
     async fn read_returns_expected_json_for_specified_organization() -> anyhow::Result<()> {
         let mut config = Config::default();
         let now = Utc::now();
-        let external_id = Uuid::new_v4();
-        let endpoint_path = format!("/organizations/{}", external_id);
+        let id = Id::new_v4();
+        let endpoint_path = format!("/organizations/{}", id);
 
         enable_test_logging(&mut config);
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let organization = organizations::Model {
-            id: 1,
+            id: id,
             name: "Organization One".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: external_id,
         };
 
         let organization_results = [vec![organization.clone()]];
@@ -333,28 +329,25 @@ mod organization_endpoints_tests {
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let organization1 = organizations::Model {
-            id: 1,
+            id: Id::new_v4(),
             name: "Organization One".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: Uuid::new_v4(),
         };
         let organization2 = organizations::Model {
-            id: 2,
+            id: Id::new_v4(),
             name: "Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: Uuid::new_v4(),
         };
         let organization3 = organizations::Model {
-            id: 3,
+            id: Id::new_v4(),
             name: "Organization Three".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: Uuid::new_v4(),
         };
 
         // Note: for entity_api::organization::find_all() to be able to return
@@ -412,21 +405,23 @@ mod organization_endpoints_tests {
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
 
+        let user_id1 = Id::new_v4();
+
         let organization_results1 = [vec![organizations::Model {
-            id: 2,
+            id: user_id1,
             name: "Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: Uuid::new_v4(),
         }]];
+
+        let user_id2 = Id::new_v4();
         let organization_results2 = [vec![organizations::Model {
-            id: 3,
+            id: user_id2,
             name: "Organization Three".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: Uuid::new_v4(),
         }]];
 
         let exec_results1 = [MockExecResult {
@@ -463,7 +458,11 @@ mod organization_endpoints_tests {
         {
             let response = test_client_server
                 .client
-                .delete(test_client_server.url("/organizations/2").unwrap())
+                .delete(
+                    test_client_server
+                        .url(format!("/organizations/{}", user_id1))
+                        .unwrap(),
+                )
                 .send()
                 .await?
                 .text()
@@ -483,7 +482,11 @@ mod organization_endpoints_tests {
         {
             let response = test_client_server
                 .client
-                .delete(test_client_server.url("/organizations/3").unwrap())
+                .delete(
+                    test_client_server
+                        .url(format!("/organizations/{}", user_id2))
+                        .unwrap(),
+                )
                 .send()
                 .await?
                 .text()
@@ -515,21 +518,19 @@ mod organization_endpoints_tests {
         let user_results1 = [vec![user.clone()]];
 
         let organization_results1 = [vec![organizations::Model {
-            id: 5,
+            id: Id::new_v4(),
             name: "New Organization Five".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: Uuid::new_v4(),
         }]];
 
         let organization_results2 = [vec![organizations::Model {
-            id: 6,
+            id: Id::new_v4(),
             name: "Second Organization Six".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: Uuid::new_v4(),
         }]];
 
         let exec_results1 = [MockExecResult {
@@ -622,24 +623,23 @@ mod organization_endpoints_tests {
 
         let user = TestClientServer::get_user().expect("Creating a new test user failed");
         let user_results1 = [vec![user.clone()]];
-        let uuid = Uuid::new_v4();
 
+        let user_id1 = Id::new_v4();
+        let user_id2 = Id::new_v4();
         let organizations = [
             vec![organizations::Model {
-                id: 2,
+                id: user_id1,
                 name: "Organization Two".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
-                external_id: uuid,
             }],
             vec![organizations::Model {
-                id: 2,
+                id: user_id2,
                 name: "Updated Organization Two".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
-                external_id: uuid,
             }],
         ];
 
@@ -667,17 +667,20 @@ mod organization_endpoints_tests {
         assert_eq!(response, ());
 
         let updated_organization2 = organizations::Model {
-            id: 2,
+            id: user_id2,
             name: "Updated Organization Two".to_owned(),
             created_at: now.into(),
             updated_at: now.into(),
             logo: None,
-            external_id: uuid,
         };
 
         let response_text = test_client_server
             .client
-            .put(test_client_server.url("/organizations/2").unwrap())
+            .put(
+                test_client_server
+                    .url(format!("/organizations/{}", user_id2))
+                    .unwrap(),
+            )
             .json(&updated_organization2)
             .send()
             .await?
@@ -686,7 +689,8 @@ mod organization_endpoints_tests {
 
         // We need to parse the values to serde_json::Value to compare them
         // so that the attribute order does not matter.
-        let parsed_response: serde_json::Value = serde_json::from_str(&response_text).unwrap();
+        let parsed_response: serde_json::Value =
+            serde_json::from_str(&response_text).unwrap_or_default();
 
         let expected_response = json!({
             "status_code": 200,
