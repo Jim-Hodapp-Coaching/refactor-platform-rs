@@ -133,7 +133,7 @@ async fn by_user(query: Select<Organizations>, user_id: Id) -> Select<Organizati
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
-    use entity::{Id, organizations};
+    use entity::{organizations, Id};
     use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]

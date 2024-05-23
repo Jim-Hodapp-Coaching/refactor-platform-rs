@@ -2,7 +2,7 @@ use chrono::Utc;
 use password_auth::generate_hash;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
-use entity::{coaching_relationships, Id, organizations, users};
+use entity::{coaching_relationships, organizations, users, Id};
 
 pub mod coaching_relationship;
 pub mod error;
