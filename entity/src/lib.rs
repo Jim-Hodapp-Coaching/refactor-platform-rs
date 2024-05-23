@@ -11,5 +11,6 @@ pub mod organizations;
 pub mod overarching_goals;
 pub mod users;
 
-/// A type alias that represents any Entity's internal id field data type
+/// A type alias that represents any Entity's internal id field data type.
+/// Aliased so that it's easy to change the underlying type if necessary.
 pub type Id = Uuid;

@@ -81,7 +81,7 @@ pub async fn find_by(
 
 async fn by_organization(
     query: Select<coaching_relationships::Entity>,
-    organization_id: Uuid,
+    organization_id: Id,
 ) -> Select<coaching_relationships::Entity> {
     let organization_subquery = entity::organizations::Entity::find()
         .select_only()
@@ -108,7 +108,7 @@ mod tests {
     async fn find_by_user_returns_all_records_associated_with_user() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
-        let user_id = Uuid::new_v4();
+        let user_id = Id::new_v4();
         let _ = find_by_user(&db, user_id).await;
 
         assert_eq!(
@@ -127,7 +127,7 @@ mod tests {
     async fn find_by_organization_queries_for_all_records_by_organization() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
-        let organization_id = Uuid::new_v4();
+        let organization_id = Id::new_v4();
         let _ = find_by_organization(&db, organization_id).await;
 
         assert_eq!(

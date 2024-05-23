@@ -1,18 +1,16 @@
 use chrono::Utc;
 use password_auth::generate_hash;
-use sea_orm::{prelude::Uuid, ActiveModelTrait, DatabaseConnection, Set};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
-use entity::coaching_relationships;
-use entity::organizations;
-use entity::users;
+use entity::{coaching_relationships, Id, organizations, users};
 
 pub mod coaching_relationship;
 pub mod error;
 pub mod organization;
 pub mod user;
 
-pub(crate) fn uuid_parse_str(uuid_str: &str) -> Result<Uuid, error::Error> {
-    Uuid::parse_str(uuid_str).map_err(|_| error::Error {
+pub(crate) fn uuid_parse_str(uuid_str: &str) -> Result<Id, error::Error> {
+    Id::parse_str(uuid_str).map_err(|_| error::Error {
         inner: None,
         error_code: error::EntityApiErrorCode::InvalidQueryTerm,
     })

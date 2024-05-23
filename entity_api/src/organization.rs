@@ -133,22 +133,22 @@ async fn by_user(query: Select<Organizations>, user_id: Id) -> Select<Organizati
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
-    use entity::organizations;
-    use sea_orm::{prelude::Uuid, DatabaseBackend, MockDatabase, Transaction};
+    use entity::{Id, organizations};
+    use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]
     async fn find_all_returns_a_list_of_records_when_present() -> Result<(), Error> {
         let now = Utc::now();
         let organizations = vec![vec![
             organizations::Model {
-                id: Uuid::new_v4(),
+                id: Id::new_v4(),
                 name: "Organization One".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
                 logo: None,
             },
             organizations::Model {
-                id: Uuid::new_v4(),
+                id: Id::new_v4(),
                 name: "Organization One".to_owned(),
                 created_at: now.into(),
                 updated_at: now.into(),
@@ -168,7 +168,7 @@ mod tests {
     async fn find_by_user_returns_all_records_associated_with_user() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
-        let user_id = Uuid::new_v4();
+        let user_id = Id::new_v4();
         let _ = find_by_user(&db, user_id).await;
 
         assert_eq!(
