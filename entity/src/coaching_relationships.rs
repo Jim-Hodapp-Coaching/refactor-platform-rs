@@ -35,26 +35,38 @@ pub enum Relation {
     )]
     Organizations,
     #[sea_orm(
-        belongs_to = "super::users::Entity",
+        belongs_to = "super::coaches::Entity",
         from = "Column::CoachId",
-        to = "super::users::Column::Id",
+        to = "super::coaches::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    Users2,
+    Coaches,
     #[sea_orm(
-        belongs_to = "super::users::Entity",
+        belongs_to = "super::coachees::Entity",
         from = "Column::CoacheeId",
-        to = "super::users::Column::Id",
+        to = "super::coachees::Column::Id",
         on_update = "NoAction",
         on_delete = "NoAction"
     )]
-    Users1,
+    Coachees,
 }
 
 impl Related<super::organizations::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Organizations.def()
+    }
+}
+
+impl Related<super::coaches::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Coaches.def()
+    }
+}
+
+impl Related<super::coachees::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Coachees.def()
     }
 }
 

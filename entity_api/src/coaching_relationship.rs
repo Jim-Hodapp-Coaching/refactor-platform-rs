@@ -2,9 +2,15 @@ use super::error::{EntityApiErrorCode, Error};
 use crate::uuid_parse_str;
 use chrono::Utc;
 use entity::{
-    coaching_relationships::{self, ActiveModel, Model}, users, Id
+    coachees, coaches,
+    coaching_relationships::{self, ActiveModel, Model},
+    users, Id,
 };
-use sea_orm::{entity::prelude::*, Condition, DatabaseConnection, JoinType, QuerySelect, QueryTrait, Set, sea_query::Alias};
+use sea_orm::{
+    entity::prelude::*,
+    sea_query::{Alias, SimpleExpr},
+    Condition, DatabaseConnection, IntoSimpleExpr, JoinType, QuerySelect, QueryTrait, Set,
+};
 
 use log::*;
 
@@ -58,24 +64,41 @@ pub async fn find_by_organization_with_user_names(
     db: &DatabaseConnection,
     organization_id: Id,
 ) -> Result<Vec<Model>, Error> {
-    let query = by_organization(coaching_relationships::Entity::find(), organization_id).await
-        .join_as(JoinType::Join, users::Relation::Coach.def().rev(), Alias::new("coach"))
-        // .join_as(JoinType::Join, coaching_relationships::Relation::Coach.def().rev(), Alias::new("coach"))
-        // .join_as(JoinType::Join, coaching_relationships::Relation::Coachee.def().rev(), Alias::new("coachee"))
-        .select_only();
-        // .column(coaching_relationships::Column::Id)
-        // .column(coaching_relationships::Column::OrganizationId)
-        // .column(coaching_relationships::Column::CoachId)
-        // .column(coaching_relationships::Column::CoacheeId)
-        // .column_as(crate::users::Column::FirstName, "coach_first_name")
-        // .column_as(crate::users::Column::LastName, "coach_last_name")
-        // .column_as(crate::users::Column::FirstName, "coachee_first_name")
-        // .column_as(crate::users::Column::LastName, "coachee_last_name");
-        // .into_query();
-        
-
-
-
+    let coaches = Alias::new("coaches");
+    let coachees = Alias::new("coachees");
+    let query = by_organization(coaching_relationships::Entity::find(), organization_id)
+        .await
+        .join_as(
+            JoinType::Join,
+            coaches::Relation::CoachingRelationships.def().rev(),
+            coaches.clone(),
+        )
+        .join_as(
+            JoinType::Join,
+            coachees::Relation::CoachingRelationships.def().rev(),
+            coachees.clone(),
+        )
+        .select_only()
+        .column(coaching_relationships::Column::Id)
+        .column(coaching_relationships::Column::OrganizationId)
+        .column(coaching_relationships::Column::CoachId)
+        .column(coaching_relationships::Column::CoacheeId)
+        .column_as(
+            Expr::val(format!("{}.first_name", coaches.to_string())),
+            "coach_first_name",
+        )
+        .column_as(
+            Expr::val(format!("{}.last_name", coaches.to_string())).into_simple_expr(),
+            "coach_last_name",
+        )
+        .column_as(
+            Expr::val(format!("{}.first_name", coachees.to_string())).into_simple_expr(),
+            "coachee_first_name",
+        )
+        .column_as(
+            Expr::val(format!("{}.last_name", coachees.to_string())).into_simple_expr(),
+            "coachee_last_name",
+        );
 
     Ok(query.all(db).await?)
 }
@@ -131,7 +154,7 @@ async fn by_organization(
 
 // impl From<Model> for CoachingRelationshipWithNames {
 //     fn from(model: Model) -> Self {
-//         coach = 
+//         coach =
 //         Self {
 //             id: model.id,
 //             coach_id: model.coach_id,
@@ -206,7 +229,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn find_by_organization_with_user_names_returns_all_records_by_organization_with_user_names() -> Result<(), Error> {
+    async fn find_by_organization_with_user_names_returns_all_records_by_organization_with_user_names(
+    ) -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
 
         let organization_id = Id::new_v4();
@@ -216,7 +240,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."id" = $1)"#,
+                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "users"."first_name" AS "coach_first_name", "users"."last_name" AS "coach_last_name",  "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."id" = $1)"#,
                 [organization_id.clone().into()]
             )]
         );
