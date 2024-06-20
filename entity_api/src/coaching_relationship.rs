@@ -4,13 +4,13 @@ use chrono::Utc;
 use entity::{
     coachees, coaches,
     coaching_relationships::{self, ActiveModel, Model},
-    users, Id,
+    Id,
 };
 use sea_orm::{
-    entity::prelude::*,
-    sea_query::{Alias, SimpleExpr},
-    Condition, DatabaseConnection, IntoSimpleExpr, JoinType, QuerySelect, QueryTrait, Set,
+    entity::prelude::*, sea_query::Alias, Condition, DatabaseConnection, FromQueryResult, JoinType,
+    QuerySelect, QueryTrait, Set,
 };
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 use log::*;
 
@@ -63,9 +63,10 @@ pub async fn find_by_organization(
 pub async fn find_by_organization_with_user_names(
     db: &DatabaseConnection,
     organization_id: Id,
-) -> Result<Vec<Model>, Error> {
+) -> Result<Vec<CoachingRelationshipWithUserNames>, Error> {
     let coaches = Alias::new("coaches");
     let coachees = Alias::new("coachees");
+
     let query = by_organization(coaching_relationships::Entity::find(), organization_id)
         .await
         .join_as(
@@ -83,22 +84,13 @@ pub async fn find_by_organization_with_user_names(
         .column(coaching_relationships::Column::OrganizationId)
         .column(coaching_relationships::Column::CoachId)
         .column(coaching_relationships::Column::CoacheeId)
-        .column_as(
-            Expr::val(format!("{}.first_name", coaches.to_string())),
-            "coach_first_name",
-        )
-        .column_as(
-            Expr::val(format!("{}.last_name", coaches.to_string())).into_simple_expr(),
-            "coach_last_name",
-        )
-        .column_as(
-            Expr::val(format!("{}.first_name", coachees.to_string())).into_simple_expr(),
-            "coachee_first_name",
-        )
-        .column_as(
-            Expr::val(format!("{}.last_name", coachees.to_string())).into_simple_expr(),
-            "coachee_last_name",
-        );
+        .column(coaching_relationships::Column::CreatedAt)
+        .column(coaching_relationships::Column::UpdatedAt)
+        .column_as(Expr::cust("coaches.first_name"), "coach_first_name")
+        .column_as(Expr::cust("coaches.last_name"), "coach_last_name")
+        .column_as(Expr::cust("coachees.first_name"), "coachee_first_name")
+        .column_as(Expr::cust("coachees.last_name"), "coachee_last_name")
+        .into_model::<CoachingRelationshipWithUserNames>();
 
     Ok(query.all(db).await?)
 }
@@ -144,42 +136,40 @@ async fn by_organization(
 
 // A convenient combined struct that holds the results of looking up the Users associated
 // with the coach/coachee ids. This should be used as an implementation detail only.
-// struct CoachingRelationshipWithNames {
-//     pub id: Id,
-//     pub coach_id: Id,
-//     pub coachee_id: Id,
-//     pub coach_name: String,
-//     pub coachee_name: String,
-// }
+#[derive(FromQueryResult, Debug)]
+pub struct CoachingRelationshipWithUserNames {
+    pub id: Id,
+    pub coach_id: Id,
+    pub coachee_id: Id,
+    pub coach_first_name: String,
+    pub coach_last_name: String,
+    pub coachee_first_name: String,
+    pub coachee_last_name: String,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
+}
 
-// impl From<Model> for CoachingRelationshipWithNames {
-//     fn from(model: Model) -> Self {
-//         coach =
-//         Self {
-//             id: model.id,
-//             coach_id: model.coach_id,
-//             coachee_id: model.coachee_id,
-//             coach_name: ,
-//             coachee_name: "Coachee".to_string(),
-//         }
-//     }
-// }
-
-// serialize the CoachingRelationshipWithNames struct so that it can be used in the API
+// serialize the CoachingRelationshipUserWithNames struct so that it can be used in the API
 // and appears to be a coaching_relationship JSON object.
-// impl Serialize for CoachingRelationshipWithNames {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: Serializer,
-//     {
-//         // 3 is the number of fields in the struct.
-//         let mut state = serializer.serialize_struct("Color", 3)?;
-//         state.serialize_field("", &self.r)?;
-//         state.serialize_field("g", &self.g)?;
-//         state.serialize_field("b", &self.b)?;
-//         state.end()
-//     }
-// }
+impl Serialize for CoachingRelationshipWithUserNames {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("CoachingRelationship", 7)?;
+        state.serialize_field("id", &self.id)?;
+        state.serialize_field("coach_id", &self.coach_id)?;
+        state.serialize_field("coachee_id", &self.coachee_id)?;
+        state.serialize_field("coach_first_name", &self.coach_first_name)?;
+        state.serialize_field("coach_last_name", &self.coach_last_name)?;
+        state.serialize_field("coachee_first_name", &self.coachee_first_name)?;
+        state.serialize_field("coachee_last_name", &self.coachee_last_name)?;
+        state.serialize_field("created_at", &self.created_at)?;
+        state.serialize_field("updated_at", &self.updated_at)?;
+        state.end()
+    }
+}
 
 #[cfg(test)]
 // We need to gate seaORM's mock feature behind conditional compilation because
@@ -240,7 +230,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "users"."first_name" AS "coach_first_name", "users"."last_name" AS "coach_last_name",  "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."id" = $1)"#,
+                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at", coaches.first_name AS "coach_first_name", coaches.last_name AS "coach_last_name", coachees.first_name AS "coachee_first_name", coachees.last_name AS "coachee_last_name" FROM "refactor_platform"."coaching_relationships" JOIN "refactor_platform"."users" AS "coaches" ON "coaching_relationships"."coach_id" = "coaches"."id" JOIN "refactor_platform"."users" AS "coachees" ON "coaching_relationships"."coachee_id" = "coachees"."id" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."id" = $1)"#,
                 [organization_id.clone().into()]
             )]
         );
