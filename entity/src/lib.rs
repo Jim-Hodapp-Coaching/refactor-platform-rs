@@ -4,6 +4,8 @@ pub mod prelude;
 
 pub mod actions;
 pub mod agreements;
+pub mod coachees;
+pub mod coaches;
 pub mod coaching_relationships;
 pub mod coaching_sessions;
 pub mod notes;

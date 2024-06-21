@@ -2,11 +2,15 @@ use super::error::{EntityApiErrorCode, Error};
 use crate::uuid_parse_str;
 use chrono::Utc;
 use entity::{
-    coaching_relationships,
-    coaching_relationships::{ActiveModel, Model},
+    coachees, coaches,
+    coaching_relationships::{self, ActiveModel, Model},
     Id,
 };
-use sea_orm::{entity::prelude::*, Condition, DatabaseConnection, QuerySelect, QueryTrait, Set};
+use sea_orm::{
+    entity::prelude::*, sea_query::Alias, Condition, DatabaseConnection, FromQueryResult, JoinType,
+    QuerySelect, QueryTrait, Set,
+};
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 
 use log::*;
 
@@ -56,6 +60,41 @@ pub async fn find_by_organization(
     Ok(query.all(db).await?)
 }
 
+pub async fn find_by_organization_with_user_names(
+    db: &DatabaseConnection,
+    organization_id: Id,
+) -> Result<Vec<CoachingRelationshipWithUserNames>, Error> {
+    let coaches = Alias::new("coaches");
+    let coachees = Alias::new("coachees");
+
+    let query = by_organization(coaching_relationships::Entity::find(), organization_id)
+        .await
+        .join_as(
+            JoinType::Join,
+            coaches::Relation::CoachingRelationships.def().rev(),
+            coaches.clone(),
+        )
+        .join_as(
+            JoinType::Join,
+            coachees::Relation::CoachingRelationships.def().rev(),
+            coachees.clone(),
+        )
+        .select_only()
+        .column(coaching_relationships::Column::Id)
+        .column(coaching_relationships::Column::OrganizationId)
+        .column(coaching_relationships::Column::CoachId)
+        .column(coaching_relationships::Column::CoacheeId)
+        .column(coaching_relationships::Column::CreatedAt)
+        .column(coaching_relationships::Column::UpdatedAt)
+        .column_as(Expr::cust("coaches.first_name"), "coach_first_name")
+        .column_as(Expr::cust("coaches.last_name"), "coach_last_name")
+        .column_as(Expr::cust("coachees.first_name"), "coachee_first_name")
+        .column_as(Expr::cust("coachees.last_name"), "coachee_last_name")
+        .into_model::<CoachingRelationshipWithUserNames>();
+
+    Ok(query.all(db).await?)
+}
+
 pub async fn find_by(
     db: &DatabaseConnection,
     params: std::collections::HashMap<String, String>,
@@ -93,6 +132,42 @@ async fn by_organization(
         coaching_relationships::Column::OrganizationId
             .in_subquery(organization_subquery.to_owned()),
     )
+}
+
+// A convenient combined struct that holds the results of looking up the Users associated
+// with the coach/coachee ids. This should be used as an implementation detail only.
+#[derive(FromQueryResult, Debug)]
+pub struct CoachingRelationshipWithUserNames {
+    pub id: Id,
+    pub coach_id: Id,
+    pub coachee_id: Id,
+    pub coach_first_name: String,
+    pub coach_last_name: String,
+    pub coachee_first_name: String,
+    pub coachee_last_name: String,
+    pub created_at: DateTimeWithTimeZone,
+    pub updated_at: DateTimeWithTimeZone,
+}
+
+// serialize the CoachingRelationshipUserWithNames struct so that it can be used in the API
+// and appears to be a coaching_relationship JSON object.
+impl Serialize for CoachingRelationshipWithUserNames {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("CoachingRelationship", 7)?;
+        state.serialize_field("id", &self.id)?;
+        state.serialize_field("coach_id", &self.coach_id)?;
+        state.serialize_field("coachee_id", &self.coachee_id)?;
+        state.serialize_field("coach_first_name", &self.coach_first_name)?;
+        state.serialize_field("coach_last_name", &self.coach_last_name)?;
+        state.serialize_field("coachee_first_name", &self.coachee_first_name)?;
+        state.serialize_field("coachee_last_name", &self.coachee_last_name)?;
+        state.serialize_field("created_at", &self.created_at)?;
+        state.serialize_field("updated_at", &self.updated_at)?;
+        state.end()
+    }
 }
 
 #[cfg(test)]
@@ -135,6 +210,26 @@ mod tests {
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
                 r#"SELECT "coaching_relationships"."id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at" FROM "refactor_platform"."coaching_relationships" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."id" = $1)"#,
+                [organization_id.clone().into()]
+            )]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_by_organization_with_user_names_returns_all_records_by_organization_with_user_names(
+    ) -> Result<(), Error> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let organization_id = Id::new_v4();
+        let _ = find_by_organization_with_user_names(&db, organization_id).await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "coaching_relationships"."id", "coaching_relationships"."organization_id", "coaching_relationships"."coach_id", "coaching_relationships"."coachee_id", "coaching_relationships"."created_at", "coaching_relationships"."updated_at", coaches.first_name AS "coach_first_name", coaches.last_name AS "coach_last_name", coachees.first_name AS "coachee_first_name", coachees.last_name AS "coachee_last_name" FROM "refactor_platform"."coaching_relationships" JOIN "refactor_platform"."users" AS "coaches" ON "coaching_relationships"."coach_id" = "coaches"."id" JOIN "refactor_platform"."users" AS "coachees" ON "coaching_relationships"."coachee_id" = "coachees"."id" WHERE "coaching_relationships"."organization_id" IN (SELECT "organizations"."id" FROM "refactor_platform"."organizations" WHERE "organizations"."id" = $1)"#,
                 [organization_id.clone().into()]
             )]
         );

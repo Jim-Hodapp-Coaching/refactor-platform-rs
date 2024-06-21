@@ -41,9 +41,11 @@ pub async fn index(
     Path(organization_id): Path<Id>,
 ) -> Result<impl IntoResponse, Error> {
     debug!("GET all CoachingRelationships");
-    let coaching_relationships =
-        CoachingRelationshipApi::find_by_organization(app_state.db_conn_ref(), organization_id)
-            .await?;
+    let coaching_relationships = CoachingRelationshipApi::find_by_organization_with_user_names(
+        app_state.db_conn_ref(),
+        organization_id,
+    )
+    .await?;
 
     debug!("Found CoachingRelationships: {:?}", coaching_relationships);
 
