@@ -5,6 +5,7 @@ use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 use entity::{coaching_relationships, organizations, users, Id};
 
 pub mod coaching_relationship;
+pub mod coaching_session;
 pub mod error;
 pub mod organization;
 pub mod user;
