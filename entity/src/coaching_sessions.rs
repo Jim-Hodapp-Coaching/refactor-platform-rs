@@ -11,8 +11,8 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: Id,
     pub coaching_relationship_id: Id,
-    pub date: Option<DateTime>,
-    pub timezone: Option<String>,
+    pub date: DateTime,
+    pub timezone: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }
