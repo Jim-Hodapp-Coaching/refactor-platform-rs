@@ -1,8 +1,8 @@
-use chrono::Utc;
+use chrono::{Days, Utc};
 use password_auth::generate_hash;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
-use entity::{coaching_relationships, organizations, users, Id};
+use entity::{coaching_relationships, coaching_sessions, organizations, users, Id};
 
 pub mod coaching_relationship;
 pub mod coaching_session;
@@ -88,7 +88,7 @@ pub async fn seed_database(db: &DatabaseConnection) {
     .await
     .unwrap();
 
-    coaching_relationships::ActiveModel {
+    let jim_caleb_coaching_relationship = coaching_relationships::ActiveModel {
         coach_id: Set(jim_hodapp.id.clone().unwrap()),
         coachee_id: Set(caleb_bourg.id.clone().unwrap()),
         organization_id: Set(jim_hodapp_coaching.id.unwrap()),
@@ -104,6 +104,90 @@ pub async fn seed_database(db: &DatabaseConnection) {
         coach_id: Set(jim_hodapp.id.clone().unwrap()),
         coachee_id: Set(other_user.id.clone().unwrap()),
         organization_id: Set(jim_hodapp_other_org.id.unwrap()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(7)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(14)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(21)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_sub_days(Days::new(7)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(14)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(21)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
