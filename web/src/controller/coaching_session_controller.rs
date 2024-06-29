@@ -18,7 +18,9 @@ use log::*;
     path = "/coaching_sessions",
     params(
         ApiVersion,
-        ("coaching_relationship_id" = Option<Id>, Query, description = "Filter by coaching_relationship_id")
+        ("coaching_relationship_id" = Option<Id>, Query, description = "Filter by coaching_relationship_id"),
+        ("from_date" = Option<NaiveDate>, Query, description = "Filter by from_date"),
+        ("to_date" = Option<NaiveDate>, Query, description = "Filter by to_date")
     ),
     responses(
         (status = 200, description = "Successfully retrieved all Coaching Sessions", body = [entity::coaching_sessions::Model]),
