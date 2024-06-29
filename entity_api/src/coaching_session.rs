@@ -1,20 +1,8 @@
 use super::error::{EntityApiErrorCode, Error};
-use crate::uuid_parse_str;
-use entity::{
-    coaching_sessions::{self, Entity, Model},
-    Id,
-};
+use crate::{naive_date_parse_str, uuid_parse_str};
+use entity::coaching_sessions::{self, Entity, Model};
 use sea_orm::{entity::prelude::*, DatabaseConnection};
 use std::collections::HashMap;
-
-pub async fn find_by_coaching_relationship(
-    db: &DatabaseConnection,
-    coaching_relationship_id: Id,
-) -> Result<Vec<Model>, Error> {
-    let query = by_coaching_relationship(Entity::find(), coaching_relationship_id).await;
-
-    Ok(query.all(db).await?)
-}
 
 pub async fn find_by(
     db: &DatabaseConnection,
@@ -26,7 +14,17 @@ pub async fn find_by(
         match key.as_str() {
             "coaching_relationship_id" => {
                 let coaching_relationship_id = uuid_parse_str(&value)?;
-                query = by_coaching_relationship(query, coaching_relationship_id).await;
+                query = query.filter(
+                    coaching_sessions::Column::CoachingRelationshipId.eq(coaching_relationship_id),
+                )
+            }
+            "from_date" => {
+                let from_date = naive_date_parse_str(&value)?;
+                query = query.filter(coaching_sessions::Column::Date.gt(from_date));
+            }
+            "to_date" => {
+                let to_date = naive_date_parse_str(&value)?;
+                query = query.filter(coaching_sessions::Column::Date.lt(to_date));
             }
             _ => {
                 return Err(Error {
@@ -40,13 +38,6 @@ pub async fn find_by(
     Ok(query.all(db).await?)
 }
 
-async fn by_coaching_relationship(
-    query: Select<Entity>,
-    coaching_relationship_id: Id,
-) -> Select<Entity> {
-    query.filter(coaching_sessions::Column::CoachingRelationshipId.eq(coaching_relationship_id))
-}
-
 #[cfg(test)]
 // We need to gate seaORM's mock feature behind conditional compilation because
 // the feature removes the Clone trait implementation from seaORM's DatabaseConnection.
@@ -54,15 +45,22 @@ async fn by_coaching_relationship(
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
+    use chrono::NaiveDate;
     use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]
     async fn find_by_coaching_relationships_returns_all_records_associated_with_coaching_relationship(
     ) -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
-
+        let mut query_params = HashMap::new();
         let coaching_relationship_id = Id::new_v4();
-        let _ = find_by_coaching_relationship(&db, coaching_relationship_id).await;
+
+        query_params.insert(
+            "coaching_relationship_id".to_owned(),
+            coaching_relationship_id.to_string(),
+        );
+
+        let _ = find_by(&db, query_params).await;
 
         assert_eq!(
             db.into_transaction_log(),
@@ -70,6 +68,50 @@ mod tests {
                 DatabaseBackend::Postgres,
                 r#"SELECT "coaching_sessions"."id", "coaching_sessions"."coaching_relationship_id", "coaching_sessions"."date", "coaching_sessions"."timezone", "coaching_sessions"."created_at", "coaching_sessions"."updated_at" FROM "refactor_platform"."coaching_sessions" WHERE "coaching_sessions"."coaching_relationship_id" = $1"#,
                 [coaching_relationship_id.into()]
+            )]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_by_from_date_returns_all_records_after_date() -> Result<(), Error> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+        let mut query_params = HashMap::new();
+        let from_date = NaiveDate::from_ymd(2021, 1, 1);
+
+        query_params.insert("from_date".to_owned(), from_date.to_string());
+
+        let _ = find_by(&db, query_params).await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "coaching_sessions"."id", "coaching_sessions"."coaching_relationship_id", "coaching_sessions"."date", "coaching_sessions"."timezone", "coaching_sessions"."created_at", "coaching_sessions"."updated_at" FROM "refactor_platform"."coaching_sessions" WHERE "coaching_sessions"."date" > $1"#,
+                [from_date.into()]
+            )]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_by_to_date_returns_all_records_before_date() -> Result<(), Error> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+        let mut query_params = HashMap::new();
+        let to_date = NaiveDate::from_ymd(2027, 1, 1);
+
+        query_params.insert("to_date".to_owned(), to_date.to_string());
+
+        let _ = find_by(&db, query_params).await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "coaching_sessions"."id", "coaching_sessions"."coaching_relationship_id", "coaching_sessions"."date", "coaching_sessions"."timezone", "coaching_sessions"."created_at", "coaching_sessions"."updated_at" FROM "refactor_platform"."coaching_sessions" WHERE "coaching_sessions"."date" < $1"#,
+                [to_date.into()]
             )]
         );
 
