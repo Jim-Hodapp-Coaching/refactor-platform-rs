@@ -3,15 +3,16 @@
 use crate::Id;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, ToSchema)]
 #[sea_orm(schema_name = "refactor_platform", table_name = "coaching_sessions")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: Id,
     pub coaching_relationship_id: Id,
-    pub date: Option<DateTime>,
-    pub timezone: Option<String>,
+    pub date: DateTime,
+    pub timezone: String,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
 }

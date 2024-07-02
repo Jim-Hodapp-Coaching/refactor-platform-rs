@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-05-21T12:05:17.574Z
+-- Generated at: 2024-06-28T21:45:29.597Z
 
 
 CREATE TABLE "refactor_platform"."organizations" (
@@ -36,8 +36,8 @@ CREATE TABLE "refactor_platform"."users" (
 CREATE TABLE "refactor_platform"."coaching_sessions" (
   "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_relationship_id" uuid NOT NULL,
-  "date" timestamp,
-  "timezone" varchar,
+  "date" timestamp NOT NULL,
+  "timezone" varchar NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
