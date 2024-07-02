@@ -46,6 +46,7 @@ pub async fn find_by(
 mod tests {
     use super::*;
     use chrono::NaiveDate;
+    use entity::Id;
     use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]
@@ -78,7 +79,7 @@ mod tests {
     async fn find_by_from_date_returns_all_records_after_date() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
         let mut query_params = HashMap::new();
-        let from_date = NaiveDate::from_ymd(2021, 1, 1);
+        let from_date = NaiveDate::from_ymd_opt(2021, 1, 1).unwrap();
 
         query_params.insert("from_date".to_owned(), from_date.to_string());
 
@@ -100,7 +101,7 @@ mod tests {
     async fn find_by_to_date_returns_all_records_before_date() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
         let mut query_params = HashMap::new();
-        let to_date = NaiveDate::from_ymd(2027, 1, 1);
+        let to_date = NaiveDate::from_ymd_opt(2027, 1, 1).unwrap();
 
         query_params.insert("to_date".to_owned(), to_date.to_string());
 
