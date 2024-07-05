@@ -1,16 +1,24 @@
-use chrono::Utc;
+use chrono::{Days, Utc};
 use password_auth::generate_hash;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
-use entity::{coaching_relationships, organizations, users, Id};
+use entity::{coaching_relationships, coaching_sessions, organizations, users, Id};
 
 pub mod coaching_relationship;
+pub mod coaching_session;
 pub mod error;
 pub mod organization;
 pub mod user;
 
 pub(crate) fn uuid_parse_str(uuid_str: &str) -> Result<Id, error::Error> {
     Id::parse_str(uuid_str).map_err(|_| error::Error {
+        inner: None,
+        error_code: error::EntityApiErrorCode::InvalidQueryTerm,
+    })
+}
+
+pub(crate) fn naive_date_parse_str(date_str: &str) -> Result<chrono::NaiveDate, error::Error> {
+    chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").map_err(|_| error::Error {
         inner: None,
         error_code: error::EntityApiErrorCode::InvalidQueryTerm,
     })
@@ -87,7 +95,7 @@ pub async fn seed_database(db: &DatabaseConnection) {
     .await
     .unwrap();
 
-    coaching_relationships::ActiveModel {
+    let jim_caleb_coaching_relationship = coaching_relationships::ActiveModel {
         coach_id: Set(jim_hodapp.id.clone().unwrap()),
         coachee_id: Set(caleb_bourg.id.clone().unwrap()),
         organization_id: Set(jim_hodapp_coaching.id.unwrap()),
@@ -103,6 +111,114 @@ pub async fn seed_database(db: &DatabaseConnection) {
         coach_id: Set(jim_hodapp.id.clone().unwrap()),
         coachee_id: Set(other_user.id.clone().unwrap()),
         organization_id: Set(jim_hodapp_other_org.id.unwrap()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(7)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(14)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(21)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_sub_days(Days::new(28)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_sub_days(Days::new(7)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_sub_days(Days::new(14)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_sub_days(Days::new(21)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
+    coaching_sessions::ActiveModel {
+        coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
+        date: Set(now.naive_local().checked_sub_days(Days::new(28)).unwrap()),
+        timezone: Set("America/Chicago".to_owned()),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
@@ -131,6 +247,20 @@ mod tests {
     async fn uuid_parse_str_returns_error_for_invalid_uuid() {
         let uuid_str = "invalid";
         let result = uuid_parse_str(uuid_str);
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn naive_date_parse_str_parses_valid_date() {
+        let date_str = "2021-08-01";
+        let date = naive_date_parse_str(date_str).unwrap();
+        assert_eq!(date.to_string(), date_str);
+    }
+
+    #[tokio::test]
+    async fn naive_date_parse_str_returns_error_for_invalid_date() {
+        let date_str = "invalid";
+        let result = naive_date_parse_str(date_str);
         assert!(result.is_err());
     }
 }

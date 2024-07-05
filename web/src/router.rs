@@ -7,7 +7,9 @@ use axum_login::login_required;
 use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
-use crate::controller::{organization, organization_controller, user_session_controller};
+use crate::controller::{
+    coaching_session_controller, organization, organization_controller, user_session_controller,
+};
 
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
@@ -30,13 +32,15 @@ use utoipa_rapidoc::RapiDoc;
             organization_controller::delete,
             user_session_controller::login,
             user_session_controller::logout,
-            organization::coaching_relationship_controller::index
+            organization::coaching_relationship_controller::index,
+            coaching_session_controller::index,
         ),
         components(
             schemas(
                 entity::organizations::Model,
                 entity::users::Model,
                 entity::coaching_relationships::Model,
+                entity::coaching_sessions::Model,
                 entity_api::user::Credentials,
             )
         ),
@@ -71,6 +75,7 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(organization_coaching_relationship_routes(app_state.clone()))
         .merge(session_routes())
         .merge(protected_routes())
+        .merge(coaching_sessions_routes(app_state.clone()))
         // FIXME: protect the OpenAPI web UI
         .merge(RapiDoc::with_openapi("/api-docs/openapi2.json", ApiDoc::openapi()).path("/rapidoc"))
         .fallback_service(static_routes())
@@ -99,6 +104,16 @@ pub fn organization_routes(app_state: AppState) -> Router {
         .route(
             "/organizations/:id",
             delete(organization_controller::delete),
+        )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
+}
+
+pub fn coaching_sessions_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route(
+            "/coaching_sessions",
+            get(coaching_session_controller::index),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
