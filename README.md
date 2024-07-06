@@ -42,6 +42,12 @@ The platform itself is useful for professional independent coaches, informal men
 
     This will create a database named `my_database`, a user named `my_user`, and a schema named `my_schema`.
 
+5. If you want seeded test data in your database, run:
+
+   ```shell
+   cargo run --bin seed_db
+   ```
+
 Please note that the script assumes that the password for the new PostgreSQL user is `password`. If you want to use a different password, you'll need to modify the script accordingly.
 
 ### Set Up Database Manually
@@ -96,6 +102,8 @@ Note that to generate a new Entity using the CLI you must ignore all other table
 `entity` - shape of the data models and the relationships to each other
 
 `migration` - relational DB SQL migrations
+
+`scripts` - contains handy developer-related scripts that make working with this codebase more straightforward
 
 `service` - CLI flags, environment variables, config handling and backend daemon setup
 
