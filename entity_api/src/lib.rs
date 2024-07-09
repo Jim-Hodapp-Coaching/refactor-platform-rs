@@ -7,6 +7,7 @@ use entity::{coaching_relationships, coaching_sessions, organizations, users, Id
 pub mod coaching_relationship;
 pub mod coaching_session;
 pub mod error;
+pub mod note;
 pub mod organization;
 pub mod user;
 

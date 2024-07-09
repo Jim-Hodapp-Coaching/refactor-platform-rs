@@ -8,7 +8,8 @@ use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
 use crate::controller::{
-    coaching_session_controller, organization, organization_controller, user_session_controller,
+    coaching_session_controller, note_controller, organization, organization_controller,
+    user_session_controller,
 };
 
 use utoipa::{
@@ -25,6 +26,7 @@ use utoipa_rapidoc::RapiDoc;
             title = "Refactor Platform API"
         ),
         paths(
+            note_controller::create,
             organization_controller::index,
             organization_controller::read,
             organization_controller::create,
@@ -37,6 +39,7 @@ use utoipa_rapidoc::RapiDoc;
         ),
         components(
             schemas(
+                entity::notes::Model,
                 entity::organizations::Model,
                 entity::users::Model,
                 entity::coaching_relationships::Model,
@@ -72,6 +75,7 @@ impl Modify for SecurityAddon {
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
         .merge(organization_routes(app_state.clone()))
+        .merge(note_routes(app_state.clone()))
         .merge(organization_coaching_relationship_routes(app_state.clone()))
         .merge(session_routes())
         .merge(protected_routes())
@@ -87,6 +91,13 @@ fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
             "/organizations/:organization_id/coaching_relationships",
             get(organization::coaching_relationship_controller::index),
         )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
+}
+
+fn note_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/notes", post(note_controller::create))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
