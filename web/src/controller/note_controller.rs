@@ -6,8 +6,9 @@ use crate::{AppState, Error};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{Form, Json};
+use axum::Json;
 use entity_api::note as NoteApi;
+use entity::notes::Model;
 use service::config::ApiVersion;
 
 use log::*;
@@ -16,6 +17,7 @@ use log::*;
 #[utoipa::path(
     post,
     path = "/notes",
+    request_body(content = entity_api::notes::Model, content_type = "application/json"),
     params(ApiVersion),
     responses(
         (status = 201, description = "Successfully Created a New Note", body = [entity::notes::Model]),
@@ -28,14 +30,13 @@ use log::*;
     )
 )]
 
-/// POST Create a New Note
 pub async fn create(
     CompareApiVersion(_v): CompareApiVersion,
     AuthenticatedUser(_user): AuthenticatedUser,
     // TODO: create a new Extractor to authorize the user to access
     // the data requested
     State(app_state): State<AppState>,
-    Json(note_model): Json<entity::notes::Model>,
+    Json(note_model): Json<Model>,
 ) -> Result<impl IntoResponse, Error> {
     debug!("POST Create a New Note with from: {:?}", note_model);
 
