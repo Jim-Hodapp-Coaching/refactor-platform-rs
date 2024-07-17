@@ -3,13 +3,14 @@ use crate::extractors::{
     authenticated_user::AuthenticatedUser, compare_api_version::CompareApiVersion,
 };
 use crate::{AppState, Error};
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use entity_api::note as NoteApi;
 use entity::notes::Model;
+use entity_api::note as NoteApi;
 use service::config::ApiVersion;
+use std::collections::HashMap;
 
 use log::*;
 
@@ -45,4 +46,41 @@ pub async fn create(
     debug!("New Note: {:?}", note);
 
     Ok(Json(ApiResponse::new(StatusCode::CREATED.into(), note)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/notes",
+    params(
+        ApiVersion,
+        ("coaching_session_id" = Option<Id>, Query, description = "Filter by coaching_session_id")
+    ),
+    responses(
+        (status = 200, description = "Successfully retrieved all Notes", body = [entity::coaching_sessions::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
+pub async fn index(
+    CompareApiVersion(_v): CompareApiVersion,
+    AuthenticatedUser(_user): AuthenticatedUser,
+    // TODO: create a new Extractor to authorize the user to access
+    // the data requested
+    State(app_state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<impl IntoResponse, Error> {
+    debug!("GET all Notes");
+    debug!("Filter Params: {:?}", params);
+
+    let coaching_sessions = NoteApi::find_by(app_state.db_conn_ref(), params).await?;
+
+    debug!("Found Notes: {:?}", coaching_sessions);
+
+    Ok(Json(ApiResponse::new(
+        StatusCode::OK.into(),
+        coaching_sessions,
+    )))
 }
