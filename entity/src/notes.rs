@@ -12,8 +12,10 @@ pub struct Model {
     #[serde(skip_deserializing)]
     #[sea_orm(primary_key)]
     pub id: Id,
+    #[serde(skip_deserializing)]
     pub coaching_session_id: Id,
     pub body: Option<String>,
+    #[serde(skip_deserializing)]
     pub user_id: Id,
     #[serde(skip_deserializing)]
     pub created_at: DateTimeWithTimeZone,

@@ -1,7 +1,12 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::uuid_parse_str;
 use entity::notes::{self, ActiveModel, Entity, Model};
-use sea_orm::{entity::prelude::*, DatabaseConnection, Set, TryIntoModel};
+use entity::Id;
+use sea_orm::{
+    entity::prelude::*,
+    ActiveValue::{Set, Unchanged},
+    DatabaseConnection, TryIntoModel,
+};
 use std::collections::HashMap;
 
 use log::*;
@@ -21,6 +26,35 @@ pub async fn create(db: &DatabaseConnection, note_model: Model) -> Result<Model,
     };
 
     Ok(note_active_model.save(db).await?.try_into_model()?)
+}
+
+pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Model, Error> {
+    let result = Entity::find_by_id(id).one(db).await?;
+
+    match result {
+        Some(note) => {
+            debug!("Existing Note model to be Updated: {:?}", note);
+
+            let active_model: ActiveModel = ActiveModel {
+                id: Unchanged(note.id),
+                coaching_session_id: Unchanged(note.coaching_session_id),
+                body: Set(model.body),
+                user_id: Unchanged(note.user_id),
+                updated_at: Set(chrono::Utc::now().into()),
+                created_at: Unchanged(note.created_at),
+            };
+
+            Ok(active_model.update(db).await?.try_into_model()?)
+        }
+        None => {
+            debug!("Note with id {} not found", id);
+
+            Err(Error {
+                inner: None,
+                error_code: EntityApiErrorCode::RecordNotFound,
+            })
+        }
+    }
 }
 
 pub async fn find_by(
@@ -78,6 +112,30 @@ mod tests {
         let note = create(&db, note_model.clone().into()).await?;
 
         assert_eq!(note.id, note_model.id);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_returns_an_updated_note_model() -> Result<(), Error> {
+        let now = chrono::Utc::now();
+
+        let note_model = Model {
+            id: Id::new_v4(),
+            coaching_session_id: Id::new_v4(),
+            body: Some("This is a note".to_owned()),
+            user_id: Id::new_v4(),
+            created_at: now.into(),
+            updated_at: now.into(),
+        };
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![vec![note_model.clone()], vec![note_model.clone()]])
+            .into_connection();
+
+        let note = update(&db, note_model.id, note_model.clone()).await?;
+
+        assert_eq!(note.body, note_model.body);
 
         Ok(())
     }
