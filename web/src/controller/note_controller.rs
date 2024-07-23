@@ -18,8 +18,8 @@ use log::*;
 #[utoipa::path(
     post,
     path = "/notes",
-    request_body(content = entity_api::notes::Model, content_type = "application/json"),
     params(ApiVersion),
+    request_body = entity::notes::Model,
     responses(
         (status = 201, description = "Successfully Created a New Note", body = [entity::notes::Model]),
         (status= 422, description = "Unprocessable Entity"),
@@ -51,11 +51,11 @@ pub async fn create(
 #[utoipa::path(
     put,
     path = "/notes/{id}",
-    request_body(content = entity_api::notes::Model, content_type = "application/json"),
     params(
         ApiVersion,
         ("id" = Id, Path, description = "Id of note to update"),
     ),
+    request_body = entity::notes::Model,
     responses(
         (status = 200, description = "Successfully Updated Note", body = [entity::notes::Model]),
         (status = 401, description = "Unauthorized"),
