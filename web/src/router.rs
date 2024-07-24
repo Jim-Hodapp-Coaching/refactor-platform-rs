@@ -27,6 +27,7 @@ use utoipa_rapidoc::RapiDoc;
         ),
         paths(
             note_controller::create,
+            note_controller::update,
             note_controller::index,
             organization_controller::index,
             organization_controller::read,
@@ -99,6 +100,7 @@ fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
 fn note_routes(app_state: AppState) -> Router {
     Router::new()
         .route("/notes", post(note_controller::create))
+        .route("/notes/:id", put(note_controller::update))
         .route("/notes", get(note_controller::index))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)

@@ -3,11 +3,11 @@ use crate::extractors::{
     authenticated_user::AuthenticatedUser, compare_api_version::CompareApiVersion,
 };
 use crate::{AppState, Error};
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use entity::notes::Model;
+use entity::{notes::Model, Id};
 use entity_api::note as NoteApi;
 use service::config::ApiVersion;
 use std::collections::HashMap;
@@ -18,8 +18,8 @@ use log::*;
 #[utoipa::path(
     post,
     path = "/notes",
-    request_body(content = entity_api::notes::Model, content_type = "application/json"),
     params(ApiVersion),
+    request_body = entity::notes::Model,
     responses(
         (status = 201, description = "Successfully Created a New Note", body = [entity::notes::Model]),
         (status= 422, description = "Unprocessable Entity"),
@@ -46,6 +46,41 @@ pub async fn create(
     debug!("New Note: {:?}", note);
 
     Ok(Json(ApiResponse::new(StatusCode::CREATED.into(), note)))
+}
+
+#[utoipa::path(
+    put,
+    path = "/notes/{id}",
+    params(
+        ApiVersion,
+        ("id" = Id, Path, description = "Id of note to update"),
+    ),
+    request_body = entity::notes::Model,
+    responses(
+        (status = 200, description = "Successfully Updated Note", body = [entity::notes::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
+pub async fn update(
+    CompareApiVersion(_v): CompareApiVersion,
+    AuthenticatedUser(_user): AuthenticatedUser,
+    // TODO: create a new Extractor to authorize the user to access
+    // the data requested
+    State(app_state): State<AppState>,
+    Path(id): Path<Id>,
+    Json(note_model): Json<Model>,
+) -> Result<impl IntoResponse, Error> {
+    debug!("PUT Update Note with id: {}", id);
+
+    let note = NoteApi::update(app_state.db_conn_ref(), id, note_model).await?;
+
+    debug!("Updated Note: {:?}", note);
+
+    Ok(Json(ApiResponse::new(StatusCode::OK.into(), note)))
 }
 
 #[utoipa::path(
