@@ -39,7 +39,7 @@ pub async fn create(
     State(app_state): State<AppState>,
     Json(note_model): Json<Model>,
 ) -> Result<impl IntoResponse, Error> {
-    debug!("POST Create a New Note with from: {:?}", note_model);
+    debug!("POST Create a New Note from: {:?}", note_model);
 
     let note = NoteApi::create(app_state.db_conn_ref(), note_model).await?;
 
