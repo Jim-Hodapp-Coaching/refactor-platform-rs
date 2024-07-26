@@ -34,9 +34,18 @@ async fn main() {
 
     info!("Starting up...");
 
-    let db = Arc::new(service::init_database(config.database_uri()).await.unwrap());
+    let db_conn = Arc::new(
+        service::init_database(config.database_uri())
+            .await
+            .map_err(|e| panic!("Failed to establish DBConnection: {:?}", e.to_string()))
+            .unwrap_or_default(),
+    );
 
-    let app_state = AppState::new(config, &db);
+    if db_conn.ping().await.is_err() {
+        panic!("Failed to establish a useable DBConnection and ping the DB successfully.");
+    }
+
+    let app_state = AppState::new(config, &db_conn);
 
     web::init_server(app_state).await.unwrap();
 }
