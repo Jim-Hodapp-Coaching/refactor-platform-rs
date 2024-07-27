@@ -78,7 +78,6 @@ pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>
                 inner: None,
                 error_code: EntityApiErrorCode::RecordNotFound,
             })
-            
         }
     }
 }
