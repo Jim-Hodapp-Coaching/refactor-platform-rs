@@ -110,14 +110,11 @@ pub async fn index(
     debug!("GET all Notes");
     debug!("Filter Params: {:?}", params);
 
-    let coaching_sessions = NoteApi::find_by(app_state.db_conn_ref(), params).await?;
+    let notes = NoteApi::find_by(app_state.db_conn_ref(), params).await?;
 
-    debug!("Found Notes: {:?}", coaching_sessions);
+    debug!("Found Notes: {:?}", notes);
 
-    Ok(Json(ApiResponse::new(
-        StatusCode::OK.into(),
-        coaching_sessions,
-    )))
+    Ok(Json(ApiResponse::new(StatusCode::OK.into(), notes)))
 }
 
 /// GET a particular Note specified by its id.
