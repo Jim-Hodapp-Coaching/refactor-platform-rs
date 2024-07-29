@@ -146,8 +146,7 @@ pub async fn read(
 ) -> Result<impl IntoResponse, Error> {
     debug!("GET Organization by id: {}", id);
 
-    let note: Option<notes::Model> =
-        NoteApi::find_by_id(app_state.db_conn_ref(), id).await?;
+    let note: Option<notes::Model> = NoteApi::find_by_id(app_state.db_conn_ref(), id).await?;
 
     Ok(Json(ApiResponse::new(StatusCode::OK.into(), note)))
 }
