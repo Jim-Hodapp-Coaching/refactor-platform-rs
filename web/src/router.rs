@@ -8,7 +8,7 @@ use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
 use crate::controller::{
-    coaching_session_controller, note_controller, organization, organization_controller,
+    agreement_controller, coaching_session_controller, note_controller, organization, organization_controller,
     user_session_controller,
 };
 
@@ -26,6 +26,9 @@ use utoipa_rapidoc::RapiDoc;
             title = "Refactor Platform API"
         ),
         paths(
+            agreement_controller::create,
+            agreement_controller::update,
+            agreement_controller::index,
             note_controller::create,
             note_controller::update,
             note_controller::index,
@@ -77,6 +80,7 @@ impl Modify for SecurityAddon {
 
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
+        .merge(agreement_routes(app_state.clone()))
         .merge(organization_routes(app_state.clone()))
         .merge(note_routes(app_state.clone()))
         .merge(organization_coaching_relationship_routes(app_state.clone()))
@@ -94,6 +98,15 @@ fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
             "/organizations/:organization_id/coaching_relationships",
             get(organization::coaching_relationship_controller::index),
         )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
+}
+
+fn agreement_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/agreements", post(agreement_controller::create))
+        .route("/agreements/:id", put(agreement_controller::update))
+        .route("/agreements", get(agreement_controller::index))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
