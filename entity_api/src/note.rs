@@ -47,8 +47,33 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
             Ok(active_model.update(db).await?.try_into_model()?)
         }
         None => {
-            debug!("Note with id {} not found", id);
+            error!("Note with id {} not found", id);
 
+            Err(Error {
+                inner: None,
+                error_code: EntityApiErrorCode::RecordNotFound,
+            })
+        }
+    }
+}
+
+pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>, Error> {
+    match Entity::find_by_id(id).one(db).await {
+        Ok(Some(note)) => {
+            debug!("Note found: {:?}", note);
+
+            Ok(Some(note))
+        }
+        Ok(None) => {
+            error!("Note with id {} not found", id);
+
+            Err(Error {
+                inner: None,
+                error_code: EntityApiErrorCode::RecordNotFound,
+            })
+        }
+        Err(err) => {
+            error!("Note with id {} not found and returned error {}", id, err);
             Err(Error {
                 inner: None,
                 error_code: EntityApiErrorCode::RecordNotFound,

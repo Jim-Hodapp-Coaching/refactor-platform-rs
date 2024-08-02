@@ -29,6 +29,7 @@ use utoipa_rapidoc::RapiDoc;
             note_controller::create,
             note_controller::update,
             note_controller::index,
+            note_controller::read,
             organization_controller::index,
             organization_controller::read,
             organization_controller::create,
@@ -102,6 +103,7 @@ fn note_routes(app_state: AppState) -> Router {
         .route("/notes", post(note_controller::create))
         .route("/notes/:id", put(note_controller::update))
         .route("/notes", get(note_controller::index))
+        .route("/notes/:id", get(note_controller::read))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }

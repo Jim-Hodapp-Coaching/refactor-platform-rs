@@ -7,7 +7,7 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use entity::{notes::Model, Id};
+use entity::{notes, Id};
 use entity_api::note as NoteApi;
 use service::config::ApiVersion;
 use std::collections::HashMap;
@@ -37,7 +37,7 @@ pub async fn create(
     // TODO: create a new Extractor to authorize the user to access
     // the data requested
     State(app_state): State<AppState>,
-    Json(note_model): Json<Model>,
+    Json(note_model): Json<notes::Model>,
 ) -> Result<impl IntoResponse, Error> {
     debug!("POST Create a New Note from: {:?}", note_model);
 
@@ -72,7 +72,7 @@ pub async fn update(
     // the data requested
     State(app_state): State<AppState>,
     Path(id): Path<Id>,
-    Json(note_model): Json<Model>,
+    Json(note_model): Json<notes::Model>,
 ) -> Result<impl IntoResponse, Error> {
     debug!("PUT Update Note with id: {}", id);
 
@@ -110,12 +110,39 @@ pub async fn index(
     debug!("GET all Notes");
     debug!("Filter Params: {:?}", params);
 
-    let coaching_sessions = NoteApi::find_by(app_state.db_conn_ref(), params).await?;
+    let notes = NoteApi::find_by(app_state.db_conn_ref(), params).await?;
 
-    debug!("Found Notes: {:?}", coaching_sessions);
+    debug!("Found Notes: {:?}", notes);
 
-    Ok(Json(ApiResponse::new(
-        StatusCode::OK.into(),
-        coaching_sessions,
-    )))
+    Ok(Json(ApiResponse::new(StatusCode::OK.into(), notes)))
+}
+
+/// GET a particular Note specified by its id.
+#[utoipa::path(
+    get,
+    path = "/notes/{id}",
+    params(
+        ApiVersion,
+        ("id" = String, Path, description = "Note id to retrieve")
+    ),
+    responses(
+        (status = 200, description = "Successfully retrieved a certain Note by its id", body = [entity::notes::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Note not found"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
+pub async fn read(
+    CompareApiVersion(_v): CompareApiVersion,
+    State(app_state): State<AppState>,
+    Path(id): Path<Id>,
+) -> Result<impl IntoResponse, Error> {
+    debug!("GET Organization by id: {}", id);
+
+    let note: Option<notes::Model> = NoteApi::find_by_id(app_state.db_conn_ref(), id).await?;
+
+    Ok(Json(ApiResponse::new(StatusCode::OK.into(), note)))
 }
