@@ -127,7 +127,6 @@ pub async fn index(
     ),
     responses(
         (status = 200, description = "Successfully retrieved a certain Note by its id", body = [entity::notes::Model]),
-        (status = 204, description = "No content"),
         (status = 401, description = "Unauthorized"),
         (status = 404, description = "Note not found"),
         (status = 405, description = "Method not allowed")

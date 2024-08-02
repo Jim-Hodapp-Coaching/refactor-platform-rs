@@ -104,27 +104,7 @@ pub async fn find_by(
         }
     }
 
-    match query.all(db).await {
-        Ok(notes) => {
-            debug!("Note found: {:?}", notes);
-
-            if !notes.is_empty() {
-                Ok(notes)
-            } else {
-                Err(Error {
-                    inner: None,
-                    error_code: EntityApiErrorCode::RecordNotFound,
-                })
-            }
-        }
-        Err(err) => {
-            error!("Error encountered retrieving all notes {}", err);
-            Err(Error {
-                inner: None,
-                error_code: EntityApiErrorCode::SystemError,
-            })
-        }
-    }
+    Ok(query.all(db).await?)
 }
 
 #[cfg(test)]

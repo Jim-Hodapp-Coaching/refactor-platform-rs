@@ -39,7 +39,7 @@ impl IntoResponse for Error {
             EntityApiErrorCode::RecordNotFound => {
                 debug!("Error: {:#?}, mapping to NO_CONTENT", self);
 
-                (StatusCode::NO_CONTENT, "NO CONTENT").into_response()
+                (StatusCode::NOT_FOUND, "NOT FOUND").into_response()
             }
             EntityApiErrorCode::RecordNotUpdated => {
                 debug!("Error: {:#?}, mapping to UNPROCESSABLE_ENTITY", self);
