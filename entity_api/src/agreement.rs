@@ -57,6 +57,32 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
     }
 }
 
+pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>, Error> {
+    match Entity::find_by_id(id).one(db).await {
+        Ok(Some(agreement)) => {
+            debug!("Agreement found: {:?}", agreement);
+
+            Ok(Some(agreement))
+        }
+        Ok(None) => {
+            error!("Agreement with id {} not found", id);
+
+            Err(Error {
+                inner: None,
+                error_code: EntityApiErrorCode::RecordNotFound,
+            })
+        }
+        Err(err) => {
+            error!("Error finding Agreement with id {}: {:?}", id, err);
+
+            Err(Error {
+                inner: Some(err),
+                error_code: EntityApiErrorCode::RecordNotFound,
+            })
+        }
+    }
+}
+
 pub async fn find_by(
     db: &DatabaseConnection,
     query_params: HashMap<String, String>,
@@ -130,7 +156,10 @@ mod tests {
         };
 
         let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(vec![vec![agreement_model.clone()], vec![agreement_model.clone()]])
+            .append_query_results(vec![
+                vec![agreement_model.clone()],
+                vec![agreement_model.clone()],
+            ])
             .into_connection();
 
         let agreement = update(&db, agreement_model.id, agreement_model.clone()).await?;
@@ -141,7 +170,27 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn find_by_returns_all_agreements_associated_with_coaching_session() -> Result<(), Error> {
+    async fn find_by_id_returns_agreement_associated_with_id() -> Result<(), Error> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+        let agreement_id = Id::new_v4();
+
+        let _ = find_by_id(&db, agreement_id).await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "agreements"."id", "agreements"."coaching_session_id", "agreements"."details", "agreements"."user_id", "agreements"."created_at", "agreements"."updated_at" FROM "refactor_platform"."agreements" WHERE "agreements"."id" = $1 LIMIT $2"#,
+                [agreement_id.into(), sea_orm::Value::BigUnsigned(Some(1))]
+            )]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_by_returns_all_agreements_associated_with_coaching_session() -> Result<(), Error>
+    {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
         let mut query_params = HashMap::new();
         let coaching_session_id = Id::new_v4();
