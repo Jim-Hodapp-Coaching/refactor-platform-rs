@@ -45,6 +45,7 @@ use utoipa_rapidoc::RapiDoc;
         ),
         components(
             schemas(
+                entity::agreements::Model,
                 entity::notes::Model,
                 entity::organizations::Model,
                 entity::users::Model,
