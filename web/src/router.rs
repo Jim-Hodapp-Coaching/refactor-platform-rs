@@ -8,8 +8,8 @@ use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
 use crate::controller::{
-    agreement_controller, coaching_session_controller, note_controller, organization, organization_controller,
-    user_session_controller,
+    agreement_controller, coaching_session_controller, note_controller, organization,
+    organization_controller, user_session_controller,
 };
 
 use utoipa::{
@@ -29,6 +29,7 @@ use utoipa_rapidoc::RapiDoc;
             agreement_controller::create,
             agreement_controller::update,
             agreement_controller::index,
+            agreement_controller::read,
             note_controller::create,
             note_controller::update,
             note_controller::index,
@@ -108,6 +109,7 @@ fn agreement_routes(app_state: AppState) -> Router {
         .route("/agreements", post(agreement_controller::create))
         .route("/agreements/:id", put(agreement_controller::update))
         .route("/agreements", get(agreement_controller::index))
+        .route("/agreements/:id", get(agreement_controller::read))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }

@@ -45,7 +45,40 @@ pub async fn create(
 
     debug!("New Agreement: {:?}", agreement);
 
-    Ok(Json(ApiResponse::new(StatusCode::CREATED.into(), agreement)))
+    Ok(Json(ApiResponse::new(
+        StatusCode::CREATED.into(),
+        agreement,
+    )))
+}
+
+/// GET a particular Agreement specified by its id.
+#[utoipa::path(
+    get,
+    path = "/agreements/{id}",
+    params(
+        ApiVersion,
+        ("id" = String, Path, description = "Agreement id to retrieve")
+    ),
+    responses(
+        (status = 200, description = "Successfully retrieved a specific Agreement by its id", body = [entity::notes::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Note not found"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
+pub async fn read(
+    CompareApiVersion(_v): CompareApiVersion,
+    State(app_state): State<AppState>,
+    Path(id): Path<Id>,
+) -> Result<impl IntoResponse, Error> {
+    debug!("GET Agreement by id: {}", id);
+
+    let note: Option<Model> = AgreementApi::find_by_id(app_state.db_conn_ref(), id).await?;
+
+    Ok(Json(ApiResponse::new(StatusCode::OK.into(), note)))
 }
 
 #[utoipa::path(
@@ -114,8 +147,5 @@ pub async fn index(
 
     debug!("Found Agreements: {:?}", agreements);
 
-    Ok(Json(ApiResponse::new(
-        StatusCode::OK.into(),
-        agreements,
-    )))
+    Ok(Json(ApiResponse::new(StatusCode::OK.into(), agreements)))
 }

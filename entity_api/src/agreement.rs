@@ -22,6 +22,7 @@ pub async fn create(db: &DatabaseConnection, agreement_model: Model) -> Result<M
         user_id: Set(agreement_model.user_id),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
+        status_changed_at: Set(None),
         ..Default::default()
     };
 
@@ -40,6 +41,8 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
                 coaching_session_id: Unchanged(agreement.coaching_session_id),
                 details: Set(model.details),
                 user_id: Unchanged(agreement.user_id),
+                status: Unchanged(agreement.status),
+                status_changed_at: Unchanged(agreement.status_changed_at),
                 updated_at: Set(chrono::Utc::now().into()),
                 created_at: Unchanged(agreement.created_at),
             };
