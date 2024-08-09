@@ -11,6 +11,7 @@ pub mod coaching_sessions;
 pub mod notes;
 pub mod organizations;
 pub mod overarching_goals;
+pub mod status;
 pub mod users;
 
 /// A type alias that represents any Entity's internal id field data type.

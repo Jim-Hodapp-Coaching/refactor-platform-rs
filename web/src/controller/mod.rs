@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+pub(crate) mod agreement_controller;
 pub(crate) mod coaching_session_controller;
 pub(crate) mod note_controller;
 pub(crate) mod organization;

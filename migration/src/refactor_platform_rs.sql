@@ -1,7 +1,13 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-06-28T21:45:29.597Z
+-- Generated at: 2024-08-09T12:23:43.194Z
 
+
+CREATE TYPE "status" AS ENUM (
+  'in_progress',
+  'completed',
+  'wont_do'
+);
 
 CREATE TABLE "refactor_platform"."organizations" (
   "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
@@ -66,6 +72,8 @@ CREATE TABLE "refactor_platform"."agreements" (
   "coaching_session_id" uuid NOT NULL,
   "details" varchar,
   "user_id" uuid NOT NULL,
+  "status" status NOT NULL,
+  "status_changed_at" timestamptz,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
@@ -74,8 +82,8 @@ CREATE TABLE "refactor_platform"."actions" (
   "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_session_id" uuid NOT NULL,
   "due_by" timestamptz,
-  "completed" boolean,
-  "completed_at" timestamptz,
+  "status" status NOT NULL,
+  "status_changed_at" timestamptz,
   "created_at" timestamp NOT NULL DEFAULT (now()),
   "updated_at" timestamp NOT NULL DEFAULT (now())
 );
