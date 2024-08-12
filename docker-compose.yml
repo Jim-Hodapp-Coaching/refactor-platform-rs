@@ -1,0 +1,72 @@
+version: '3.8'
+
+# Define a named network for all services to communicate
+networks:
+  refactornet:
+
+# Define persistent volumes for PostgreSQL data
+volumes:
+  postgres_data:
+
+services:
+  # PostgreSQL database service
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: refactor
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: refactor_platform
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - refactornet
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U refactor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Rust web application service
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "postgres://refactor:password@postgres:5432/refactor_platform"
+    networks:
+      - refactornet
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  # Rust backend service
+  service:
+    build:
+      context: ./service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "postgres://refactor:password@postgres:5432/refactor"
+    networks:
+      - refactornet
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+
+  # Migrations service
+  migrations:
+    build:
+      context: ./migration
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "postgres://refactor:password@postgres:5432/refactor_platform"
+    networks:
+      - refactornet
+    depends_on:
+      postgres:
+        condition: service_healthy

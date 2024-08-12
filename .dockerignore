@@ -1,0 +1,32 @@
+# Ignore the target directory, which contains build artifacts
+/target
+
+# Ignore the Cargo.lock file to ensure that Docker uses the latest dependencies
+Cargo.lock
+
+# Ignore any local configuration files
+/.vscode
+/.idea
+
+# Ignore Git-related files
+/.git
+/.gitignore
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+
+# Ignore the debug directory
+/debug
+
+# Ignore the dbml-error.log file
+dbml-error.log
+
+# Ignore the Dockerfile itself
+Dockerfile
+
+# Ignore the static analysis configuration file
+static-analysis.datadog.yml
+
+# Ignore documentation files
+/docs
