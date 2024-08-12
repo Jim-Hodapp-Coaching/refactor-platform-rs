@@ -1,57 +1,37 @@
-# Makefile for managing the project
+# Makefile
 
-# Variables
-DOCKER_COMPOSE = docker-compose
-DB_CONTAINER = postgres
-DB_USER = refactor
-DB_PASSWORD = password
-DB_NAME = refactor_platform
-DB_URL = postgres://$(DB_USER):$(DB_PASSWORD)@localhost:5432/$(DB_NAME)
+.PHONY: help install_postgresql install_dbml2sql rebuild_db seed_db setup_db_manual run_migrations generate_entity
 
-# Default target
-.PHONY: help
-help: ## Show this help message
-    @echo "Usage: make [target]"
-    @echo ""
-    @echo "Targets:"
-    @awk 'BEGIN {FS = ":.*##"; printf "\033[36m%-20s\033[0m %s\n", "Target", "Description"} /^[a-zA-Z_-]+:.*?##/ { printf "\033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+help:
+    @echo "Available commands:"
+    @echo "  install_postgresql    Install PostgreSQL using Homebrew"
+    @echo "  install_dbml2sql      Install dbml2sql tool using npm"
+    @echo "  rebuild_db            Run the rebuild_db.sh script with default settings"
+    @echo "  seed_db               Seed the database with test data"
+    @echo "  setup_db_manual       Set up the database manually using SQL commands"
+    @echo "  run_migrations        Run database migrations"
+    @echo "  generate_entity       Generate a new entity from the database"
 
-.PHONY: up
-up: ## Start all services using Docker Compose
-    $(DOCKER_COMPOSE) up -d
+install_postgresql:
+    brew install postgresql
 
-.PHONY: down
-down: ## Stop all services using Docker Compose
-    $(DOCKER_COMPOSE) down
+install_dbml2sql:
+    npm install -g @dbml/cli
 
-.PHONY: rebuild-db
-rebuild-db: ## Rebuild the database using the provided shell script
+rebuild_db:
     ./scripts/rebuild_db.sh
 
-.PHONY: migrate
-migrate: ## Run database migrations
-    DATABASE_URL=$(DB_URL) sea-orm-cli migrate up -s $(DB_NAME)
-
-.PHONY: seed-db
-seed-db: ## Seed the database with test data
+seed_db:
     cargo run --bin seed_db
 
-.PHONY: logs
-logs: ## Show logs for all services
-    $(DOCKER_COMPOSE) logs -f
+setup_db_manual:
+    psql -U postgres -c "CREATE DATABASE refactor_platform;"
+    psql -U postgres -d refactor_platform -c "CREATE USER refactor WITH PASSWORD 'password';"
+    psql -U postgres -d refactor_platform -c "CREATE SCHEMA IF NOT EXISTS refactor_platform AUTHORIZATION refactor;"
+    psql -U postgres -d refactor_platform -c "GRANT ALL PRIVILEGES ON SCHEMA refactor_platform TO refactor;"
 
-.PHONY: ps
-ps: ## List all running services
-    $(DOCKER_COMPOSE) ps
+run_migrations:
+    DATABASE_URL=postgres://refactor:password@localhost:5432/refactor_platform sea-orm-cli migrate up -s refactor_platform
 
-.PHONY: build
-build: ## Build all Docker images
-    $(DOCKER_COMPOSE) build
-
-.PHONY: clean
-clean: ## Remove all stopped containers and unused images
-    docker system prune -f
-
-.PHONY: generate-entity
-generate-entity: ## Generate a new Entity from the database
-    DATABASE_URL=$(DB_URL) sea-orm-cli generate entity -s $(DB_NAME) -o entity/src -v --with-serde both --serde-skip-deserializing-primary-key --ignore-tables {table to ignore} --ignore-tables {other table to ignore}
+generate_entity:
+    DATABASE_URL=postgres://refactor:password@localhost:5432/refactor_platform sea-orm-cli generate entity -s refactor_platform -o entity/src -v --with-serde both --serde-skip-deserializing-primary-key --ignore-tables {table to ignore} --ignore-tables {other table to ignore}
