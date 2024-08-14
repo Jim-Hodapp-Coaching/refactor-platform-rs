@@ -10,8 +10,9 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: Id,
     pub coaching_session_id: Option<Id>,
+    pub user_id: Id,
     pub title: Option<String>,
-    pub details: Option<String>,
+    pub body: Option<String>,
     pub completed_at: Option<DateTimeWithTimeZone>,
     pub created_at: DateTimeWithTimeZone,
     pub updated_at: DateTimeWithTimeZone,
@@ -27,11 +28,25 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     CoachingSessions,
+    #[sea_orm(
+        belongs_to = "super::users::Entity",
+        from = "Column::UserId",
+        to = "super::users::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Users,
 }
 
 impl Related<super::coaching_sessions::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::CoachingSessions.def()
+    }
+}
+
+impl Related<super::users::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Users.def()
     }
 }
 

@@ -8,8 +8,8 @@ use entity_api::user::Backend;
 use tower_http::services::ServeDir;
 
 use crate::controller::{
-    agreement_controller, coaching_session_controller, note_controller, organization,
-    organization_controller, user_session_controller,
+    action_controller, agreement_controller, coaching_session_controller, note_controller,
+    organization, organization_controller, user_session_controller,
 };
 
 use utoipa::{
@@ -26,6 +26,10 @@ use utoipa_rapidoc::RapiDoc;
             title = "Refactor Platform API"
         ),
         paths(
+            action_controller::create,
+            action_controller::update,
+            action_controller::index,
+            action_controller::read,
             agreement_controller::create,
             agreement_controller::update,
             agreement_controller::index,
@@ -46,6 +50,7 @@ use utoipa_rapidoc::RapiDoc;
         ),
         components(
             schemas(
+                entity::actions::Model,
                 entity::agreements::Model,
                 entity::notes::Model,
                 entity::organizations::Model,
@@ -82,6 +87,7 @@ impl Modify for SecurityAddon {
 
 pub fn define_routes(app_state: AppState) -> Router {
     Router::new()
+        .merge(action_routes(app_state.clone()))
         .merge(agreement_routes(app_state.clone()))
         .merge(organization_routes(app_state.clone()))
         .merge(note_routes(app_state.clone()))
@@ -100,6 +106,16 @@ fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
             "/organizations/:organization_id/coaching_relationships",
             get(organization::coaching_relationship_controller::index),
         )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
+}
+
+fn action_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/actions", post(action_controller::create))
+        .route("/actions/:id", put(action_controller::update))
+        .route("/actions", get(action_controller::index))
+        .route("/actions/:id", get(action_controller::read))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }

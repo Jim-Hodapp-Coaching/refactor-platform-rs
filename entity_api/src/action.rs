@@ -1,6 +1,6 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::uuid_parse_str;
-use entity::agreements::{self, ActiveModel, Entity, Model};
+use entity::actions::{self, ActiveModel, Entity, Model};
 use entity::Id;
 use sea_orm::{
     entity::prelude::*,
@@ -11,46 +11,47 @@ use std::collections::HashMap;
 
 use log::*;
 
-pub async fn create(db: &DatabaseConnection, agreement_model: Model) -> Result<Model, Error> {
-    debug!("New Agreement Model to be inserted: {:?}", agreement_model);
+pub async fn create(db: &DatabaseConnection, action_model: Model) -> Result<Model, Error> {
+    debug!("New Action Model to be inserted: {:?}", action_model);
 
     let now = chrono::Utc::now();
 
-    let agreement_active_model: ActiveModel = ActiveModel {
-        coaching_session_id: Set(agreement_model.coaching_session_id),
-        body: Set(agreement_model.body),
-        user_id: Set(agreement_model.user_id),
+    let action_active_model: ActiveModel = ActiveModel {
+        coaching_session_id: Set(action_model.coaching_session_id),
+        user_id: Set(action_model.user_id),
+        due_by: Set(action_model.due_by),
+        body: Set(action_model.body),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
-        status_changed_at: Set(None),
         ..Default::default()
     };
 
-    Ok(agreement_active_model.save(db).await?.try_into_model()?)
+    Ok(action_active_model.save(db).await?.try_into_model()?)
 }
 
 pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Model, Error> {
     let result = Entity::find_by_id(id).one(db).await?;
 
     match result {
-        Some(agreement) => {
-            debug!("Existing Agreement model to be Updated: {:?}", agreement);
+        Some(action) => {
+            debug!("Existing Action model to be Updated: {:?}", action);
 
             let active_model: ActiveModel = ActiveModel {
-                id: Unchanged(agreement.id),
-                coaching_session_id: Unchanged(agreement.coaching_session_id),
+                id: Unchanged(model.id),
+                coaching_session_id: Unchanged(model.coaching_session_id),
+                user_id: Unchanged(model.user_id),
                 body: Set(model.body),
-                user_id: Unchanged(agreement.user_id),
-                status: Unchanged(agreement.status),
-                status_changed_at: Unchanged(agreement.status_changed_at),
+                due_by: Set(model.due_by),
+                status: Set(model.status),
+                status_changed_at: Set(model.status_changed_at),
                 updated_at: Set(chrono::Utc::now().into()),
-                created_at: Unchanged(agreement.created_at),
+                created_at: Unchanged(model.created_at),
             };
 
             Ok(active_model.update(db).await?.try_into_model()?)
         }
         None => {
-            debug!("Agreement with id {} not found", id);
+            error!("Action with id {} not found", id);
 
             Err(Error {
                 inner: None,
@@ -62,13 +63,13 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
 
 pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>, Error> {
     match Entity::find_by_id(id).one(db).await {
-        Ok(Some(agreement)) => {
-            debug!("Agreement found: {:?}", agreement);
+        Ok(Some(action)) => {
+            debug!("Action found: {:?}", action);
 
-            Ok(Some(agreement))
+            Ok(Some(action))
         }
         Ok(None) => {
-            error!("Agreement with id {} not found", id);
+            error!("Action with id {} not found", id);
 
             Err(Error {
                 inner: None,
@@ -76,10 +77,9 @@ pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>
             })
         }
         Err(err) => {
-            error!("Error finding Agreement with id {}: {:?}", id, err);
-
+            error!("Action with id {} not found and returned error {}", id, err);
             Err(Error {
-                inner: Some(err),
+                inner: None,
                 error_code: EntityApiErrorCode::RecordNotFound,
             })
         }
@@ -97,7 +97,7 @@ pub async fn find_by(
             "coaching_session_id" => {
                 let coaching_session_id = uuid_parse_str(&value)?;
 
-                query = query.filter(agreements::Column::CoachingSessionId.eq(coaching_session_id));
+                query = query.filter(actions::Column::CoachingSessionId.eq(coaching_session_id));
             }
             _ => {
                 return Err(Error {
@@ -118,17 +118,18 @@ pub async fn find_by(
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
-    use entity::{agreements::Model, Id};
+    use entity::{actions::Model, Id};
     use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]
-    async fn create_returns_a_new_agreement_model() -> Result<(), Error> {
+    async fn create_returns_a_new_action_model() -> Result<(), Error> {
         let now = chrono::Utc::now();
 
-        let agreement_model = Model {
+        let action_model = Model {
             id: Id::new_v4(),
             coaching_session_id: Id::new_v4(),
-            body: Some("This is a agreement".to_owned()),
+            body: Some("This is a action".to_owned()),
+            due_by: Some(now.into()),
             user_id: Id::new_v4(),
             status_changed_at: None,
             status: Default::default(),
@@ -137,24 +138,25 @@ mod tests {
         };
 
         let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(vec![vec![agreement_model.clone()]])
+            .append_query_results(vec![vec![action_model.clone()]])
             .into_connection();
 
-        let agreement = create(&db, agreement_model.clone().into()).await?;
+        let action = create(&db, action_model.clone().into()).await?;
 
-        assert_eq!(agreement.id, agreement_model.id);
+        assert_eq!(action.id, action_model.id);
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn update_returns_an_updated_agreement_model() -> Result<(), Error> {
+    async fn update_returns_an_updated_action_model() -> Result<(), Error> {
         let now = chrono::Utc::now();
 
-        let agreement_model = Model {
+        let action_model = Model {
             id: Id::new_v4(),
             coaching_session_id: Id::new_v4(),
-            body: Some("This is a agreement".to_owned()),
+            due_by: Some(now.into()),
+            body: Some("This is a action".to_owned()),
             user_id: Id::new_v4(),
             status_changed_at: None,
             status: Default::default(),
@@ -163,41 +165,18 @@ mod tests {
         };
 
         let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(vec![
-                vec![agreement_model.clone()],
-                vec![agreement_model.clone()],
-            ])
+            .append_query_results(vec![vec![action_model.clone()], vec![action_model.clone()]])
             .into_connection();
 
-        let agreement = update(&db, agreement_model.id, agreement_model.clone()).await?;
+        let action = update(&db, action_model.id, action_model.clone()).await?;
 
-        assert_eq!(agreement.body, agreement_model.body);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn find_by_id_returns_agreement_associated_with_id() -> Result<(), Error> {
-        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
-        let agreement_id = Id::new_v4();
-
-        let _ = find_by_id(&db, agreement_id).await;
-
-        assert_eq!(
-            db.into_transaction_log(),
-            [Transaction::from_sql_and_values(
-                DatabaseBackend::Postgres,
-                r#"SELECT "agreements"."id", "agreements"."coaching_session_id", "agreements"."body", "agreements"."user_id", CAST("agreements"."status" AS text), "agreements"."status_changed_at", "agreements"."created_at", "agreements"."updated_at" FROM "refactor_platform"."agreements" WHERE "agreements"."id" = $1 LIMIT $2"#,
-                [agreement_id.into(), sea_orm::Value::BigUnsigned(Some(1))]
-            )]
-        );
+        assert_eq!(action.body, action_model.body);
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn find_by_returns_all_agreements_associated_with_coaching_session() -> Result<(), Error>
-    {
+    async fn find_by_returns_all_actions_associated_with_coaching_session() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
         let mut query_params = HashMap::new();
         let coaching_session_id = Id::new_v4();
@@ -213,7 +192,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "agreements"."id", "agreements"."coaching_session_id", "agreements"."body", "agreements"."user_id", CAST("agreements"."status" AS text), "agreements"."status_changed_at", "agreements"."created_at", "agreements"."updated_at" FROM "refactor_platform"."agreements" WHERE "agreements"."coaching_session_id" = $1"#,
+                r#"SELECT "actions"."id", "actions"."coaching_session_id", "actions"."user_id", "actions"."body", "actions"."due_by", CAST("actions"."status" AS text), "actions"."status_changed_at", "actions"."created_at", "actions"."updated_at" FROM "refactor_platform"."actions" WHERE "actions"."coaching_session_id" = $1"#,
                 [coaching_session_id.into()]
             )]
         );
