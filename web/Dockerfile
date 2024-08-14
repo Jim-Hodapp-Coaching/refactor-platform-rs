@@ -1,15 +1,20 @@
 # Stage 1: Build the Rust application
-FROM rust:1.55 AS builder
+FROM rust:latest AS builder
 
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Copy Cargo.toml and Cargo.lock and install dependencies
-COPY Cargo.toml Cargo.lock ./
-RUN cargo fetch
+# Copy the source code into the working directory
+COPY . /usr/src/app/
 
-# Copy the rest of the code and build the application
-COPY . .
+# Copy the local dependencies
+COPY ../entity /usr/src/entity
+COPY ../entity_api /usr/src/entity_api
+# COPY ../service /usr/src/service
+
+# Fetch the dependencies and build the application
+RUN cargo build 
+RUN cargo fetch
 RUN cargo build --release
 
 
@@ -25,16 +30,16 @@ LABEL description="The web service for the refactor platoform project."
 RUN apk add --no-cache ca-certificates
 
 # Create a non-root user and group
-RUN addgroup -S appgroup && adduser -S refactoruser -G refactorgroup
+RUN addgroup -S refactorgroup && adduser -S refactoruser -G refactorgroup
 
 # Set the working directory
 WORKDIR /app
 
 # Copy the binary from the build stage to the working directory
-COPY --from=builer /usr/src/app/target/release/app .
+COPY --from=builder /usr/src/app/target/release/web .
 
 # Change ownership of the binary to the non-root user
-RUN chown refactoruser:refactorgroup /app/app
+RUN chown refactoruser:refactorgroup /app/web
 
 # Expose the port that the app listens on
 EXPOSE 8000
@@ -43,4 +48,4 @@ EXPOSE 8000
 USER  refactoruser
 
 # Set the command to run the application
-CMD ["./app"]
+CMD ["./web"]
