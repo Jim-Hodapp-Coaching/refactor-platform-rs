@@ -9,7 +9,7 @@ use tower_http::services::ServeDir;
 
 use crate::controller::{
     action_controller, agreement_controller, coaching_session_controller, note_controller,
-    organization, organization_controller, user_session_controller,
+    organization, organization_controller, overarching_goal_controller, user_session_controller,
 };
 
 use utoipa::{
@@ -43,6 +43,10 @@ use utoipa_rapidoc::RapiDoc;
             organization_controller::create,
             organization_controller::update,
             organization_controller::delete,
+            overarching_goal_controller::create,
+            overarching_goal_controller::update,
+            overarching_goal_controller::index,
+            overarching_goal_controller::read,
             user_session_controller::login,
             user_session_controller::logout,
             organization::coaching_relationship_controller::index,
@@ -52,11 +56,12 @@ use utoipa_rapidoc::RapiDoc;
             schemas(
                 entity::actions::Model,
                 entity::agreements::Model,
+                entity::coaching_sessions::Model,
+                entity::coaching_relationships::Model,
                 entity::notes::Model,
                 entity::organizations::Model,
+                entity::overarching_goals::Model,
                 entity::users::Model,
-                entity::coaching_relationships::Model,
-                entity::coaching_sessions::Model,
                 entity_api::user::Credentials,
             )
         ),
@@ -92,6 +97,7 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(organization_routes(app_state.clone()))
         .merge(note_routes(app_state.clone()))
         .merge(organization_coaching_relationship_routes(app_state.clone()))
+        .merge(overarching_goal_routes(app_state.clone()))
         .merge(session_routes())
         .merge(protected_routes())
         .merge(coaching_sessions_routes(app_state.clone()))
@@ -153,6 +159,28 @@ pub fn organization_routes(app_state: AppState) -> Router {
         .route(
             "/organizations/:id",
             delete(organization_controller::delete),
+        )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
+}
+
+pub fn overarching_goal_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route(
+            "/overarching_goals",
+            post(overarching_goal_controller::create),
+        )
+        .route(
+            "/overarching_goals/:id",
+            put(overarching_goal_controller::update),
+        )
+        .route(
+            "/overarching_goals",
+            get(overarching_goal_controller::index),
+        )
+        .route(
+            "/overarching_goals/:id",
+            get(overarching_goal_controller::read),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
