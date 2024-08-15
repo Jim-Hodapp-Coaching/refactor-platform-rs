@@ -1,0 +1,36 @@
+# Stage 1: Build the Rust application
+FROM rust:latest AS builder
+
+# Set the working directory
+WORKDIR /usr/src/app
+
+# Copy the local dependencies
+COPY ../entity/Cargo.toml entity/
+COPY ../entity_api/Cargo.toml entity_api/
+
+# Copy the Cargo.toml and Cargo.lock files to leverage Docker's caching
+COPY Cargo.toml Cargo.lock ./
+
+# Fetch the dependencies
+RUN cargo fetch
+
+# Copy the source code into the working directory
+COPY . .
+
+# Build the application in release mode
+RUN cargo build --release
+
+# Stage 2: Create a minimal runtime image
+FROM alpine:latest
+
+# Install necessary runtime dependencies
+RUN apk add --no-cache libgcc
+
+# Set the working directory
+WORKDIR /usr/src/app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /usr/src/app/target/release/your_binary_name .
+
+# Set the entrypoint to the binary
+ENTRYPOINT ["./your_binary_name"]
