@@ -33,7 +33,7 @@ use log::*;
 
 pub async fn create(
     CompareApiVersion(_v): CompareApiVersion,
-    AuthenticatedUser(_user): AuthenticatedUser,
+    AuthenticatedUser(user): AuthenticatedUser,
     // TODO: create a new Extractor to authorize the user to access
     // the data requested
     State(app_state): State<AppState>,
@@ -45,7 +45,8 @@ pub async fn create(
     );
 
     let overarching_goals =
-        OverarchingGoalApi::create(app_state.db_conn_ref(), overarching_goals_model).await?;
+        OverarchingGoalApi::create(app_state.db_conn_ref(), overarching_goals_model, user.id)
+            .await?;
 
     debug!("New Overarching Goal: {:?}", overarching_goals);
 

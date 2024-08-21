@@ -14,6 +14,7 @@ pub struct Model {
     pub id: Id,
     pub coaching_session_id: Id,
     pub body: Option<String>,
+    #[serde(skip_deserializing)]
     pub user_id: Id,
     #[serde(skip_deserializing)]
     pub created_at: DateTimeWithTimeZone,

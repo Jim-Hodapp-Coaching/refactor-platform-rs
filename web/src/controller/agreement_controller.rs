@@ -33,7 +33,7 @@ use log::*;
 
 pub async fn create(
     CompareApiVersion(_v): CompareApiVersion,
-    AuthenticatedUser(_user): AuthenticatedUser,
+    AuthenticatedUser(user): AuthenticatedUser,
     // TODO: create a new Extractor to authorize the user to access
     // the data requested
     State(app_state): State<AppState>,
@@ -41,7 +41,7 @@ pub async fn create(
 ) -> Result<impl IntoResponse, Error> {
     debug!("POST Create a New Agreement from: {:?}", agreement_model);
 
-    let agreement = AgreementApi::create(app_state.db_conn_ref(), agreement_model).await?;
+    let agreement = AgreementApi::create(app_state.db_conn_ref(), agreement_model, user.id).await?;
 
     debug!("New Agreement: {:?}", agreement);
 

@@ -11,14 +11,18 @@ use std::collections::HashMap;
 
 use log::*;
 
-pub async fn create(db: &DatabaseConnection, action_model: Model) -> Result<Model, Error> {
+pub async fn create(
+    db: &DatabaseConnection,
+    action_model: Model,
+    user_id: Id,
+) -> Result<Model, Error> {
     debug!("New Action Model to be inserted: {:?}", action_model);
 
     let now = chrono::Utc::now();
 
     let action_active_model: ActiveModel = ActiveModel {
         coaching_session_id: Set(action_model.coaching_session_id),
-        user_id: Set(action_model.user_id),
+        user_id: Set(user_id),
         due_by: Set(action_model.due_by),
         body: Set(action_model.body),
         created_at: Set(now.into()),
@@ -127,10 +131,10 @@ mod tests {
 
         let action_model = Model {
             id: Id::new_v4(),
+            user_id: Id::new_v4(),
             coaching_session_id: Id::new_v4(),
             body: Some("This is a action".to_owned()),
             due_by: Some(now.into()),
-            user_id: Id::new_v4(),
             status_changed_at: None,
             status: Default::default(),
             created_at: now.into(),
@@ -141,7 +145,7 @@ mod tests {
             .append_query_results(vec![vec![action_model.clone()]])
             .into_connection();
 
-        let action = create(&db, action_model.clone().into()).await?;
+        let action = create(&db, action_model.clone().into(), Id::new_v4()).await?;
 
         assert_eq!(action.id, action_model.id);
 

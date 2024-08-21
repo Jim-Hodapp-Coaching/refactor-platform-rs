@@ -15,6 +15,7 @@ use log::*;
 pub async fn create(
     db: &DatabaseConnection,
     overarching_goal_model: Model,
+    user_id: Id,
 ) -> Result<Model, Error> {
     debug!(
         "New Overarching Goal Model to be inserted: {:?}",
@@ -25,7 +26,7 @@ pub async fn create(
 
     let overarching_goal_active_model: ActiveModel = ActiveModel {
         coaching_session_id: Set(overarching_goal_model.coaching_session_id),
-        user_id: Set(overarching_goal_model.user_id),
+        user_id: Set(user_id),
         title: Set(overarching_goal_model.title),
         body: Set(overarching_goal_model.body),
         created_at: Set(now.into()),
@@ -135,7 +136,7 @@ pub async fn find_by(
 mod tests {
     use super::*;
     use entity::{overarching_goals::Model, Id};
-    use sea_orm::{DatabaseBackend, MockDatabase, Transoverarching_goal};
+    use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]
     async fn create_returns_a_new_overarching_goal_model() -> Result<(), Error> {
@@ -143,12 +144,11 @@ mod tests {
 
         let overarching_goal_model = Model {
             id: Id::new_v4(),
-            coaching_session_id: Id::new_v4(),
-            body: Some("This is a overarching_goal".to_owned()),
-            due_by: Some(now.into()),
             user_id: Id::new_v4(),
-            status_changed_at: None,
-            status: Default::default(),
+            coaching_session_id: Some(Id::new_v4()),
+            title: Some("title".to_owned()),
+            body: Some("This is a overarching_goal".to_owned()),
+            completed_at: Some(now.into()),
             created_at: now.into(),
             updated_at: now.into(),
         };
@@ -157,7 +157,8 @@ mod tests {
             .append_query_results(vec![vec![overarching_goal_model.clone()]])
             .into_connection();
 
-        let overarching_goal = create(&db, overarching_goal_model.clone().into()).await?;
+        let overarching_goal =
+            create(&db, overarching_goal_model.clone().into(), Id::new_v4()).await?;
 
         assert_eq!(overarching_goal.id, overarching_goal_model.id);
 
@@ -170,12 +171,11 @@ mod tests {
 
         let overarching_goal_model = Model {
             id: Id::new_v4(),
-            coaching_session_id: Id::new_v4(),
-            due_by: Some(now.into()),
+            coaching_session_id: Some(Id::new_v4()),
+            title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             user_id: Id::new_v4(),
-            status_changed_at: None,
-            status: Default::default(),
+            completed_at: Some(now.into()),
             created_at: now.into(),
             updated_at: now.into(),
         };
@@ -215,9 +215,9 @@ mod tests {
 
         assert_eq!(
             db.into_transaction_log(),
-            [Transoverarching_goal::from_sql_and_values(
+            [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "overarching_goals"."id", "overarching_goals"."coaching_session_id", "overarching_goals"."user_id", "overarching_goals"."body", "overarching_goals"."title", "overarching_goals"."created_at", "overarching_goals"."updated_at" FROM "refactor_platform"."overarching_goals" WHERE "overarching_goals"."coaching_session_id" = $1"#,
+                r#"SELECT "overarching_goals"."id", "overarching_goals"."coaching_session_id", "overarching_goals"."user_id", "overarching_goals"."title", "overarching_goals"."body", "overarching_goals"."completed_at", "overarching_goals"."created_at", "overarching_goals"."updated_at" FROM "refactor_platform"."overarching_goals" WHERE "overarching_goals"."coaching_session_id" = $1"#,
                 [coaching_session_id.into()]
             )]
         );

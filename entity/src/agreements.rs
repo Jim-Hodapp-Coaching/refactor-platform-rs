@@ -15,6 +15,7 @@ pub struct Model {
     #[sea_orm(unique)]
     pub coaching_session_id: Id,
     pub body: Option<String>,
+    #[serde(skip_deserializing)]
     pub user_id: Id,
     #[serde(skip_deserializing)]
     pub status: status::Status,

@@ -11,7 +11,11 @@ use std::collections::HashMap;
 
 use log::*;
 
-pub async fn create(db: &DatabaseConnection, agreement_model: Model) -> Result<Model, Error> {
+pub async fn create(
+    db: &DatabaseConnection,
+    agreement_model: Model,
+    user_id: Id,
+) -> Result<Model, Error> {
     debug!("New Agreement Model to be inserted: {:?}", agreement_model);
 
     let now = chrono::Utc::now();
@@ -19,7 +23,7 @@ pub async fn create(db: &DatabaseConnection, agreement_model: Model) -> Result<M
     let agreement_active_model: ActiveModel = ActiveModel {
         coaching_session_id: Set(agreement_model.coaching_session_id),
         body: Set(agreement_model.body),
-        user_id: Set(agreement_model.user_id),
+        user_id: Set(user_id),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         status_changed_at: Set(None),
@@ -127,9 +131,9 @@ mod tests {
 
         let agreement_model = Model {
             id: Id::new_v4(),
+            user_id: Id::new_v4(),
             coaching_session_id: Id::new_v4(),
             body: Some("This is a agreement".to_owned()),
-            user_id: Id::new_v4(),
             status_changed_at: None,
             status: Default::default(),
             created_at: now.into(),
@@ -140,7 +144,7 @@ mod tests {
             .append_query_results(vec![vec![agreement_model.clone()]])
             .into_connection();
 
-        let agreement = create(&db, agreement_model.clone().into()).await?;
+        let agreement = create(&db, agreement_model.clone().into(), Id::new_v4()).await?;
 
         assert_eq!(agreement.id, agreement_model.id);
 
