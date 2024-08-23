@@ -21,7 +21,7 @@ use log::*;
     params(ApiVersion),
     request_body = entity::overarching_goals::Model,
     responses(
-        (status = 201, description = "Successfully Created a New OverarchingGoal", body = [entity::overarching_goals::Model]),
+        (status = 201, description = "Successfully Created a New Overarching Goal", body = [entity::overarching_goals::Model]),
         (status= 422, description = "Unprocessable Entity"),
         (status = 401, description = "Unauthorized"),
         (status = 405, description = "Method not allowed")
@@ -67,7 +67,7 @@ pub async fn create(
     responses(
         (status = 200, description = "Successfully retrieved a specific Overarching Goal by its id", body = [entity::notes::Model]),
         (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Note not found"),
+        (status = 404, description = "Overarching Goal not found"),
         (status = 405, description = "Method not allowed")
     ),
     security(
@@ -149,7 +149,7 @@ pub async fn index(
     State(app_state): State<AppState>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<impl IntoResponse, Error> {
-    debug!("GET all OverarchingGoals");
+    debug!("GET all Overarching Goals");
     debug!("Filter Params: {:?}", params);
 
     let overarching_goals = OverarchingGoalApi::find_by(app_state.db_conn_ref(), params).await?;
