@@ -1,6 +1,7 @@
 ## Entity Schema Diagram - Definitions and Relationships
 
-![refactor_platform_erd_may_2024](https://github.com/Jim-Hodapp-Coaching/refactor-platform-rs/assets/14064042/f7cb9197-6f24-422a-953c-f44dd01c40ec)
+![Untitled (1)](https://github.com/user-attachments/assets/1eea6ba9-b689-4bcb-8b7b-1d9cf725c16c)
+
 
 ## Example Data - A User as a Coach and Coachee in Two Different Organizations
 
