@@ -62,7 +62,7 @@ pub async fn create(
     responses(
         (status = 200, description = "Successfully retrieved a specific Agreement by its id", body = [entity::notes::Model]),
         (status = 401, description = "Unauthorized"),
-        (status = 404, description = "Note not found"),
+        (status = 404, description = "Agreement not found"),
         (status = 405, description = "Method not allowed")
     ),
     security(
