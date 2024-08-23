@@ -4,11 +4,14 @@ use sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 
 use entity::{coaching_relationships, coaching_sessions, organizations, users, Id};
 
+pub mod action;
+pub mod agreement;
 pub mod coaching_relationship;
 pub mod coaching_session;
 pub mod error;
 pub mod note;
 pub mod organization;
+pub mod overarching_goal;
 pub mod user;
 
 pub(crate) fn uuid_parse_str(uuid_str: &str) -> Result<Id, error::Error> {

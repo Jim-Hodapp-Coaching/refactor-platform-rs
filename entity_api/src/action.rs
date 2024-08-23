@@ -1,6 +1,6 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::uuid_parse_str;
-use entity::notes::{self, ActiveModel, Entity, Model};
+use entity::actions::{self, ActiveModel, Entity, Model};
 use entity::Id;
 use sea_orm::{
     entity::prelude::*,
@@ -13,45 +13,49 @@ use log::*;
 
 pub async fn create(
     db: &DatabaseConnection,
-    note_model: Model,
+    action_model: Model,
     user_id: Id,
 ) -> Result<Model, Error> {
-    debug!("New Note Model to be inserted: {:?}", note_model);
+    debug!("New Action Model to be inserted: {:?}", action_model);
 
     let now = chrono::Utc::now();
 
-    let note_active_model: ActiveModel = ActiveModel {
-        coaching_session_id: Set(note_model.coaching_session_id),
-        body: Set(note_model.body),
+    let action_active_model: ActiveModel = ActiveModel {
+        coaching_session_id: Set(action_model.coaching_session_id),
         user_id: Set(user_id),
+        due_by: Set(action_model.due_by),
+        body: Set(action_model.body),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
     };
 
-    Ok(note_active_model.save(db).await?.try_into_model()?)
+    Ok(action_active_model.save(db).await?.try_into_model()?)
 }
 
 pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Model, Error> {
     let result = Entity::find_by_id(id).one(db).await?;
 
     match result {
-        Some(note) => {
-            debug!("Existing Note model to be Updated: {:?}", note);
+        Some(action) => {
+            debug!("Existing Action model to be Updated: {:?}", action);
 
             let active_model: ActiveModel = ActiveModel {
-                id: Unchanged(note.id),
-                coaching_session_id: Unchanged(note.coaching_session_id),
+                id: Unchanged(model.id),
+                coaching_session_id: Unchanged(model.coaching_session_id),
+                user_id: Unchanged(model.user_id),
                 body: Set(model.body),
-                user_id: Unchanged(note.user_id),
+                due_by: Set(model.due_by),
+                status: Set(model.status),
+                status_changed_at: Set(model.status_changed_at),
                 updated_at: Set(chrono::Utc::now().into()),
-                created_at: Unchanged(note.created_at),
+                created_at: Unchanged(model.created_at),
             };
 
             Ok(active_model.update(db).await?.try_into_model()?)
         }
         None => {
-            error!("Note with id {} not found", id);
+            error!("Action with id {} not found", id);
 
             Err(Error {
                 inner: None,
@@ -63,13 +67,13 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
 
 pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>, Error> {
     match Entity::find_by_id(id).one(db).await {
-        Ok(Some(note)) => {
-            debug!("Note found: {:?}", note);
+        Ok(Some(action)) => {
+            debug!("Action found: {:?}", action);
 
-            Ok(Some(note))
+            Ok(Some(action))
         }
         Ok(None) => {
-            error!("Note with id {} not found", id);
+            error!("Action with id {} not found", id);
 
             Err(Error {
                 inner: None,
@@ -77,7 +81,7 @@ pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>
             })
         }
         Err(err) => {
-            error!("Note with id {} not found and returned error {}", id, err);
+            error!("Action with id {} not found and returned error {}", id, err);
             Err(Error {
                 inner: None,
                 error_code: EntityApiErrorCode::RecordNotFound,
@@ -97,7 +101,7 @@ pub async fn find_by(
             "coaching_session_id" => {
                 let coaching_session_id = uuid_parse_str(&value)?;
 
-                query = query.filter(notes::Column::CoachingSessionId.eq(coaching_session_id));
+                query = query.filter(actions::Column::CoachingSessionId.eq(coaching_session_id));
             }
             _ => {
                 return Err(Error {
@@ -118,59 +122,65 @@ pub async fn find_by(
 #[cfg(feature = "mock")]
 mod tests {
     use super::*;
-    use entity::{notes::Model, Id};
+    use entity::{actions::Model, Id};
     use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
 
     #[tokio::test]
-    async fn create_returns_a_new_note_model() -> Result<(), Error> {
+    async fn create_returns_a_new_action_model() -> Result<(), Error> {
         let now = chrono::Utc::now();
 
-        let note_model = Model {
+        let action_model = Model {
             id: Id::new_v4(),
             user_id: Id::new_v4(),
             coaching_session_id: Id::new_v4(),
-            body: Some("This is a note".to_owned()),
+            body: Some("This is a action".to_owned()),
+            due_by: Some(now.into()),
+            status_changed_at: None,
+            status: Default::default(),
             created_at: now.into(),
             updated_at: now.into(),
         };
 
         let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(vec![vec![note_model.clone()]])
+            .append_query_results(vec![vec![action_model.clone()]])
             .into_connection();
 
-        let note = create(&db, note_model.clone().into(), Id::new_v4()).await?;
+        let action = create(&db, action_model.clone().into(), Id::new_v4()).await?;
 
-        assert_eq!(note.id, note_model.id);
+        assert_eq!(action.id, action_model.id);
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn update_returns_an_updated_note_model() -> Result<(), Error> {
+    async fn update_returns_an_updated_action_model() -> Result<(), Error> {
         let now = chrono::Utc::now();
 
-        let note_model = Model {
+        let action_model = Model {
             id: Id::new_v4(),
             coaching_session_id: Id::new_v4(),
-            body: Some("This is a note".to_owned()),
+            due_by: Some(now.into()),
+            body: Some("This is a action".to_owned()),
             user_id: Id::new_v4(),
+            status_changed_at: None,
+            status: Default::default(),
             created_at: now.into(),
             updated_at: now.into(),
         };
 
         let db = MockDatabase::new(DatabaseBackend::Postgres)
-            .append_query_results(vec![vec![note_model.clone()], vec![note_model.clone()]])
+            .append_query_results(vec![vec![action_model.clone()], vec![action_model.clone()]])
             .into_connection();
 
-        let note = update(&db, note_model.id, note_model.clone()).await?;
+        let action = update(&db, action_model.id, action_model.clone()).await?;
 
-        assert_eq!(note.body, note_model.body);
+        assert_eq!(action.body, action_model.body);
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn find_by_returns_all_notes_associated_with_coaching_session() -> Result<(), Error> {
+    async fn find_by_returns_all_actions_associated_with_coaching_session() -> Result<(), Error> {
         let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
         let mut query_params = HashMap::new();
         let coaching_session_id = Id::new_v4();
@@ -186,7 +196,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "notes"."id", "notes"."coaching_session_id", "notes"."body", "notes"."user_id", "notes"."created_at", "notes"."updated_at" FROM "refactor_platform"."notes" WHERE "notes"."coaching_session_id" = $1"#,
+                r#"SELECT "actions"."id", "actions"."coaching_session_id", "actions"."user_id", "actions"."body", "actions"."due_by", CAST("actions"."status" AS text), "actions"."status_changed_at", "actions"."created_at", "actions"."updated_at" FROM "refactor_platform"."actions" WHERE "actions"."coaching_session_id" = $1"#,
                 [coaching_session_id.into()]
             )]
         );

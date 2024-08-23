@@ -1,7 +1,13 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-06-28T21:45:29.597Z
+-- Generated at: 2024-08-09T18:10:25.658Z
 
+
+CREATE TYPE "status" AS ENUM (
+  'in_progress',
+  'completed',
+  'wont_do'
+);
 
 CREATE TABLE "refactor_platform"."organizations" (
   "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
@@ -44,9 +50,10 @@ CREATE TABLE "refactor_platform"."coaching_sessions" (
 
 CREATE TABLE "refactor_platform"."overarching_goals" (
   "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
+  "user_id" uuid NOT NULL,
   "coaching_session_id" uuid,
   "title" varchar,
-  "details" varchar,
+  "body" varchar,
   "completed_at" timestamptz,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
@@ -64,8 +71,10 @@ CREATE TABLE "refactor_platform"."notes" (
 CREATE TABLE "refactor_platform"."agreements" (
   "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_session_id" uuid NOT NULL,
-  "details" varchar,
+  "body" varchar,
   "user_id" uuid NOT NULL,
+  "status" status NOT NULL,
+  "status_changed_at" timestamptz,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
@@ -73,9 +82,11 @@ CREATE TABLE "refactor_platform"."agreements" (
 CREATE TABLE "refactor_platform"."actions" (
   "id" uuid UNIQUE PRIMARY KEY NOT NULL DEFAULT (gen_random_uuid()),
   "coaching_session_id" uuid NOT NULL,
+  "body" varchar,
+  "user_id" uuid NOT NULL,
   "due_by" timestamptz,
-  "completed" boolean,
-  "completed_at" timestamptz,
+  "status" status NOT NULL,
+  "status_changed_at" timestamptz,
   "created_at" timestamp NOT NULL DEFAULT (now()),
   "updated_at" timestamp NOT NULL DEFAULT (now())
 );
@@ -106,11 +117,13 @@ COMMENT ON COLUMN "refactor_platform"."coaching_sessions"."timezone" IS 'The bas
 
 COMMENT ON COLUMN "refactor_platform"."coaching_sessions"."updated_at" IS 'The last date and time fields were changed';
 
+COMMENT ON COLUMN "refactor_platform"."overarching_goals"."user_id" IS 'User that created (owns) the overarching goal';
+
 COMMENT ON COLUMN "refactor_platform"."overarching_goals"."coaching_session_id" IS 'The coaching session that an overarching goal is associated with';
 
 COMMENT ON COLUMN "refactor_platform"."overarching_goals"."title" IS 'A short description of an overarching goal';
 
-COMMENT ON COLUMN "refactor_platform"."overarching_goals"."details" IS 'A long description of an overarching goal';
+COMMENT ON COLUMN "refactor_platform"."overarching_goals"."body" IS 'Main text of the overarching goal supporting Markdown';
 
 COMMENT ON COLUMN "refactor_platform"."overarching_goals"."completed_at" IS 'The date and time an overarching goal was completed';
 
@@ -122,11 +135,15 @@ COMMENT ON COLUMN "refactor_platform"."notes"."user_id" IS 'User that created (o
 
 COMMENT ON COLUMN "refactor_platform"."notes"."updated_at" IS 'The last date and time an overarching note''s fields were changed';
 
-COMMENT ON COLUMN "refactor_platform"."agreements"."details" IS 'Either a short or long description of an agreement reached between coach and coachee in a coaching session';
+COMMENT ON COLUMN "refactor_platform"."agreements"."body" IS 'Either a short or long description of an agreement reached between coach and coachee in a coaching session';
 
 COMMENT ON COLUMN "refactor_platform"."agreements"."user_id" IS 'User that created (owns) the agreement';
 
 COMMENT ON COLUMN "refactor_platform"."agreements"."updated_at" IS 'The last date and time an overarching agreement''s fields were changed';
+
+COMMENT ON COLUMN "refactor_platform"."actions"."body" IS 'Main text of the action supporting Markdown';
+
+COMMENT ON COLUMN "refactor_platform"."actions"."user_id" IS 'User that created (owns) the action';
 
 ALTER TABLE "refactor_platform"."coaching_relationships" ADD FOREIGN KEY ("organization_id") REFERENCES "refactor_platform"."organizations" ("id");
 
