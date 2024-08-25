@@ -4,11 +4,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Eq, PartialEq, EnumIter, Deserialize, Serialize, DeriveActiveEnum)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "status")]
 pub enum Status {
-    #[sea_orm(string_value = "InProgress")]
+    #[sea_orm(string_value = "not_started")]
+    NotStarted,
+    #[sea_orm(string_value = "in_progress")]
     InProgress,
-    #[sea_orm(string_value = "Completed")]
+    #[sea_orm(string_value = "completed")]
     Completed,
-    #[sea_orm(string_value = "WontDo")]
+    #[sea_orm(string_value = "wont_do")]
     WontDo,
 }
 
