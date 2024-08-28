@@ -89,6 +89,7 @@ Table refactor_platform.actions {
 }
 
 enum status {
+  not_started
   in_progress
   completed
   wont_do
