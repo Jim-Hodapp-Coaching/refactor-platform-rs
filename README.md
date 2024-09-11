@@ -88,10 +88,19 @@ DATABASE_URL=postgres://refactor:password@localhost:5432/refactor_platform sea-o
 ### Generate a new Entity from Database
 Note that to generate a new Entity using the CLI you must ignore all other tables using the `--ignore-tables` option. You must add the option for _each_ table you are ignoring.
 
-
 ```bash
  DATABASE_URL=postgres://refactor:password@localhost:5432/refactor_platform sea-orm-cli generate entity  -s refactor_platform -o entity/src -v --with-serde both --serde-skip-deserializing-primary-key --ignore-tables {table to ignore} --ignore-tables {other table to ignore}
 ```
+
+## Starting the Backend
+
+To run the backend directly outside of a container:
+
+```bash
+cargo run  -- -l DEBUG -d postgres://refactor:password@localhost:5432/refactor_platform
+```
+
+This will start the backend with log level DEBUG and attempt to connect to a Postgres DB server on the same machine with user `refactor` and password `password` on port `5432` and selecting the database named `refactor_platform`.
 
 ## Project Directory Structure
 
