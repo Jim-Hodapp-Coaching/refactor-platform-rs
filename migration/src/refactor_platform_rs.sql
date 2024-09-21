@@ -1,9 +1,10 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-08-09T18:10:25.658Z
+-- Generated at: 2024-09-21T03:25:20.880Z
 
 
 CREATE TYPE "status" AS ENUM (
+  'not_started',
   'in_progress',
   'completed',
   'wont_do'
@@ -73,8 +74,6 @@ CREATE TABLE "refactor_platform"."agreements" (
   "coaching_session_id" uuid NOT NULL,
   "body" varchar,
   "user_id" uuid NOT NULL,
-  "status" status NOT NULL,
-  "status_changed_at" timestamptz,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
