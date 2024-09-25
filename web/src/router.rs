@@ -185,6 +185,10 @@ pub fn overarching_goal_routes(app_state: AppState) -> Router {
             "/overarching_goals/:id",
             get(overarching_goal_controller::read),
         )
+        .route(
+            "/overarching_goals/:id/status",
+            put(overarching_goal_controller::update_status),
+        )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
