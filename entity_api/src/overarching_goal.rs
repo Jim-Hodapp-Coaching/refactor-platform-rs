@@ -1,7 +1,7 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::uuid_parse_str;
 use entity::overarching_goals::{self, ActiveModel, Entity, Model};
-use entity::Id;
+use entity::{status::Status, Id};
 use sea_orm::{
     entity::prelude::*,
     ActiveModelTrait,
@@ -61,6 +61,46 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
                 completed_at: Set(model.completed_at),
                 updated_at: Set(chrono::Utc::now().into()),
                 created_at: Unchanged(model.created_at),
+            };
+
+            Ok(active_model.update(db).await?.try_into_model()?)
+        }
+        None => {
+            error!("Overarching Goal with id {} not found", id);
+
+            Err(Error {
+                inner: None,
+                error_code: EntityApiErrorCode::RecordNotFound,
+            })
+        }
+    }
+}
+
+pub async fn update_status(
+    db: &DatabaseConnection,
+    id: Id,
+    status: Status,
+) -> Result<Model, Error> {
+    let result = Entity::find_by_id(id).one(db).await?;
+
+    match result {
+        Some(overarching_goal) => {
+            debug!(
+                "Existing Overarching Goal model to be Updated: {:?}",
+                overarching_goal
+            );
+
+            let active_model: ActiveModel = ActiveModel {
+                id: Unchanged(overarching_goal.id),
+                coaching_session_id: Unchanged(overarching_goal.coaching_session_id),
+                user_id: Unchanged(overarching_goal.user_id),
+                body: Unchanged(overarching_goal.body),
+                title: Unchanged(overarching_goal.title),
+                status: Set(status),
+                status_changed_at: Set(Some(chrono::Utc::now().into())),
+                completed_at: Unchanged(overarching_goal.completed_at),
+                updated_at: Set(chrono::Utc::now().into()),
+                created_at: Unchanged(overarching_goal.created_at),
             };
 
             Ok(active_model.update(db).await?.try_into_model()?)
@@ -201,6 +241,62 @@ mod tests {
         .await?;
 
         assert_eq!(overarching_goal.body, overarching_goal_model.body);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_status_returns_an_updated_overarching_goal_model() -> Result<(), Error> {
+        let now = chrono::Utc::now();
+
+        let overarching_goal_model = Model {
+            id: Id::new_v4(),
+            coaching_session_id: Some(Id::new_v4()),
+            title: Some("title".to_owned()),
+            body: Some("This is a overarching_goal".to_owned()),
+            user_id: Id::new_v4(),
+            completed_at: Some(now.into()),
+            status_changed_at: None,
+            status: Default::default(),
+            created_at: now.into(),
+            updated_at: now.into(),
+        };
+
+        let updated_overarching_goal_model = Model {
+            id: Id::new_v4(),
+            coaching_session_id: Some(Id::new_v4()),
+            title: Some("title".to_owned()),
+            body: Some("This is a overarching_goal".to_owned()),
+            user_id: Id::new_v4(),
+            completed_at: Some(now.into()),
+            status_changed_at: Some(now.into()),
+            status: Status::Completed,
+            created_at: now.into(),
+            updated_at: now.into(),
+        };
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![
+                vec![overarching_goal_model.clone()],
+                vec![updated_overarching_goal_model.clone()],
+            ])
+            .into_connection();
+
+        let overarching_goal =
+            update_status(&db, overarching_goal_model.id, Status::Completed).await?;
+
+        assert_eq!(overarching_goal.status, Status::Completed);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_status_returns_error_when_overarching_goal_not_found() -> Result<(), Error> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let result = update_status(&db, Id::new_v4(), Status::Completed).await;
+
+        assert_eq!(result.is_err(), true);
 
         Ok(())
     }
