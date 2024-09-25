@@ -61,6 +61,26 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
     }
 }
 
+pub async fn delete_by_id(db: &DatabaseConnection, id: Id) -> Result<(), Error> {
+    let result = find_by_id(db, id).await?;
+
+    match result {
+        Some(agreement_model) => {
+            debug!(
+                "Existing Agreement model to be deleted: {:?}",
+                agreement_model
+            );
+
+            agreement_model.delete(db).await?;
+            Ok(())
+        }
+        None => Err(Error {
+            inner: None,
+            error_code: EntityApiErrorCode::RecordNotFound,
+        }),
+    }
+}
+
 pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>, Error> {
     match Entity::find_by_id(id).one(db).await {
         Ok(Some(agreement)) => {

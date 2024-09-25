@@ -9,6 +9,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use entity::{agreements::Model, Id};
 use entity_api::agreement as AgreementApi;
+use serde_json::json;
 use service::config::ApiVersion;
 use std::collections::HashMap;
 
@@ -148,4 +149,33 @@ pub async fn index(
     debug!("Found Agreements: {:?}", agreements);
 
     Ok(Json(ApiResponse::new(StatusCode::OK.into(), agreements)))
+}
+
+/// DELETE an Agreement specified by its primary key.
+#[utoipa::path(
+    delete,
+    path = "/agreements/{id}",
+    params(
+        ApiVersion,
+        ("id" = i32, Path, description = "Agreement id to delete")
+    ),
+    responses(
+        (status = 200, description = "Successfully deleted a certain Agreement by its id", body = [i32]),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Agreement not found"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
+pub async fn delete(
+    CompareApiVersion(_v): CompareApiVersion,
+    State(app_state): State<AppState>,
+    Path(id): Path<Id>,
+) -> Result<impl IntoResponse, Error> {
+    debug!("DELETE Agreement by id: {}", id);
+
+    AgreementApi::delete_by_id(app_state.db_conn_ref(), id).await?;
+    Ok(Json(json!({"id": id})))
 }
