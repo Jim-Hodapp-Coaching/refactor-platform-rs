@@ -114,6 +114,41 @@ pub async fn update(
 }
 
 #[utoipa::path(
+    put,
+    path = "/actions/{id}/status",
+    params(
+        ApiVersion,
+        ("id" = Id, Path, description = "Id of action to update"),
+        ("value" = Option<String>, Query, description = "Status value to update"),
+    ),
+    request_body = entity::actions::Model,
+    responses(
+        (status = 200, description = "Successfully Updated Action", body = [entity::actions::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
+pub async fn update_status(
+    CompareApiVersion(_v): CompareApiVersion,
+    AuthenticatedUser(_user): AuthenticatedUser,
+    Query(status): Query<String>,
+    Path(id): Path<Id>,
+    State(app_state): State<AppState>,
+) -> Result<impl IntoResponse, Error> {
+    debug!("PUT Update Action Status with id: {}", id);
+
+    let action =
+        ActionApi::update_status(app_state.db_conn_ref(), id, status.as_str().into()).await?;
+
+    debug!("Updated Action: {:?}", action);
+
+    Ok(Json(ApiResponse::new(StatusCode::OK.into(), action)))
+}
+
+#[utoipa::path(
     get,
     path = "/actions",
     params(

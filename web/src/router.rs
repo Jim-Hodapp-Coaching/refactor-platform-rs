@@ -123,6 +123,7 @@ fn action_routes(app_state: AppState) -> Router {
         .route("/actions/:id", put(action_controller::update))
         .route("/actions", get(action_controller::index))
         .route("/actions/:id", get(action_controller::read))
+        .route("/actions/:id/status", put(action_controller::update_status))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
