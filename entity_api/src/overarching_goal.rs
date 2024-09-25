@@ -56,6 +56,8 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
                 user_id: Unchanged(model.user_id),
                 body: Set(model.body),
                 title: Set(model.title),
+                status: Set(model.status),
+                status_changed_at: Set(model.status_changed_at),
                 completed_at: Set(model.completed_at),
                 updated_at: Set(chrono::Utc::now().into()),
                 created_at: Unchanged(model.created_at),
@@ -148,6 +150,8 @@ mod tests {
             coaching_session_id: Some(Id::new_v4()),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
+            status_changed_at: None,
+            status: Default::default(),
             completed_at: Some(now.into()),
             created_at: now.into(),
             updated_at: now.into(),
@@ -176,6 +180,8 @@ mod tests {
             body: Some("This is a overarching_goal".to_owned()),
             user_id: Id::new_v4(),
             completed_at: Some(now.into()),
+            status_changed_at: None,
+            status: Default::default(),
             created_at: now.into(),
             updated_at: now.into(),
         };
@@ -217,7 +223,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "overarching_goals"."id", "overarching_goals"."coaching_session_id", "overarching_goals"."user_id", "overarching_goals"."title", "overarching_goals"."body", "overarching_goals"."completed_at", "overarching_goals"."created_at", "overarching_goals"."updated_at" FROM "refactor_platform"."overarching_goals" WHERE "overarching_goals"."coaching_session_id" = $1"#,
+                r#"SELECT "overarching_goals"."id", "overarching_goals"."coaching_session_id", "overarching_goals"."user_id", "overarching_goals"."title", "overarching_goals"."body", CAST("overarching_goals"."status" AS text), "overarching_goals"."status_changed_at", "overarching_goals"."completed_at", "overarching_goals"."created_at", "overarching_goals"."updated_at" FROM "refactor_platform"."overarching_goals" WHERE "overarching_goals"."coaching_session_id" = $1"#,
                 [coaching_session_id.into()]
             )]
         );

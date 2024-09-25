@@ -1,6 +1,6 @@
--- SQL dump generated using DBML (dbml-lang.org)
+-- SQL dump generated using DBML (dbml.dbdiagram.io)
 -- Database: PostgreSQL
--- Generated at: 2024-09-21T03:25:20.880Z
+-- Generated at: 2024-09-25T08:10:38.833Z
 
 
 CREATE TYPE "status" AS ENUM (
@@ -55,6 +55,8 @@ CREATE TABLE "refactor_platform"."overarching_goals" (
   "coaching_session_id" uuid,
   "title" varchar,
   "body" varchar,
+  "status" status NOT NULL,
+  "status_changed_at" timestamptz,
   "completed_at" timestamptz,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
