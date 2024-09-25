@@ -26,7 +26,6 @@ pub async fn create(
         user_id: Set(user_id),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
-        status_changed_at: Set(None),
         ..Default::default()
     };
 
@@ -45,8 +44,6 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
                 coaching_session_id: Unchanged(agreement.coaching_session_id),
                 body: Set(model.body),
                 user_id: Unchanged(agreement.user_id),
-                status: Unchanged(agreement.status),
-                status_changed_at: Unchanged(agreement.status_changed_at),
                 updated_at: Set(chrono::Utc::now().into()),
                 created_at: Unchanged(agreement.created_at),
             };
@@ -134,8 +131,6 @@ mod tests {
             user_id: Id::new_v4(),
             coaching_session_id: Id::new_v4(),
             body: Some("This is a agreement".to_owned()),
-            status_changed_at: None,
-            status: Default::default(),
             created_at: now.into(),
             updated_at: now.into(),
         };
@@ -160,8 +155,6 @@ mod tests {
             coaching_session_id: Id::new_v4(),
             body: Some("This is a agreement".to_owned()),
             user_id: Id::new_v4(),
-            status_changed_at: None,
-            status: Default::default(),
             created_at: now.into(),
             updated_at: now.into(),
         };
@@ -191,7 +184,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "agreements"."id", "agreements"."coaching_session_id", "agreements"."body", "agreements"."user_id", CAST("agreements"."status" AS text), "agreements"."status_changed_at", "agreements"."created_at", "agreements"."updated_at" FROM "refactor_platform"."agreements" WHERE "agreements"."id" = $1 LIMIT $2"#,
+                r#"SELECT "agreements"."id", "agreements"."coaching_session_id", "agreements"."body", "agreements"."user_id", "agreements"."created_at", "agreements"."updated_at" FROM "refactor_platform"."agreements" WHERE "agreements"."id" = $1 LIMIT $2"#,
                 [agreement_id.into(), sea_orm::Value::BigUnsigned(Some(1))]
             )]
         );
@@ -217,7 +210,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "agreements"."id", "agreements"."coaching_session_id", "agreements"."body", "agreements"."user_id", CAST("agreements"."status" AS text), "agreements"."status_changed_at", "agreements"."created_at", "agreements"."updated_at" FROM "refactor_platform"."agreements" WHERE "agreements"."coaching_session_id" = $1"#,
+                r#"SELECT "agreements"."id", "agreements"."coaching_session_id", "agreements"."body", "agreements"."user_id", "agreements"."created_at", "agreements"."updated_at" FROM "refactor_platform"."agreements" WHERE "agreements"."coaching_session_id" = $1"#,
                 [coaching_session_id.into()]
             )]
         );
