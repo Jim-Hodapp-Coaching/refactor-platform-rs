@@ -1,7 +1,7 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::uuid_parse_str;
 use entity::actions::{self, ActiveModel, Entity, Model};
-use entity::Id;
+use entity::{status::Status, Id};
 use sea_orm::{
     entity::prelude::*,
     ActiveValue::{Set, Unchanged},
@@ -50,6 +50,42 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
                 status_changed_at: Set(model.status_changed_at),
                 updated_at: Set(chrono::Utc::now().into()),
                 created_at: Unchanged(model.created_at),
+            };
+
+            Ok(active_model.update(db).await?.try_into_model()?)
+        }
+        None => {
+            error!("Action with id {} not found", id);
+
+            Err(Error {
+                inner: None,
+                error_code: EntityApiErrorCode::RecordNotFound,
+            })
+        }
+    }
+}
+
+pub async fn update_status(
+    db: &DatabaseConnection,
+    id: Id,
+    status: Status,
+) -> Result<Model, Error> {
+    let result = Entity::find_by_id(id).one(db).await?;
+
+    match result {
+        Some(action) => {
+            debug!("Existing Action model to be Updated: {:?}", action);
+
+            let active_model: ActiveModel = ActiveModel {
+                id: Unchanged(action.id),
+                coaching_session_id: Unchanged(action.coaching_session_id),
+                user_id: Unchanged(action.user_id),
+                body: Unchanged(action.body),
+                due_by: Unchanged(action.due_by),
+                status: Set(status),
+                status_changed_at: Set(Some(chrono::Utc::now().into())),
+                updated_at: Set(chrono::Utc::now().into()),
+                created_at: Unchanged(action.created_at),
             };
 
             Ok(active_model.update(db).await?.try_into_model()?)
@@ -175,6 +211,59 @@ mod tests {
         let action = update(&db, action_model.id, action_model.clone()).await?;
 
         assert_eq!(action.body, action_model.body);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_status_returns_an_updated_action_model() -> Result<(), Error> {
+        let now = chrono::Utc::now();
+
+        let action_model = Model {
+            id: Id::new_v4(),
+            coaching_session_id: Id::new_v4(),
+            due_by: Some(now.into()),
+            body: Some("This is a action".to_owned()),
+            user_id: Id::new_v4(),
+            status_changed_at: None,
+            status: Default::default(),
+            created_at: now.into(),
+            updated_at: now.into(),
+        };
+
+        let updated_action_model = Model {
+            id: Id::new_v4(),
+            coaching_session_id: Id::new_v4(),
+            due_by: Some(now.into()),
+            body: Some("This is a action".to_owned()),
+            user_id: Id::new_v4(),
+            status_changed_at: None,
+            status: Status::Completed,
+            created_at: now.into(),
+            updated_at: now.into(),
+        };
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![
+                vec![action_model.clone()],
+                vec![updated_action_model.clone()],
+            ])
+            .into_connection();
+
+        let action = update_status(&db, action_model.id, Status::Completed).await?;
+
+        assert_eq!(action.status, Status::Completed);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_status_returns_error_when_action_not_found() -> Result<(), Error> {
+        let db = MockDatabase::new(DatabaseBackend::Postgres).into_connection();
+
+        let result = update_status(&db, Id::new_v4(), Status::Completed).await;
+
+        assert_eq!(result.is_err(), true);
 
         Ok(())
     }

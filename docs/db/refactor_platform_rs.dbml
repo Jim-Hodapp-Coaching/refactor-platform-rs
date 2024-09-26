@@ -48,6 +48,8 @@ Table refactor_platform.overarching_goals {
   coaching_session_id uuid [note: 'The coaching session that an overarching goal is associated with']
   title varchar [note: 'A short description of an overarching goal']
   body varchar [note: 'Main text of the overarching goal supporting Markdown']
+  status status [not null]
+  status_changed_at timestamptz
   completed_at timestamptz [note: 'The date and time an overarching goal was completed']
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`, note: 'The last date and time fields were changed']

@@ -30,6 +30,7 @@ use utoipa_rapidoc::RapiDoc;
             action_controller::update,
             action_controller::index,
             action_controller::read,
+            action_controller::update_status,
             agreement_controller::create,
             agreement_controller::update,
             agreement_controller::index,
@@ -48,6 +49,7 @@ use utoipa_rapidoc::RapiDoc;
             overarching_goal_controller::update,
             overarching_goal_controller::index,
             overarching_goal_controller::read,
+            overarching_goal_controller::update_status,
             user_session_controller::login,
             user_session_controller::logout,
             organization::coaching_relationship_controller::index,
@@ -123,6 +125,7 @@ fn action_routes(app_state: AppState) -> Router {
         .route("/actions/:id", put(action_controller::update))
         .route("/actions", get(action_controller::index))
         .route("/actions/:id", get(action_controller::read))
+        .route("/actions/:id/status", put(action_controller::update_status))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
@@ -183,6 +186,10 @@ pub fn overarching_goal_routes(app_state: AppState) -> Router {
         .route(
             "/overarching_goals/:id",
             get(overarching_goal_controller::read),
+        )
+        .route(
+            "/overarching_goals/:id/status",
+            put(overarching_goal_controller::update_status),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)

@@ -19,3 +19,15 @@ impl std::default::Default for Status {
         Self::InProgress
     }
 }
+
+impl From<&str> for Status {
+    fn from(value: &str) -> Self {
+        match value {
+            "not_started" => Self::NotStarted,
+            "in_progress" => Self::InProgress,
+            "completed" => Self::Completed,
+            "wont_do" => Self::WontDo,
+            _ => Self::InProgress,
+        }
+    }
+}
