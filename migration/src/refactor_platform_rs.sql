@@ -1,7 +1,6 @@
 -- SQL dump generated using DBML (dbml.dbdiagram.io)
 -- Database: PostgreSQL
--- Generated at: 2024-09-25T08:10:38.833Z
-
+-- Generated at: 2024-09-26T18:27:03.587Z
 
 CREATE TYPE "status" AS ENUM (
   'not_started',
@@ -87,9 +86,9 @@ CREATE TABLE "refactor_platform"."actions" (
   "user_id" uuid NOT NULL,
   "due_by" timestamptz,
   "status" status NOT NULL,
-  "status_changed_at" timestamptz,
-  "created_at" timestamp NOT NULL DEFAULT (now()),
-  "updated_at" timestamp NOT NULL DEFAULT (now())
+  "status_changed_at" timestamptz NOT NULL DEFAULT (now()),
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 COMMENT ON COLUMN "refactor_platform"."organizations"."name" IS 'The name of the organization that the coach <--> coachee belong to';
@@ -134,13 +133,13 @@ COMMENT ON COLUMN "refactor_platform"."notes"."body" IS 'Main text of the note s
 
 COMMENT ON COLUMN "refactor_platform"."notes"."user_id" IS 'User that created (owns) the note';
 
-COMMENT ON COLUMN "refactor_platform"."notes"."updated_at" IS 'The last date and time an overarching note''s fields were changed';
+COMMENT ON COLUMN "refactor_platform"."notes"."updated_at" IS 'The last date and time a note''s fields were changed';
 
 COMMENT ON COLUMN "refactor_platform"."agreements"."body" IS 'Either a short or long description of an agreement reached between coach and coachee in a coaching session';
 
 COMMENT ON COLUMN "refactor_platform"."agreements"."user_id" IS 'User that created (owns) the agreement';
 
-COMMENT ON COLUMN "refactor_platform"."agreements"."updated_at" IS 'The last date and time an overarching agreement''s fields were changed';
+COMMENT ON COLUMN "refactor_platform"."agreements"."updated_at" IS 'The last date and time an agreement''s fields were changed';
 
 COMMENT ON COLUMN "refactor_platform"."actions"."body" IS 'Main text of the action supporting Markdown';
 

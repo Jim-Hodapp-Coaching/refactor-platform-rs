@@ -61,7 +61,7 @@ Table refactor_platform.notes {
   body varchar [note: 'Main text of the note supporting Markdown']
   user_id uuid [not null, note: 'User that created (owns) the note']
   created_at timestamptz [not null, default: `now()`]
-  updated_at timestamptz [not null, default: `now()`, note: 'The last date and time an overarching note\'s fields were changed']
+  updated_at timestamptz [not null, default: `now()`, note: 'The last date and time a note\'s fields were changed']
 }
 
 Table refactor_platform.agreements {
@@ -70,7 +70,7 @@ Table refactor_platform.agreements {
   body varchar [note: 'Either a short or long description of an agreement reached between coach and coachee in a coaching session']
   user_id uuid [not null, note: 'User that created (owns) the agreement']
   created_at timestamptz [not null, default: `now()`]
-  updated_at timestamptz [not null, default: `now()`, note: 'The last date and time an overarching agreement\'s fields were changed']
+  updated_at timestamptz [not null, default: `now()`, note: 'The last date and time an agreement\'s fields were changed']
 }
 
 Table refactor_platform.actions {
@@ -83,9 +83,9 @@ Table refactor_platform.actions {
   user_id uuid [not null, note: 'User that created (owns) the action']
   due_by timestamptz
   status status [not null]
-  status_changed_at timestamptz
-  created_at timestamp [not null, default: `now()`]
-  updated_at timestamp [not null, default: `now()`]
+  status_changed_at timestamptz [not null, default: `now()`]
+  created_at timestamptz [not null, default: `now()`]
+  updated_at timestamptz [not null, default: `now()`]
 }
 
 enum status {

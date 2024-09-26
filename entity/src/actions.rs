@@ -16,10 +16,9 @@ pub struct Model {
     pub user_id: Id,
     pub body: Option<String>,
     pub due_by: Option<DateTimeWithTimeZone>,
-    #[serde(skip_deserializing)]
     pub status: status::Status,
     #[serde(skip_deserializing)]
-    pub status_changed_at: Option<DateTimeWithTimeZone>,
+    pub status_changed_at: DateTimeWithTimeZone,
     #[serde(skip_deserializing)]
     pub created_at: DateTimeWithTimeZone,
     #[serde(skip_deserializing)]

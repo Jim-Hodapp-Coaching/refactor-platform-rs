@@ -31,6 +31,7 @@ use utoipa_rapidoc::RapiDoc;
             action_controller::index,
             action_controller::read,
             action_controller::update_status,
+            action_controller::delete,
             agreement_controller::create,
             agreement_controller::update,
             agreement_controller::index,
@@ -126,6 +127,7 @@ fn action_routes(app_state: AppState) -> Router {
         .route("/actions", get(action_controller::index))
         .route("/actions/:id", get(action_controller::read))
         .route("/actions/:id/status", put(action_controller::update_status))
+        .route("/actions/:id", delete(action_controller::delete))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }

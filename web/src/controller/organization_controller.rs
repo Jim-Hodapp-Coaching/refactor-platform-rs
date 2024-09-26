@@ -161,7 +161,7 @@ pub async fn update(
     path = "/organizations/{id}",
     params(
         ApiVersion,
-        ("id" = i32, Path, description = "Organization id to update")
+        ("id" = i32, Path, description = "Organization id to delete")
     ),
     responses(
         (status = 200, description = "Successfully deleted a certain Organization by its id", body = [i32]),
