@@ -23,8 +23,10 @@ pub async fn create(
     let action_active_model: ActiveModel = ActiveModel {
         coaching_session_id: Set(action_model.coaching_session_id),
         user_id: Set(user_id),
-        due_by: Set(action_model.due_by),
         body: Set(action_model.body),
+        status: Set(action_model.status),
+        due_by: Set(action_model.due_by),
+        status_changed_at: Set(now.into()),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
@@ -41,15 +43,15 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
             debug!("Existing Action model to be Updated: {:?}", action);
 
             let active_model: ActiveModel = ActiveModel {
-                id: Unchanged(model.id),
-                coaching_session_id: Unchanged(model.coaching_session_id),
+                id: Unchanged(action.id),
+                coaching_session_id: Unchanged(action.coaching_session_id),
                 user_id: Unchanged(model.user_id),
                 body: Set(model.body),
                 due_by: Set(model.due_by),
                 status: Set(model.status),
-                status_changed_at: Set(model.status_changed_at),
+                status_changed_at: Set(chrono::Utc::now().into()),
                 updated_at: Set(chrono::Utc::now().into()),
-                created_at: Unchanged(model.created_at),
+                created_at: Unchanged(action.created_at),
             };
 
             Ok(active_model.update(db).await?.try_into_model()?)
@@ -83,7 +85,7 @@ pub async fn update_status(
                 body: Unchanged(action.body),
                 due_by: Unchanged(action.due_by),
                 status: Set(status),
-                status_changed_at: Set(Some(chrono::Utc::now().into())),
+                status_changed_at: Set(chrono::Utc::now().into()),
                 updated_at: Set(chrono::Utc::now().into()),
                 created_at: Unchanged(action.created_at),
             };
@@ -98,6 +100,23 @@ pub async fn update_status(
                 error_code: EntityApiErrorCode::RecordNotFound,
             })
         }
+    }
+}
+
+pub async fn delete_by_id(db: &DatabaseConnection, id: Id) -> Result<(), Error> {
+    let result = find_by_id(db, id).await?;
+
+    match result {
+        Some(action_model) => {
+            debug!("Existing Action model to be deleted: {:?}", action_model);
+
+            action_model.delete(db).await?;
+            Ok(())
+        }
+        None => Err(Error {
+            inner: None,
+            error_code: EntityApiErrorCode::RecordNotFound,
+        }),
     }
 }
 
@@ -171,7 +190,7 @@ mod tests {
             coaching_session_id: Id::new_v4(),
             body: Some("This is a action".to_owned()),
             due_by: Some(now.into()),
-            status_changed_at: None,
+            status_changed_at: now.into(),
             status: Default::default(),
             created_at: now.into(),
             updated_at: now.into(),
@@ -198,7 +217,7 @@ mod tests {
             due_by: Some(now.into()),
             body: Some("This is a action".to_owned()),
             user_id: Id::new_v4(),
-            status_changed_at: None,
+            status_changed_at: now.into(),
             status: Default::default(),
             created_at: now.into(),
             updated_at: now.into(),
@@ -225,7 +244,7 @@ mod tests {
             due_by: Some(now.into()),
             body: Some("This is a action".to_owned()),
             user_id: Id::new_v4(),
-            status_changed_at: None,
+            status_changed_at: now.into(),
             status: Default::default(),
             created_at: now.into(),
             updated_at: now.into(),
@@ -237,7 +256,7 @@ mod tests {
             due_by: Some(now.into()),
             body: Some("This is a action".to_owned()),
             user_id: Id::new_v4(),
-            status_changed_at: None,
+            status_changed_at: now.into(),
             status: Status::Completed,
             created_at: now.into(),
             updated_at: now.into(),

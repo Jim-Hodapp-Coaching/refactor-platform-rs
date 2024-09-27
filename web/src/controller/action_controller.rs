@@ -9,6 +9,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use entity::{actions::Model, Id};
 use entity_api::action as ActionApi;
+use serde_json::json;
 use service::config::ApiVersion;
 use std::collections::HashMap;
 
@@ -30,7 +31,6 @@ use log::*;
         ("cookie_auth" = [])
     )
 )]
-
 pub async fn create(
     CompareApiVersion(_v): CompareApiVersion,
     AuthenticatedUser(user): AuthenticatedUser,
@@ -42,8 +42,6 @@ pub async fn create(
     debug!("POST Create a New Action from: {:?}", action_model);
 
     let action = ActionApi::create(app_state.db_conn_ref(), action_model, user.id).await?;
-
-    debug!("New Action: {:?}", action);
 
     Ok(Json(ApiResponse::new(StatusCode::CREATED.into(), action)))
 }
@@ -180,4 +178,33 @@ pub async fn index(
     debug!("Found Actions: {:?}", actions);
 
     Ok(Json(ApiResponse::new(StatusCode::OK.into(), actions)))
+}
+
+/// DELETE an Action specified by its primary key.
+#[utoipa::path(
+    delete,
+    path = "/actions/{id}",
+    params(
+        ApiVersion,
+        ("id" = i32, Path, description = "Action id to delete")
+    ),
+    responses(
+        (status = 200, description = "Successfully deleted a certain Action by its id", body = [i32]),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Action not found"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
+pub async fn delete(
+    CompareApiVersion(_v): CompareApiVersion,
+    State(app_state): State<AppState>,
+    Path(id): Path<Id>,
+) -> Result<impl IntoResponse, Error> {
+    debug!("DELETE Action by id: {}", id);
+
+    ActionApi::delete_by_id(app_state.db_conn_ref(), id).await?;
+    Ok(Json(json!({"id": id})))
 }
