@@ -3,7 +3,7 @@ use crate::uuid_parse_str;
 use chrono::Utc;
 use entity::{
     coachees, coaches,
-    coaching_relationships::{self, ActiveModel, Model},
+    coaching_relationships::{self, ActiveModel, Entity, Model},
     Id,
 };
 use sea_orm::{
@@ -95,6 +95,42 @@ pub async fn find_by_organization_with_user_names(
     Ok(query.all(db).await?)
 }
 
+pub async fn get_relationship_with_user_names(
+    db: &DatabaseConnection,
+    _organization_id: Id,
+    relationship_id: Id,
+) -> Result<Option<CoachingRelationshipWithUserNames>, Error> {
+    let coaches = Alias::new("coaches");
+    let coachees = Alias::new("coachees");
+
+    let query = by_coaching_relationship(coaching_relationships::Entity::find(), relationship_id)
+        .await
+        .join_as(
+            JoinType::Join,
+            coaches::Relation::CoachingRelationships.def().rev(),
+            coaches.clone(),
+        )
+        .join_as(
+            JoinType::Join,
+            coachees::Relation::CoachingRelationships.def().rev(),
+            coachees.clone(),
+        )
+        .select_only()
+        .column(coaching_relationships::Column::Id)
+        .column(coaching_relationships::Column::OrganizationId)
+        .column(coaching_relationships::Column::CoachId)
+        .column(coaching_relationships::Column::CoacheeId)
+        .column(coaching_relationships::Column::CreatedAt)
+        .column(coaching_relationships::Column::UpdatedAt)
+        .column_as(Expr::cust("coaches.first_name"), "coach_first_name")
+        .column_as(Expr::cust("coaches.last_name"), "coach_last_name")
+        .column_as(Expr::cust("coachees.first_name"), "coachee_first_name")
+        .column_as(Expr::cust("coachees.last_name"), "coachee_last_name")
+        .into_model::<CoachingRelationshipWithUserNames>();
+
+    Ok(query.one(db).await?)
+}
+
 pub async fn find_by(
     db: &DatabaseConnection,
     params: std::collections::HashMap<String, String>,
@@ -116,6 +152,43 @@ pub async fn find_by(
     }
 
     Ok(query.all(db).await?)
+}
+
+//pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>, Error> {
+pub async fn by_coaching_relationship(
+    query: Select<coaching_relationships::Entity>,
+    id: Id,
+) -> Select<coaching_relationships::Entity> {
+    let relationship_subsquery = Entity::find_by_id(id)
+        .select_only()
+        .column(entity::coaching_relationships::Column::Id)
+        .filter(entity::coaching_relationships::Column::Id.eq(id))
+        .into_query();
+
+    query.filter(coaching_relationships::Column::Id.in_subquery(relationship_subsquery.to_owned()))
+
+    // match Entity::find_by_id(id).one(db).await {
+    //     Ok(Some(relationship)) => {
+    //         debug!("CoachingRelationship found: {:?}", relationship);
+
+    //         Ok(Some(relationship))
+    //     }
+    //     Ok(None) => {
+    //         error!("Relationship with id {} not found", id);
+
+    //         Err(Error {
+    //             inner: None,
+    //             error_code: EntityApiErrorCode::RecordNotFound,
+    //         })
+    //     }
+    //     Err(err) => {
+    //         error!("Relationship with id {} not found and returned error {}", id, err);
+    //         Err(Error {
+    //             inner: None,
+    //             error_code: EntityApiErrorCode::RecordNotFound,
+    //         })
+    //     }
+    // }
 }
 
 async fn by_organization(
