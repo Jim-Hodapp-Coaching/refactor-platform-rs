@@ -38,14 +38,13 @@ pub async fn read(
     // TODO: create a new Extractor to authorize the user to access
     // the data requested
     State(app_state): State<AppState>,
-    Path((organization_id, relationship_id)): Path<(Id, Id)>,
+    Path((_organization_id, relationship_id)): Path<(Id, Id)>,
 ) -> Result<impl IntoResponse, Error> {
     debug!("GET CoachingRelationship by id: {}", relationship_id);
 
     let relationship: Option<entity_api::coaching_relationship::CoachingRelationshipWithUserNames> =
         CoachingRelationshipApi::get_relationship_with_user_names(
             app_state.db_conn_ref(),
-            organization_id,
             relationship_id,
         )
         .await?;

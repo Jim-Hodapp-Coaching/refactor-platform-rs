@@ -97,7 +97,6 @@ pub async fn find_by_organization_with_user_names(
 
 pub async fn get_relationship_with_user_names(
     db: &DatabaseConnection,
-    _organization_id: Id,
     relationship_id: Id,
 ) -> Result<Option<CoachingRelationshipWithUserNames>, Error> {
     let coaches = Alias::new("coaches");
@@ -154,7 +153,6 @@ pub async fn find_by(
     Ok(query.all(db).await?)
 }
 
-//pub async fn find_by_id(db: &DatabaseConnection, id: Id) -> Result<Option<Model>, Error> {
 pub async fn by_coaching_relationship(
     query: Select<coaching_relationships::Entity>,
     id: Id,
@@ -166,29 +164,6 @@ pub async fn by_coaching_relationship(
         .into_query();
 
     query.filter(coaching_relationships::Column::Id.in_subquery(relationship_subsquery.to_owned()))
-
-    // match Entity::find_by_id(id).one(db).await {
-    //     Ok(Some(relationship)) => {
-    //         debug!("CoachingRelationship found: {:?}", relationship);
-
-    //         Ok(Some(relationship))
-    //     }
-    //     Ok(None) => {
-    //         error!("Relationship with id {} not found", id);
-
-    //         Err(Error {
-    //             inner: None,
-    //             error_code: EntityApiErrorCode::RecordNotFound,
-    //         })
-    //     }
-    //     Err(err) => {
-    //         error!("Relationship with id {} not found and returned error {}", id, err);
-    //         Err(Error {
-    //             inner: None,
-    //             error_code: EntityApiErrorCode::RecordNotFound,
-    //         })
-    //     }
-    // }
 }
 
 async fn by_organization(
