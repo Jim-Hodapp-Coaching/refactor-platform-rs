@@ -54,6 +54,7 @@ use utoipa_rapidoc::RapiDoc;
             user_session_controller::login,
             user_session_controller::logout,
             organization::coaching_relationship_controller::index,
+            organization::coaching_relationship_controller::read,
             coaching_session_controller::index,
         ),
         components(
@@ -115,6 +116,10 @@ fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
         .route(
             "/organizations/:organization_id/coaching_relationships",
             get(organization::coaching_relationship_controller::index),
+        )
+        .route(
+            "/organizations/:organization_id/coaching_relationships/:relationship_id",
+            get(organization::coaching_relationship_controller::read),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
