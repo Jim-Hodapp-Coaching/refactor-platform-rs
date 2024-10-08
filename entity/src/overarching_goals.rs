@@ -7,17 +7,17 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, ToSchema)]
+#[schema(as = entity::overarching_goals::Model)]
 #[sea_orm(schema_name = "refactor_platform", table_name = "overarching_goals")]
 pub struct Model {
     #[serde(skip_deserializing)]
     #[sea_orm(primary_key)]
     pub id: Id,
-    pub coaching_session_id: Option<Id>,
+    pub coaching_session_id: Id,
     #[serde(skip_deserializing)]
     pub user_id: Id,
     pub title: Option<String>,
     pub body: Option<String>,
-    #[serde(skip_deserializing)]
     pub status: Status,
     #[serde(skip_deserializing)]
     pub status_changed_at: Option<DateTimeWithTimeZone>,

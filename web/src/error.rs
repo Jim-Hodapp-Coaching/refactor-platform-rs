@@ -27,27 +27,48 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         match self.0.error_code {
             EntityApiErrorCode::InvalidQueryTerm => {
-                debug!("Error: {:#?}, mapping to UNPROCESSABLE_ENTITY", self);
+                error!(
+                    "Error: {:#?}, mapping to UNPROCESSABLE_ENTITY (reason: {})",
+                    self,
+                    self.0
+                        .inner
+                        .as_ref()
+                        .map_or_else(|| "unspecified".to_string(), |err| err.to_string())
+                );
 
                 (StatusCode::UNPROCESSABLE_ENTITY, "UNPROCESSABLE ENTITY").into_response()
             }
             EntityApiErrorCode::SystemError => {
-                debug!("Error: {:#?}, mapping to INTERNAL_SERVER_ERROR", self);
+                error!(
+                    "Error: {:#?}, mapping to INTERNAL_SERVER_ERROR (reason: {})",
+                    self,
+                    self.0
+                        .inner
+                        .as_ref()
+                        .map_or_else(|| "unspecified".to_string(), |err| err.to_string())
+                );
 
                 (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL SERVER ERROR").into_response()
             }
             EntityApiErrorCode::RecordNotFound => {
-                debug!("Error: {:#?}, mapping to NO_CONTENT", self);
+                error!("Error: {:#?}, mapping to NO_CONTENT", self);
 
                 (StatusCode::NOT_FOUND, "NOT FOUND").into_response()
             }
             EntityApiErrorCode::RecordNotUpdated => {
-                debug!("Error: {:#?}, mapping to UNPROCESSABLE_ENTITY", self);
+                error!(
+                    "Error: {:#?}, mapping to UNPROCESSABLE_ENTITY (reason: {})",
+                    self,
+                    self.0
+                        .inner
+                        .as_ref()
+                        .map_or_else(|| "unspecified".to_string(), |err| err.to_string())
+                );
 
                 (StatusCode::UNPROCESSABLE_ENTITY, "UNPROCESSABLE ENTITY").into_response()
             }
             EntityApiErrorCode::RecordUnauthenticated => {
-                debug!("Error: {:#?}, mapping to UNAUTHORIZED", self);
+                error!("Error: {:#?}, mapping to UNAUTHORIZED", self);
 
                 (StatusCode::UNAUTHORIZED, "UNAUTHORIZED").into_response()
             }
