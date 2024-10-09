@@ -76,21 +76,7 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
                 created_at: Unchanged(overarching_goal.created_at),
             };
 
-            match active_model.update(db).await?.try_into_model() {
-                Ok(model) => Ok(model),
-                Err(err) => {
-                    error!(
-                        "Error while trying to update OverarchingGoal {}: {}",
-                        id, err
-                    );
-                    Err(Error {
-                        inner: None,
-                        error_code: EntityApiErrorCode::RecordNotUpdated,
-                    })
-                }
-            }
-
-            // Ok(active_model.update(db).await?.try_into_model()?)
+            Ok(active_model.update(db).await?.try_into_model()?)
         }
         None => {
             error!("Overarching Goal with id {} not found", id);
