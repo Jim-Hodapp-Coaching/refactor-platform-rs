@@ -214,7 +214,7 @@ mod tests {
         let overarching_goal_model = Model {
             id: Id::new_v4(),
             user_id: Id::new_v4(),
-            coaching_session_id: Some(Id::new_v4()),
+            coaching_session_id: Id::new_v4(),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             status_changed_at: None,
@@ -242,7 +242,7 @@ mod tests {
 
         let overarching_goal_model = Model {
             id: Id::new_v4(),
-            coaching_session_id: Some(Id::new_v4()),
+            coaching_session_id: Id::new_v4(),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             user_id: Id::new_v4(),
@@ -278,7 +278,7 @@ mod tests {
 
         let overarching_goal_model = Model {
             id: Id::new_v4(),
-            coaching_session_id: Some(Id::new_v4()),
+            coaching_session_id: Id::new_v4(),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             user_id: Id::new_v4(),
@@ -291,7 +291,7 @@ mod tests {
 
         let updated_overarching_goal_model = Model {
             id: Id::new_v4(),
-            coaching_session_id: Some(Id::new_v4()),
+            coaching_session_id: Id::new_v4(),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             user_id: Id::new_v4(),
