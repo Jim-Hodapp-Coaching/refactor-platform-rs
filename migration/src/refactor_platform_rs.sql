@@ -1,6 +1,7 @@
--- SQL dump generated using DBML (dbml.dbdiagram.io)
+-- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-09-26T18:27:03.587Z
+-- Generated at: 2024-10-07T03:52:01.453Z
+
 
 CREATE TYPE "status" AS ENUM (
   'not_started',

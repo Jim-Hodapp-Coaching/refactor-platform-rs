@@ -2,6 +2,7 @@ use super::error::{EntityApiErrorCode, Error};
 use crate::uuid_parse_str;
 use entity::overarching_goals::{self, ActiveModel, Entity, Model};
 use entity::{status::Status, Id};
+use sea_orm::ActiveValue;
 use sea_orm::{
     entity::prelude::*,
     ActiveModelTrait,
@@ -29,6 +30,9 @@ pub async fn create(
         user_id: Set(user_id),
         title: Set(overarching_goal_model.title),
         body: Set(overarching_goal_model.body),
+        status: Set(overarching_goal_model.status),
+        status_changed_at: Set(Some(now.into())),
+        completed_at: Unchanged(overarching_goal_model.completed_at),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
@@ -50,17 +54,26 @@ pub async fn update(db: &DatabaseConnection, id: Id, model: Model) -> Result<Mod
                 overarching_goal
             );
 
+            // Automatically update status_changed_at if the last status and new status differ:
+            let av_status_changed_at: ActiveValue<Option<DateTimeWithTimeZone>> =
+                if model.status != overarching_goal.status {
+                    debug!("Updating status_changed_at for Overarching Goal to now");
+                    Set(Some(chrono::Utc::now().into()))
+                } else {
+                    Unchanged(model.status_changed_at)
+                };
+
             let active_model: ActiveModel = ActiveModel {
-                id: Unchanged(model.id),
-                coaching_session_id: Unchanged(model.coaching_session_id),
-                user_id: Unchanged(model.user_id),
+                id: Unchanged(overarching_goal.id),
+                coaching_session_id: Unchanged(overarching_goal.coaching_session_id),
+                user_id: Unchanged(overarching_goal.user_id),
                 body: Set(model.body),
                 title: Set(model.title),
                 status: Set(model.status),
-                status_changed_at: Set(model.status_changed_at),
+                status_changed_at: av_status_changed_at,
                 completed_at: Set(model.completed_at),
                 updated_at: Set(chrono::Utc::now().into()),
-                created_at: Unchanged(model.created_at),
+                created_at: Unchanged(overarching_goal.created_at),
             };
 
             Ok(active_model.update(db).await?.try_into_model()?)
@@ -187,7 +200,7 @@ mod tests {
         let overarching_goal_model = Model {
             id: Id::new_v4(),
             user_id: Id::new_v4(),
-            coaching_session_id: Some(Id::new_v4()),
+            coaching_session_id: Id::new_v4(),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             status_changed_at: None,
@@ -215,7 +228,7 @@ mod tests {
 
         let overarching_goal_model = Model {
             id: Id::new_v4(),
-            coaching_session_id: Some(Id::new_v4()),
+            coaching_session_id: Id::new_v4(),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             user_id: Id::new_v4(),
@@ -251,7 +264,7 @@ mod tests {
 
         let overarching_goal_model = Model {
             id: Id::new_v4(),
-            coaching_session_id: Some(Id::new_v4()),
+            coaching_session_id: Id::new_v4(),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             user_id: Id::new_v4(),
@@ -264,7 +277,7 @@ mod tests {
 
         let updated_overarching_goal_model = Model {
             id: Id::new_v4(),
-            coaching_session_id: Some(Id::new_v4()),
+            coaching_session_id: Id::new_v4(),
             title: Some("title".to_owned()),
             body: Some("This is a overarching_goal".to_owned()),
             user_id: Id::new_v4(),
