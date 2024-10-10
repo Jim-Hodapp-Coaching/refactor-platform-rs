@@ -62,9 +62,19 @@ pub async fn login(
         return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
     }
 
+    let user_session_json = json!({
+            "id": user.id,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "display_name": user.display_name,
+    });
+
+    debug!("user_session_json: {}", user_session_json);
+
     Ok(Json(ApiResponse::new(
         StatusCode::OK.into(),
-        json!({"id": user.id}),
+        user_session_json,
     )))
 }
 
