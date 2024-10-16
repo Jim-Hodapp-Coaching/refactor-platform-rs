@@ -8,12 +8,14 @@ name = "entity"
 path = "src/lib.rs"
 
 [dependencies]
-axum-login = "0.12.0"
+axum-login = "0.16.0"
 chrono = { version = "0.4.38", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
+sqlx = { version = "0.8.2", features = ["time", "runtime-tokio"] }
+sqlx-sqlite = { version = "0.8.2" }
 utoipa = { version = "4.2.0", features = ["axum_extras", "uuid"] }
-uuid = "1.7.0"
+uuid = { version = "1.11.0", features = ["v4"] }
 
 [dependencies.sea-orm]
-version = "0.12"
+version = "1.1.0"
 features = [ "with-uuid" ]

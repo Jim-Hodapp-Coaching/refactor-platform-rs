@@ -11,13 +11,15 @@ serde_json = "1.0.107"
 serde = { version = "1.0", features = ["derive"] }
 
 log = "0.4.20"
-axum-login = "0.12.0"
+axum-login = "0.16.0"
 async-trait = "0.1.76"
 password-auth = "1.0.0"
+sqlx = { version = "0.8.2", features = ["time", "runtime-tokio"] }
+sqlx-sqlite = { version = "0.8.2" }
 utoipa = { version = "4.2.0", features = ["axum_extras", "uuid"] }
 
 [dependencies.sea-orm]
-version = "0.12" # sea-orm version
+version = "1.1.0" # sea-orm version
 features = [
     "debug-print",
     "runtime-tokio-native-tls",
