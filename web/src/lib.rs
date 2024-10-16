@@ -1,9 +1,11 @@
 use axum::http::{header::CONTENT_TYPE, HeaderName, HeaderValue, Method};
 use axum_login::{
-    tower_sessions::{ExpiredDeletion, Expiry, PostgresStore, SessionManagerLayer},
+    tower_sessions::{Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
 };
 use entity_api::user::Backend;
+use tower_sessions::session_store::ExpiredDeletion;
+use tower_sessions_sqlx_store::PostgresStore;
 
 pub use self::error::{Error, Result};
 use log::*;
