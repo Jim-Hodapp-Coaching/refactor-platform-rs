@@ -1,2 +1,4 @@
 /target
 dbml-error.log
+.vscode/
+.DS_Store
