@@ -25,4 +25,4 @@ sqlx-sqlite = { version = "0.8.2" }
 tokio = { version = "1.40", features = ["full"] }
 tower = "0.5.1"
 utoipa = { version = "4.2.0", features = ["axum_extras", "uuid"] }
-semver = { version = "1.0.22", features = ["serde"] }
+semver = { version = "1.0.23", features = ["serde"] }
