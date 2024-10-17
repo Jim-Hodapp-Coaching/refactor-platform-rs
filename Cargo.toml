@@ -13,7 +13,7 @@ service = { path = "service" }
 entity_api = {path = "entity_api" }
 web = { path = "web" }
 
-clap = { version = "4.4.6", features = ["cargo", "derive", "env"] }
+clap = { version = "4.5.20", features = ["cargo", "derive", "env"] }
 log = "0.4"
 simplelog = { version = "0.12", features = ["paris"] }
 tokio = "1.40"
