@@ -2772,7 +2772,7 @@ dependencies = [
  "sqlx",
  "sqlx-sqlite",
  "tokio",
- "tower 0.4.13",
+ "tower 0.5.1",
  "utoipa",
 ]
 
@@ -3863,7 +3863,7 @@ dependencies = [
  "sqlx-sqlite",
  "time",
  "tokio",
- "tower 0.4.13",
+ "tower 0.5.1",
  "tower-http",
  "tower-sessions",
  "tower-sessions-sqlx-store",

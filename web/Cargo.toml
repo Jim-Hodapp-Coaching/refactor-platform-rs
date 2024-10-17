@@ -19,7 +19,7 @@ serde = { version = "1.0.210", features = ["derive"] }
 sqlx = { version = "0.8.2", features = ["time", "runtime-tokio"] }
 sqlx-sqlite = { version = "0.8.2" }
 tokio = { version = "1.40.0", features = ["full"] }
-tower = "0.4.13"
+tower = "0.5.1"
 tower-sessions = { version = "0.13.0" }
 tower-sessions-sqlx-store = { version = "0.14.1", features = ["postgres"] }
 time = "0.3.31"
