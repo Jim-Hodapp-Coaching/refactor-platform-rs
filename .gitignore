@@ -1,4 +1,9 @@
 /target
 dbml-error.log
-.vscode/
+
+# Mac OS files
 .DS_Store
+
+# workspace files
+*.code-workspace
+.vscode/
