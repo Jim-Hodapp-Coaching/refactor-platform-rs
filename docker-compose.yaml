@@ -1,38 +1,43 @@
 version: "3.8"
 
 services:
+  # Local PostgreSQL container (used for local development when needed)
   postgres:
     image: postgres:13
     container_name: postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-refactor}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-refactor_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-refactor}  # PostgreSQL user provided via environment variable
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}  # PostgreSQL password provided via environment variable
+      POSTGRES_DB: ${POSTGRES_DB:-refactor_platform}  # PostgreSQL database name provided via environment variable
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"  # Expose PostgreSQL on the configured or default port
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data  # Persist PostgreSQL data in a volume
     networks:
-      - backend_network
+      - backend_network  # Connect to the backend network for local communication
 
+  # Rust application that connects to either local or remote PostgreSQL based on environment configuration
   rust-app:
-    build: .
+    build: .  # Build the Rust app from the current directory
     container_name: rust-app
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-refactor}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-refactor_platform}
-      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-refactor}  # PostgreSQL user provided via environment variable
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}  # PostgreSQL password provided via environment variable
+      POSTGRES_DB: ${POSTGRES_DB:-refactor_platform}  # PostgreSQL database name provided via environment variable
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}  # Hostname for PostgreSQL: either 'postgres' (for local) or a remote hostname
+      USERNAME: ${USERNAME:-appuser}  # Configurable username for the non-root user in the container
+      USER_UID: ${USER_UID:-1000}  # Configurable UID for the appuser
+      USER_GID: ${USER_GID:-1000}  # Configurable GID for the appuser
     ports:
-      - "${WEB_PORT:-8080}:8080"
+      - "${WEB_PORT:-8080}:8080"  # Expose the Rust app's web port
     depends_on:
-      - postgres
+      - postgres  # Ensure the PostgreSQL service starts first (if running locally)
     networks:
-      - backend_network
+      - backend_network  # Connect to the backend network (optional if PostgreSQL is remote)
 
 networks:
   backend_network:
-    driver: bridge
+    driver: bridge  # Use bridge network for internal communication
 
 volumes:
-  postgres_data:
+  postgres_data:  # Define a named volume to persist PostgreSQL data

@@ -7,3 +7,6 @@ dbml-error.log
 # workspace files
 *.code-workspace
 .vscode/
+
+# environment files
+.env*
