@@ -1,10 +1,6 @@
-Here’s the updated README to reflect the recent changes, including the flexibility to run PostgreSQL either locally or remotely, the use of `.env` files for environment-specific configuration, and troubleshooting steps for common issues.
+# Refactor Coaching & Mentoring Platform with Docker & Docker Compose
 
----
-
-# **Refactor Coaching & Mentoring Platform with Docker & Docker Compose**
-
-This project is a Rust-based backend/web API that connects to a PostgreSQL database. It uses Docker and Docker Compose for easy local development and deployment, and includes utilities for database management, migrations, and more. You can choose to run PostgreSQL either locally (via Docker) or remotely by configuring the environment variables.
+*This project is a Rust-based backend/web API that connects to a PostgreSQL database. It uses Docker and Docker Compose for easy local development and deployment, and includes utilities for database management, migrations, and more. You can choose to run PostgreSQL either locally (via Docker) or remotely by configuring the environment variables.*
 
 ## **Prerequisites**
 
@@ -281,4 +277,3 @@ To stop and remove all containers, networks, and volumes:
   ```bash
   docker-compose down -v
   ```
-  
