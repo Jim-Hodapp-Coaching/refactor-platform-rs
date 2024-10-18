@@ -10,19 +10,19 @@ entity = { path = "../entity" }
 entity_api = { path = "../entity_api" }
 service = { path = "../service" }
 
-axum = "0.7.2"
+axum = "0.7.7"
 axum-login = "0.16.0"
-log = "0.4"
-tower-http = { version = "0.5.0", features = ["fs", "cors"] }
-serde_json = "1.0.107"
-serde = { version = "1.0", features = ["derive"] }
+log = "0.4.22"
+tower-http = { version = "0.6.1", features = ["fs", "cors"] }
+serde_json = "1.0.128"
+serde = { version = "1.0.210", features = ["derive"] }
 sqlx = { version = "0.8.2", features = ["time", "runtime-tokio"] }
 sqlx-sqlite = { version = "0.8.2" }
-tokio = { version = "1.35.0", features = ["full"] }
-tower = "0.4.13"
+tokio = { version = "1.40.0", features = ["full"] }
+tower = "0.5.1"
 tower-sessions = { version = "0.13.0" }
 tower-sessions-sqlx-store = { version = "0.14.1", features = ["postgres"] }
-time = "0.3.31"
+time = "0.3.36"
 utoipa = { version = "4.2.0", features = ["axum_extras", "uuid"] }
 utoipa-rapidoc = { version = "3.0.0", features = ["axum"] }
 
@@ -40,7 +40,7 @@ features = [
 mock = ["sea-orm/mock"]
 
 [dev-dependencies]
-anyhow = "1.0.76"
+anyhow = "1.0.89"
 chrono = { version = "0.4.38", features = ["serde"] }
 password-auth = "1.0.0"
-reqwest = { version = "0.11.23", features = ["json", "cookies"] }
+reqwest = { version = "0.12.8", features = ["json", "cookies"] }
