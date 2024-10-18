@@ -2,14 +2,14 @@
 
 *This project is a Rust-based backend/web API that connects to a PostgreSQL database. It uses Docker and Docker Compose for easy local development and deployment, and includes utilities for database management, migrations, and more. You can choose to run PostgreSQL either locally (via Docker) or remotely by configuring the environment variables.*
 
-## **Prerequisites**
+## Prerequisites
 
 Before you begin, ensure you have the following installed:
 
 - [Docker](https://www.docker.com/products/docker-desktop) (version 20+)
 - [Docker Compose](https://docs.docker.com/compose/install/) (version 1.29+)
 
-## **Project Setup**
+## Project Setup
 
 1. **Clone the repository**:
 
@@ -29,6 +29,7 @@ Before you begin, ensure you have the following installed:
      Create a `.env.remote-db` file and set `POSTGRES_HOST` to the external IP or hostname of the remote PostgreSQL instance.
 
    Example `.env.local` for local development:
+  
    ```env
    POSTGRES_USER=refactor
    POSTGRES_PASSWORD=password
@@ -42,6 +43,7 @@ Before you begin, ensure you have the following installed:
    ```
 
    Example `.env.remote-db` for remote PostgreSQL:
+
    ```env
    POSTGRES_USER=remote_user
    POSTGRES_PASSWORD=remote_password
@@ -84,7 +86,7 @@ Before you begin, ensure you have the following installed:
          - postgres
    ```
 
-## **Building and Running the Application**
+## Building and Running the Application
 
 ### **Step 1: Build the Docker images**
 
@@ -118,7 +120,7 @@ docker-compose --env-file .env.remote-db up
 
 The Rust web API should now be running on `http://localhost:8080` and PostgreSQL should be available on port `5432` (or remotely if using the `.env.remote-db` setup).
 
-## **Using the Database Utilities**
+## Using the Database Utilities
 
 ### **Rebuild the database**
 
@@ -150,7 +152,7 @@ docker-compose run -v $(pwd)/sql:/app/sql -v $(pwd)/schema.dbml:/app/schema.dbml
 
 This will output the generated SQL file in the `sql` directory.
 
-## **Stopping the Containers**
+## Stopping the Containers
 
 To stop the containers, you can use the following command:
 
@@ -164,7 +166,7 @@ If you want to remove all the containers, networks, and volumes, including the P
 docker-compose down -v
 ```
 
-## **Troubleshooting and Gotchas**
+## Troubleshooting and Gotchas
 
 ### **1. Cannot connect to PostgreSQL**
 
@@ -240,7 +242,7 @@ docker-compose down -v
 
   If the data is still being wiped, make sure you are not running `docker-compose down -v` unless you want to remove the database volume.
 
-## **Tips for Development**
+## Tips for Development
 
 - You can bring up the containers in detached mode by running:
 
