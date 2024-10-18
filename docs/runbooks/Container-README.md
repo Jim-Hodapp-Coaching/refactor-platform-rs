@@ -1,6 +1,10 @@
-# **Rust Web Application with PostgreSQL in Docker**
+Here’s the updated README to reflect the recent changes, including the flexibility to run PostgreSQL either locally or remotely, the use of `.env` files for environment-specific configuration, and troubleshooting steps for common issues.
 
-This repository contains a simple setup for deploying a Rust web application connected to a PostgreSQL database using Docker and Docker Compose. It allows for easy development and deployment of Rust services, database management utilities, and database migrations.
+---
+
+# **Refactor Coaching & Mentoring Platform with Docker & Docker Compose**
+
+This project is a Rust-based backend/web API that connects to a PostgreSQL database. It uses Docker and Docker Compose for easy local development and deployment, and includes utilities for database management, migrations, and more. You can choose to run PostgreSQL either locally (via Docker) or remotely by configuring the environment variables.
 
 ## **Prerequisites**
 
@@ -18,29 +22,68 @@ Before you begin, ensure you have the following installed:
    cd <repository-directory>
    ```
 
-2. **Review the `docker-compose.yaml` file**:
-   The Docker Compose file sets up both the Rust application and a PostgreSQL container. The key environment variables such as `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `WEB_PORT` can be customized via `.env` or directly in the `docker-compose.yaml`.
+2. **Environment Configuration**:
+
+   You'll need to decide whether you're connecting to a **local PostgreSQL container** (using Docker) or a **remote PostgreSQL instance** (e.g., on a different host or in the cloud). This is configured using `.env` files.
+
+   - **For local PostgreSQL** (default, Docker-based):
+     Create a `.env.local` file based on the template provided below and specify `POSTGRES_HOST=postgres`.
+
+   - **For remote PostgreSQL**:
+     Create a `.env.remote-db` file and set `POSTGRES_HOST` to the external IP or hostname of the remote PostgreSQL instance.
+
+   Example `.env.local` for local development:
+   ```env
+   POSTGRES_USER=refactor
+   POSTGRES_PASSWORD=password
+   POSTGRES_DB=refactor_platform
+   POSTGRES_HOST=postgres
+   POSTGRES_PORT=5432
+   WEB_PORT=8080
+   USERNAME=appuser
+   USER_UID=1000
+   USER_GID=1000
+   ```
+
+   Example `.env.remote-db` for remote PostgreSQL:
+   ```env
+   POSTGRES_USER=remote_user
+   POSTGRES_PASSWORD=remote_password
+   POSTGRES_DB=remote_db
+   POSTGRES_HOST=remote-db-host.com
+   POSTGRES_PORT=5432
+   WEB_PORT=8080
+   USERNAME=remote_appuser
+   USER_UID=1001
+   USER_GID=1001
+   ```
+
+3. **Review the `docker-compose.yaml` file**:
+
+   The Docker Compose file is configured to use environment variables defined in your `.env` files. The PostgreSQL container can either run locally (if specified in your environment file) or you can connect to a remote instance by setting the appropriate `POSTGRES_HOST`.
 
    ```yaml
    services:
      postgres:
        image: postgres:13
        environment:
-         POSTGRES_USER: refactor
-         POSTGRES_PASSWORD: password
-         POSTGRES_DB: refactor_platform
+         POSTGRES_USER: ${POSTGRES_USER}
+         POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+         POSTGRES_DB: ${POSTGRES_DB}
        ports:
-         - "5432:5432"
+         - "${POSTGRES_PORT}:5432"
+       volumes:
+         - postgres_data:/var/lib/postgresql/data
 
      rust-app:
        build: .
        environment:
-         POSTGRES_USER: refactor
-         POSTGRES_PASSWORD: password
-         POSTGRES_DB: refactor_platform
-         POSTGRES_HOST: postgres
+         POSTGRES_USER: ${POSTGRES_USER}
+         POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+         POSTGRES_DB: ${POSTGRES_DB}
+         POSTGRES_HOST: ${POSTGRES_HOST}
        ports:
-         - "8080:8080"
+         - "${WEB_PORT}:8080"
        depends_on:
          - postgres
    ```
@@ -49,21 +92,35 @@ Before you begin, ensure you have the following installed:
 
 ### **Step 1: Build the Docker images**
 
-From the project root, run the following command to build the Docker images for both the Rust application and PostgreSQL.
+From the project root, run the following command to build the Docker images for both the Rust application and PostgreSQL (if running locally).
 
 ```bash
-docker-compose build
+docker-compose --env-file .env.local build
+```
+
+or for remote PostgreSQL:
+
+```bash
+docker-compose --env-file .env.remote-db build
 ```
 
 ### **Step 2: Start the application**
 
-Once the build is complete, you can start the containers using Docker Compose. This will start the PostgreSQL database and the Rust application.
+Once the build is complete, start the containers using Docker Compose. This will start the PostgreSQL database (if local) and the Rust application.
+
+For local PostgreSQL:
 
 ```bash
-docker-compose up
+docker-compose --env-file .env.local up
 ```
 
-You should now have the Rust web API running on `http://localhost:8080` and PostgreSQL running on port `5432`.
+For remote PostgreSQL:
+
+```bash
+docker-compose --env-file .env.remote-db up
+```
+
+The Rust web API should now be running on `http://localhost:8080` and PostgreSQL should be available on port `5432` (or remotely if using the `.env.remote-db` setup).
 
 ## **Using the Database Utilities**
 
@@ -75,7 +132,7 @@ To rebuild the database (create a new database, user, and schema):
 docker-compose run rust-app rebuild-db
 ```
 
-This will use the default settings (`POSTGRES_DB=refactor_platform`, `POSTGRES_USER=refactor`, `POSTGRES_SCHEMA=refactor_platform`). You can customize these values by passing environment variables.
+This will use the default settings from your environment variables (`POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_SCHEMA`).
 
 ### **Seed the database**
 
@@ -96,27 +153,6 @@ docker-compose run -v $(pwd)/sql:/app/sql -v $(pwd)/schema.dbml:/app/schema.dbml
 ```
 
 This will output the generated SQL file in the `sql` directory.
-
-## **Customizing Environment Variables**
-
-The default environment variables are defined in the `docker-compose.yaml` file, but you can also create a `.env` file in the project root to override them. Here are some commonly used variables:
-
-- `POSTGRES_USER`: The username for the PostgreSQL database (default: `refactor`).
-- `POSTGRES_PASSWORD`: The password for the PostgreSQL user (default: `password`).
-- `POSTGRES_DB`: The name of the PostgreSQL database (default: `refactor_platform`).
-- `POSTGRES_SCHEMA`: The schema name (default: `refactor_platform`).
-- `POSTGRES_HOST`: The hostname for the PostgreSQL service (default: `postgres`).
-- `WEB_PORT`: The port on which the web API will run (default: `8080`).
-
-Example `.env` file:
-
-```
-POSTGRES_USER=myuser
-POSTGRES_PASSWORD=mypassword
-POSTGRES_DB=mydb
-POSTGRES_SCHEMA=myschema
-WEB_PORT=9090
-```
 
 ## **Stopping the Containers**
 
@@ -150,7 +186,7 @@ docker-compose down -v
      docker-compose logs postgres
      ```
 
-  3. Ensure that the `POSTGRES_HOST` environment variable in the Rust app is set to `postgres`, which is the name of the PostgreSQL service in Docker Compose.
+  3. Ensure that the `POSTGRES_HOST` environment variable in the Rust app is set to `postgres` (for local) or to the correct remote hostname.
 
 ### **2. Web API not accessible**
 
@@ -234,6 +270,15 @@ docker-compose down -v
   docker-compose restart rust-app
   ```
 
-## **Conclusion**
+- To stop all containers:
 
-This setup provides a simple yet powerful way to run and manage a Rust web application connected to PostgreSQL using Docker and Docker Compose. By leveraging the power of Docker, you can easily handle database management tasks, utility commands, and scale your application as needed.
+  ```bash
+  docker-compose down
+  ```
+
+To stop and remove all containers, networks, and volumes:
+  
+  ```bash
+  docker-compose down -v
+  ```
+  
