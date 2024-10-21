@@ -3,7 +3,7 @@ version: "3.8"
 services:
   # Local PostgreSQL container (used for local development when needed)
   postgres:
-    image: postgres:13
+    image: postgres:13  # Use the specified PostgreSQL image
     container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-refactor}  # PostgreSQL user provided via environment variable
@@ -24,12 +24,16 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-refactor}  # PostgreSQL user provided via environment variable
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}  # PostgreSQL password provided via environment variable
       POSTGRES_DB: ${POSTGRES_DB:-refactor_platform}  # PostgreSQL database name provided via environment variable
-      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}  # Hostname for PostgreSQL: either 'postgres' (for local) or a remote hostname
-      USERNAME: ${USERNAME:-appuser}  # Configurable username for the non-root user in the container
-      USER_UID: ${USER_UID:-1000}  # Configurable UID for the appuser
-      USER_GID: ${USER_GID:-1000}  # Configurable GID for the appuser
+      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA:-public}  # PostgreSQL schema provided via environment variable
+      POSTGRES_HOST: postgres  # Hostname for PostgreSQL: either 'postgres' (for local) or a remote hostname
+      DATABASE_URL: postgres://${POSTGRES_USER:-refactor}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-refactor_platform}  # Full database URL
+      WEB_PORT: ${WEB_PORT:-4000}  # Configurable web port
+      SERVICE_PORT: ${SERVICE_PORT:-4001}  # Configurable service port
+      ENTITY_API_PORT: ${ENTITY_API_PORT:-4002}  # Configurable entity API port
     ports:
-      - "${WEB_PORT:-8080}:8080"  # Expose the Rust app's web port
+      - "${WEB_PORT:-4000}:4000"  # Expose the web api port on the container to the same port on the host, default to 4000
+      - "${SERVICE_PORT:-4001}:4001"  # Expose the service port on the container to the same port on the host, default to 4001
+      - "${ENTITY_API_PORT:-4002}:4002"  # Expose the entity API port on the container to the same port on the host, default to 4002
     depends_on:
       - postgres  # Ensure the PostgreSQL service starts first (if running locally)
     networks:
@@ -37,7 +41,7 @@ services:
 
 networks:
   backend_network:
-    driver: bridge  # Use bridge network for internal communication
+    driver: bridge  # type of network driver for services to communicate
 
 volumes:
-  postgres_data:  # Define a named volume to persist PostgreSQL data
+  postgres_data:  # named volume for persisting PostgreSQL data on the host

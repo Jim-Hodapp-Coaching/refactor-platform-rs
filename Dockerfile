@@ -59,7 +59,22 @@ COPY --from=builder /app/target/release/entity /app/entity
 # Copy scripts for database management
 COPY ./scripts/rebuild_db.sh /app/scripts/rebuild_db.sh
 
-# Args for non-root username, UID, and GID for the app user
+# Environment variables for Username, UID, and GID for the app user
+ENV USERNAME=${USERNAME:-appuser}
+ENV USER_UID=${USER_UID:-1000}
+ENV USER_GID=${USER_GID:-1000}
+# Set environment variables for database connection
+ENV POSTGRES_USER=${POSTGRES_USER:-refactor}
+ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+ENV POSTGRES_DB=${POSTGRES_DB:-refactor_platform}
+ENV POSTGRES_SCHEMA=${POSTGRES_SCHEMA:-public}
+ENV POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+ENV DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
+ENV WEB_PORT=${WEB_PORT:-4000}
+ENV SERVICE_PORT=${SERVICE_PORT:-4001}
+ENV ENTITY_API_PORT=${ENTITY_API_PORT:-4002}
+
+# Args for username, UID, and GID for the app user
 ARG USERNAME=${USERNAME:-appuser}
 ARG USER_UID=${USER_UID:-1000}
 ARG USER_GID=${USER_GID:-1000}
@@ -69,18 +84,12 @@ RUN groupadd -g ${USER_GID} ${USERNAME} && \
     useradd -u ${USER_UID} -g ${USER_GID} -m ${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /app
 
-# Switch to non-root user
+# Switch to the app user
 USER ${USERNAME}
 
-# Expose environment variables (with defaults where applicable) for PostgreSQL connection
-ENV POSTGRES_USER=${POSTGRES_USER:-refactor}
-ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-ENV POSTGRES_DB=${POSTGRES_DB:-refactor_platform}
-ENV POSTGRES_HOST=${POSTGRES_HOST:-localhost}
-ENV DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
-ENV WEB_PORT=${WEB_PORT:-4000}
-
 # Expose ports to the host
+EXPOSE ${SERVICE_PORT}
+EXPOSE ${ENTITY_API_PORT}
 EXPOSE ${WEB_PORT}
 
 # Use ENTRYPOINT to handle different commands like rebuild-db, seed-db, etc.
