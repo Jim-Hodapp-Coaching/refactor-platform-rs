@@ -1,0 +1,89 @@
+# Build stage
+FROM rust:1.68-slim AS builder
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Install necessary build dependencies (build-essential, pkg-config, and libpq-dev for PostgreSQL)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    pkg-config \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the Cargo.toml files and Cache dependencies to speed up builds
+COPY Cargo.toml Cargo.lock ./
+COPY web/Cargo.toml web/Cargo.toml
+COPY service/Cargo.toml service/Cargo.toml
+COPY entity_api/Cargo.toml entity_api/Cargo.toml
+COPY entity/Cargo.toml entity/Cargo.toml
+COPY migration/Cargo.toml migration/Cargo.toml
+
+# Fetch dependencies (dependencies will be cached if Cargo.toml hasn't changed)
+RUN cargo fetch
+
+# Copy the source code into the container
+COPY . .
+
+# Build the application in release mode (workspace)
+RUN cargo build --release
+
+# Runtime Stage:
+FROM debian:bullseye-slim
+
+# Install necessary system dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    logrotate \
+    curl \
+    nodejs \
+    npm \
+    libssl1.1 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install DBML to SQL converter globally using npm (if needed for the project)
+RUN npm install -g @dbml/cli
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the compiled binaries from the builder stage for each component of the project
+COPY --from=builder /app/target/release/refactor_platform_rs /app/refactor_platform_rs
+COPY --from=builder /app/target/release/seed_db /app/seed_db
+COPY --from=builder /app/target/release/web /app/web
+COPY --from=builder /app/target/release/service /app/service
+COPY --from=builder /app/target/release/entity_api /app/entity_api
+COPY --from=builder /app/target/release/entity /app/entity
+
+# Copy scripts (for database management or other tasks) into the container
+COPY ./scripts/rebuild_db.sh /app/scripts/rebuild_db.sh
+
+# Configurable non-root user, UID, and GID for the app user to improve security
+ARG USERNAME=${USERNAME:-appuser}
+ARG USER_UID=${USER_UID:-1000}
+ARG USER_GID=${USER_GID:-1000}
+
+# Create a non-root user and set appropriate permissions for the /app directory
+RUN groupadd -g ${USER_GID} ${USERNAME} && \
+    useradd -u ${USER_UID} -g ${USER_GID} -m ${USERNAME} && \
+    chown -R ${USERNAME}:${USERNAME} /app
+
+# Switch to non-root user for better security
+USER ${USERNAME}
+
+# Expose environment variables for PostgreSQL connection
+ENV POSTGRES_USER=${POSTGRES_USER:-refactor}
+ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+ENV POSTGRES_DB=${POSTGRES_DB:-refactor_platform}
+ENV POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+ENV DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
+
+# Expose the required port
+EXPOSE 8080
+
+# Set the default entrypoint to run the main service
+ENTRYPOINT ["/app/refactor_platform_rs"]  # TODO: review line numbers 64-77 to see if env vars since we're using env files, or use ARGs, also review line 79 to see if we need to expose the port or others as well, and line 81 to see if we need to use a different command to start the service, update the ENTRYPOINT and CMD to have default entrypoint arguments but can be overridden to run utility commands to seed the db or create migrations, etc.
+
+# Allow override commands for database management
+CMD ["--help"]
