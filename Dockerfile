@@ -11,11 +11,18 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Cache dependencies to speed up builds
+# Copy the Cargo.toml files and Cache dependencies to speed up builds
 COPY Cargo.toml Cargo.lock ./
+COPY web/Cargo.toml web/Cargo.toml
+COPY service/Cargo.toml service/Cargo.toml
+COPY entity_api/Cargo.toml entity_api/Cargo.toml
+COPY entity/Cargo.toml entity/Cargo.toml
+COPY migration/Cargo.toml migration/Cargo.toml
+
+# Fetch dependencies (dependencies will be cached if Cargo.toml hasn't changed)
 RUN cargo fetch
 
-# Copy the source code
+# Copy the source code into the container
 COPY . .
 
 # Build all projects in release mode using workspace
@@ -24,13 +31,15 @@ RUN cargo build --release
 # Final stage
 FROM debian:bullseye-slim
 
-# Install PostgreSQL client libraries and other utilities
+# Install necessary system dependencies
 RUN apt-get update && apt-get install -y \
     libpq5 \
     logrotate \
     curl \
     nodejs \
     npm \
+    libssl1.1 \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Install dbml2sql globally via npm
@@ -39,7 +48,9 @@ RUN npm install -g @dbml/cli
 # Set working directory
 WORKDIR /app
 
-# Copy built binaries from builder stage
+# Copy the compiled binaries from the builder stage for each component of the project
+COPY --from=builder /app/target/release/refactor_platform_rs /app/refactor_platform_rs
+COPY --from=builder /app/target/release/seed_db /app/seed_db
 COPY --from=builder /app/target/release/web /app/web
 COPY --from=builder /app/target/release/service /app/service
 COPY --from=builder /app/target/release/entity_api /app/entity_api
@@ -48,12 +59,12 @@ COPY --from=builder /app/target/release/entity /app/entity
 # Copy scripts for database management
 COPY ./scripts/rebuild_db.sh /app/scripts/rebuild_db.sh
 
-# Configurable non-root user, UID, and GID for the app user
+# Args for non-root username, UID, and GID for the app user
 ARG USERNAME=${USERNAME:-appuser}
 ARG USER_UID=${USER_UID:-1000}
 ARG USER_GID=${USER_GID:-1000}
 
-# Create a non-root user and set appropriate permissions
+# Create the app user and set appropriate permissions
 RUN groupadd -g ${USER_GID} ${USERNAME} && \
     useradd -u ${USER_UID} -g ${USER_GID} -m ${USERNAME} && \
     chown -R ${USERNAME}:${USERNAME} /app
@@ -61,15 +72,15 @@ RUN groupadd -g ${USER_GID} ${USERNAME} && \
 # Switch to non-root user
 USER ${USERNAME}
 
-# Expose environment variables for PostgreSQL connection
+# Expose environment variables (with defaults where applicable) for PostgreSQL connection
 ENV POSTGRES_USER=${POSTGRES_USER:-refactor}
 ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
 ENV POSTGRES_DB=${POSTGRES_DB:-refactor_platform}
 ENV POSTGRES_HOST=${POSTGRES_HOST:-localhost}
 ENV DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
+ENV WEB_PORT=${WEB_PORT:-4000}
 
-# Expose configurable ports for web API
-ENV WEB_PORT=${WEB_PORT:-8080}
+# Expose ports to the host
 EXPOSE ${WEB_PORT}
 
 # Use ENTRYPOINT to handle different commands like rebuild-db, seed-db, etc.
