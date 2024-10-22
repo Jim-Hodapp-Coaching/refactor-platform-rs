@@ -1,4 +1,4 @@
-# Stage 1: Build the application
+# Build Stage: Build the application
 FROM rust:latest AS builder
 
 # Set the working directory inside the container
@@ -23,7 +23,10 @@ COPY . .
 # Build the application in release mode
 RUN cargo build --release
 
-# Stage 2: Create the runtime image
+# Verify binaries are created
+RUN ls -la /app/target/release/
+
+# Runtime Stage: Create the runtime image
 FROM debian:buster-slim
 
 # Install necessary system dependencies
@@ -33,14 +36,10 @@ RUN apt-get update && apt-get install -y \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
+# Set the working directory inside the runtime container
 WORKDIR /app
 
-# Copy the compiled binaries from the builder stage
-COPY --from=builder /app/target/release/refactor_platform_rs /app/src/refactor_platform_rs
-COPY --from=builder /app/target/release/seed_db /app/seed_db
-
-# Set environment variables for database connection
+# Set env vars in runtime stage (if not already set via docker-compose)
 ENV POSTGRES_USER=${POSTGRES_USER:-refactor}
 ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
 ENV POSTGRES_DB=${POSTGRES_DB:-refactor_platform}
@@ -50,6 +49,19 @@ ENV DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOS
 ENV WEB_PORT=${WEB_PORT:-4000}
 ENV SERVICE_PORT=${SERVICE_PORT:-4001}
 ENV ENTITY_API_PORT=${ENTITY_API_PORT:-4002}
+
+
+# Copy the compiled main binary from the builder stage to the runtime stage
+COPY --from=builder /app/target/release/refactor_platform_rs /app/src/refactor_platform_rs
+
+# Copy additional binaries
+COPY --from=builder /app/target/release/seed_db /app/src/seed_db
+COPY --from=builder /app/target/release/dbml2sql /app/dbml2sql
+
+# Copy the compiled binaries from the builder stage
+COPY --from=builder /app/target/release/refactor_platform_rs /app/src/refactor_platform_rs
+COPY --from=builder /app/target/release/seed_db /app/seed_db
+
 
 # Args for username, UID, and GID for the app user
 ARG USERNAME=${USERNAME:-appuser}
@@ -64,7 +76,7 @@ RUN groupadd -g ${USER_GID} ${USERNAME} && \
 # Switch to the app user
 USER ${USERNAME}
 
-# Expose ports to the host
+# Expose container ports to the bridge network
 EXPOSE ${SERVICE_PORT}
 EXPOSE ${ENTITY_API_PORT}
 EXPOSE ${WEB_PORT}
