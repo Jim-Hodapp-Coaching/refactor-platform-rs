@@ -14,11 +14,11 @@ COPY entity_api/Cargo.toml entity_api/Cargo.toml
 COPY entity/Cargo.toml entity/Cargo.toml
 COPY migration/Cargo.toml migration/Cargo.toml
 
+# Fetch dependencies based on the Cargo.toml and Cargo.lock
+RUN cargo fetch
+
 # Copy the source code
 COPY . .
-
-# Build dependencies to cache them
-RUN cargo fetch
 
 # Build the application in release mode
 RUN cargo build --release
@@ -50,18 +50,11 @@ ENV WEB_PORT=${WEB_PORT:-4000}
 ENV SERVICE_PORT=${SERVICE_PORT:-4001}
 ENV ENTITY_API_PORT=${ENTITY_API_PORT:-4002}
 
-
 # Copy the compiled main binary from the builder stage to the runtime stage
 COPY --from=builder /app/target/release/refactor_platform_rs /app/src/refactor_platform_rs
 
 # Copy additional binaries
 COPY --from=builder /app/target/release/seed_db /app/src/seed_db
-COPY --from=builder /app/target/release/dbml2sql /app/dbml2sql
-
-# Copy the compiled binaries from the builder stage
-COPY --from=builder /app/target/release/refactor_platform_rs /app/src/refactor_platform_rs
-COPY --from=builder /app/target/release/seed_db /app/seed_db
-
 
 # Args for username, UID, and GID for the app user
 ARG USERNAME=${USERNAME:-appuser}
@@ -81,13 +74,5 @@ EXPOSE ${SERVICE_PORT}
 EXPOSE ${ENTITY_API_PORT}
 EXPOSE ${WEB_PORT}
 
-# Use ENTRYPOINT to handle different commands like rebuild-db, seed-db, etc.
-ENTRYPOINT ["/bin/sh", "-c", "if [ \"$1\" = 'rebuild-db' ]; then \
-    /app/scripts/rebuild_db.sh ${POSTGRES_DB} ${POSTGRES_USER} ${POSTGRES_SCHEMA}; \
-    elif [ \"$1\" = 'seed-db' ]; then \
-    cargo run --bin seed_db; \
-    elif [ \"$1\" = 'dbml2sql' ]; then \
-    dbml2sql --database postgres --output /app/sql/structure.sql /app/schema.dbml; \
-    else \
-    /app/web $@; \
-    fi"]
+# Set ENTRYPOINT to an interactive bash shell
+ENTRYPOINT ["/bin/bash"]
