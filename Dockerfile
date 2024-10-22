@@ -1,68 +1,45 @@
-# Build stage
-FROM rust:1.68-slim AS builder
+# Stage 1: Build the application
+FROM rust:latest AS builder
 
-# Set working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Install necessary build dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    pkg-config \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy the Cargo.toml files and Cache dependencies to speed up builds
+# Copy the main Cargo.toml and Cargo.lock files
 COPY Cargo.toml Cargo.lock ./
+
+# Copy the Cargo.toml files from each crate
 COPY web/Cargo.toml web/Cargo.toml
 COPY service/Cargo.toml service/Cargo.toml
 COPY entity_api/Cargo.toml entity_api/Cargo.toml
 COPY entity/Cargo.toml entity/Cargo.toml
 COPY migration/Cargo.toml migration/Cargo.toml
 
-# Fetch dependencies (dependencies will be cached if Cargo.toml hasn't changed)
+# Build dependencies to cache them
 RUN cargo fetch
 
-# Copy the source code into the container
+# Copy the source code
 COPY . .
 
-# Build all projects in release mode using workspace
+# Build the application in release mode
 RUN cargo build --release
 
-# Final stage
-FROM debian:bullseye-slim
+# Stage 2: Create the runtime image
+FROM debian:buster-slim
 
 # Install necessary system dependencies
 RUN apt-get update && apt-get install -y \
-    libpq5 \
-    logrotate \
-    curl \
-    nodejs \
-    npm \
     libssl1.1 \
     ca-certificates \
+    libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dbml2sql globally via npm
-RUN npm install -g @dbml/cli
-
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Copy the compiled binaries from the builder stage for each component of the project
-COPY --from=builder /app/target/release/refactor_platform_rs /app/refactor_platform_rs
+# Copy the compiled binaries from the builder stage
+COPY --from=builder /app/target/release/refactor_platform_rs /app/src/refactor_platform_rs
 COPY --from=builder /app/target/release/seed_db /app/seed_db
-COPY --from=builder /app/target/release/web /app/web
-COPY --from=builder /app/target/release/service /app/service
-COPY --from=builder /app/target/release/entity_api /app/entity_api
-COPY --from=builder /app/target/release/entity /app/entity
 
-# Copy scripts for database management
-COPY ./scripts/rebuild_db.sh /app/scripts/rebuild_db.sh
-
-# Environment variables for Username, UID, and GID for the app user
-ENV USERNAME=${USERNAME:-appuser}
-ENV USER_UID=${USER_UID:-1000}
-ENV USER_GID=${USER_GID:-1000}
 # Set environment variables for database connection
 ENV POSTGRES_USER=${POSTGRES_USER:-refactor}
 ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
