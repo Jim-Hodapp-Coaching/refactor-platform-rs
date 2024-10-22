@@ -14,17 +14,17 @@ COPY entity_api/Cargo.toml entity_api/Cargo.toml
 COPY entity/Cargo.toml entity/Cargo.toml
 COPY migration/Cargo.toml migration/Cargo.toml
 
+# Verify binaries are created
+RUN ls -la /app/target/release/
+
 # Fetch dependencies based on the Cargo.toml and Cargo.lock
-RUN cargo fetch
+RUN cargo fetch 
 
 # Copy the source code
 COPY . .
 
 # Build the application in release mode
 RUN cargo build --release
-
-# Verify binaries are created
-RUN ls -la /app/target/release/
 
 # Runtime Stage: Create the runtime image
 FROM debian:buster-slim
