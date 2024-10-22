@@ -36,7 +36,7 @@ Before you begin, ensure you have the following installed:
    POSTGRES_DB=refactor_platform
    POSTGRES_HOST=postgres
    POSTGRES_PORT=5432
-   WEB_PORT=8080
+   WEB_PORT=4000
    USERNAME=appuser
    USER_UID=1000
    USER_GID=1000
