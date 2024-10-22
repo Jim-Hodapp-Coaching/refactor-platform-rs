@@ -14,11 +14,11 @@ COPY entity_api/Cargo.toml entity_api/Cargo.toml
 COPY entity/Cargo.toml entity/Cargo.toml
 COPY migration/Cargo.toml migration/Cargo.toml
 
-# Build dependencies to cache them
-RUN cargo fetch
-
 # Copy the source code
 COPY . .
+
+# Build dependencies to cache them
+RUN cargo fetch
 
 # Build the application in release mode
 RUN cargo build --release
