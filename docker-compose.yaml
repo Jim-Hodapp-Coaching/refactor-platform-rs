@@ -3,7 +3,7 @@ version: "3.8"
 services:
   # Local PostgreSQL container (used for local development when needed)
   postgres:
-    image: postgres:17.0.0  # Use the specified PostgreSQL image
+    image: postgres:latest  # Use the specified PostgreSQL image
     container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-refactor}  # PostgreSQL user provided via environment variable
