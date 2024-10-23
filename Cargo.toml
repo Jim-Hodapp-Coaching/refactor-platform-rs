@@ -19,8 +19,8 @@ simplelog = { version = "0.12.2", features = ["paris"] }
 tokio = "1.40"
 
 [[bin]]
-name = "refactor_platform_rs"
-path = "src/main.rs"
+name = "refactor_platform_rs" # added this line just to test/learn
+path = "src/main.rs"          # added this line just to test/learn
 
 [[bin]]
 name = "seed_db"
