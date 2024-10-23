@@ -15,7 +15,7 @@ COPY entity/Cargo.toml entity/Cargo.toml
 COPY migration/Cargo.toml migration/Cargo.toml
 
 # Verify binaries are created
-RUN ls -la /app/target/release/
+RUN ls -la /app/
 
 # Fetch dependencies based on the Cargo.toml and Cargo.lock
 RUN cargo fetch 
