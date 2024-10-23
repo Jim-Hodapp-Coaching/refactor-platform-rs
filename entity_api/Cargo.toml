@@ -19,12 +19,8 @@ sqlx-sqlite = { version = "0.8.2" }
 utoipa = { version = "4.2.0", features = ["axum_extras", "uuid"] }
 
 [dependencies.sea-orm]
-version = "1.1.0" # sea-orm version
-features = [
-    "debug-print",
-    "runtime-tokio-native-tls",
-    "sqlx-postgres"
-]
+version = "1.1.0"                                                       # sea-orm version
+features = ["debug-print", "runtime-tokio-native-tls", "sqlx-postgres"]
 
 [dev-dependencies]
 tokio = { version = "1.40", features = ["full"] }
@@ -32,3 +28,13 @@ tokio = { version = "1.40", features = ["full"] }
 [features]
 mock = ["sea-orm/mock"]
 
+[lib]
+name = "entity_api" # added this line just to test/learn
+src = "src/lib.rs"  # added this line just to test/learn
+
+[workspace] # added this line just to test
+members = [
+    "../entity",
+    "../service",
+    "../web",
+] # added this line just to test/learn
