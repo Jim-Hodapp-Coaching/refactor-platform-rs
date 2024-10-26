@@ -103,8 +103,8 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(note_routes(app_state.clone()))
         .merge(organization_coaching_relationship_routes(app_state.clone()))
         .merge(overarching_goal_routes(app_state.clone()))
-        .merge(session_routes())
-        .merge(protected_routes())
+        .merge(user_session_routes())
+        .merge(user_session_protected_routes())
         .merge(coaching_sessions_routes(app_state.clone()))
         // FIXME: protect the OpenAPI web UI
         .merge(RapiDoc::with_openapi("/api-docs/openapi2.json", ApiDoc::openapi()).path("/rapidoc"))
@@ -206,20 +206,24 @@ pub fn coaching_sessions_routes(app_state: AppState) -> Router {
     Router::new()
         .route(
             "/coaching_sessions",
+            post(coaching_session_controller::create),
+        )
+        .route(
+            "/coaching_sessions",
             get(coaching_session_controller::index),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
 
-pub fn protected_routes() -> Router {
+pub fn user_session_protected_routes() -> Router {
     Router::new()
         .route("/protected", get(user_session_controller::protected))
         .route("/logout", get(user_session_controller::logout))
         .route_layer(login_required!(Backend, login_url = "/login"))
 }
 
-pub fn session_routes() -> Router {
+pub fn user_session_routes() -> Router {
     Router::new().route("/login", post(user_session_controller::login))
 }
 
