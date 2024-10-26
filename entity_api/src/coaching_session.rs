@@ -93,8 +93,7 @@ mod tests {
             .append_query_results(vec![vec![coaching_session_model.clone()]])
             .into_connection();
 
-        let coaching_session =
-            create(&db, coaching_session_model.clone().into()).await?;
+        let coaching_session = create(&db, coaching_session_model.clone().into()).await?;
 
         assert_eq!(coaching_session.id, coaching_session_model.id);
 
