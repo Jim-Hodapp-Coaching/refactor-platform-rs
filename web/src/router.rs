@@ -37,6 +37,8 @@ use utoipa_rapidoc::RapiDoc;
             agreement_controller::index,
             agreement_controller::read,
             agreement_controller::delete,
+            coaching_session_controller::index,
+            coaching_session_controller::create,
             note_controller::create,
             note_controller::update,
             note_controller::index,
@@ -46,6 +48,8 @@ use utoipa_rapidoc::RapiDoc;
             organization_controller::create,
             organization_controller::update,
             organization_controller::delete,
+            organization::coaching_relationship_controller::index,
+            organization::coaching_relationship_controller::read,
             overarching_goal_controller::create,
             overarching_goal_controller::update,
             overarching_goal_controller::index,
@@ -53,9 +57,6 @@ use utoipa_rapidoc::RapiDoc;
             overarching_goal_controller::update_status,
             user_session_controller::login,
             user_session_controller::logout,
-            organization::coaching_relationship_controller::index,
-            organization::coaching_relationship_controller::read,
-            coaching_session_controller::index,
         ),
         components(
             schemas(
