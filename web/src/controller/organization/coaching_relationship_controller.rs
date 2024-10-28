@@ -7,11 +7,53 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use entity::Id;
+use entity::{coaching_relationships, Id};
 use entity_api::coaching_relationship as CoachingRelationshipApi;
 use service::config::ApiVersion;
 
 use log::*;
+
+/// CREATE a new CoachingRelationship.
+#[utoipa::path(
+    post,
+    path = "/organizations/{organization_id}/coaching_relationships",
+    params(
+        ApiVersion,
+    ),
+    request_body = entity::coaching_relationships::Model,
+    responses(
+        (status = 200, description = "Successfully created a new Coaching Relationship", body = [entity::coaching_relationships::Model]),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+    )]
+pub async fn create(
+    CompareApiVersion(_v): CompareApiVersion,
+    State(app_state): State<AppState>,
+    Json(coaching_relationship_model): Json<coaching_relationships::Model>,
+) -> Result<impl IntoResponse, Error> {
+    debug!(
+        "CREATE new Coaching Relationship from: {:?}",
+        coaching_relationship_model
+    );
+
+    let coaching_relationship: coaching_relationships::Model =
+        CoachingRelationshipApi::create(app_state.db_conn_ref(), coaching_relationship_model)
+            .await?;
+
+    debug!(
+        "Newly created Coaching Relationship: {:?}",
+        &coaching_relationship
+    );
+
+    Ok(Json(ApiResponse::new(
+        StatusCode::CREATED.into(),
+        coaching_relationship,
+    )))
+}
 
 /// GET a particular CoachingRelationship specified by the organization Id and relationship Id.
 #[utoipa::path(
