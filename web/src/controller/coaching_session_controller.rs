@@ -7,6 +7,7 @@ use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use entity::coaching_sessions::Model;
 use entity_api::coaching_session as CoachingSessionApi;
 use service::config::ApiVersion;
 use std::collections::HashMap;
@@ -49,5 +50,45 @@ pub async fn index(
     Ok(Json(ApiResponse::new(
         StatusCode::OK.into(),
         coaching_sessions,
+    )))
+}
+
+/// POST create a new Coaching Session
+#[utoipa::path(
+    post,
+    path = "/coaching_sessions",
+    params(ApiVersion),
+    request_body = entity::coaching_sessions::Model,
+    responses(
+        (status = 201, description = "Successfully Created a new Coaching Session", body = [entity::coaching_sessions::Model]),
+        (status= 422, description = "Unprocessable Entity"),
+        (status = 401, description = "Unauthorized"),
+        (status = 405, description = "Method not allowed")
+    ),
+    security(
+        ("cookie_auth" = [])
+    )
+)]
+pub async fn create(
+    CompareApiVersion(_v): CompareApiVersion,
+    AuthenticatedUser(_user): AuthenticatedUser,
+    // TODO: create a new Extractor to authorize the user to access
+    // the data requested
+    State(app_state): State<AppState>,
+    Json(coaching_sessions_model): Json<Model>,
+) -> Result<impl IntoResponse, Error> {
+    debug!(
+        "POST Create a new Coaching Session from: {:?}",
+        coaching_sessions_model
+    );
+
+    let coaching_session =
+        CoachingSessionApi::create(app_state.db_conn_ref(), coaching_sessions_model).await?;
+
+    debug!("New Coaching Session: {:?}", coaching_session);
+
+    Ok(Json(ApiResponse::new(
+        StatusCode::CREATED.into(),
+        coaching_session,
     )))
 }

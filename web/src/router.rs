@@ -37,6 +37,8 @@ use utoipa_rapidoc::RapiDoc;
             agreement_controller::index,
             agreement_controller::read,
             agreement_controller::delete,
+            coaching_session_controller::index,
+            coaching_session_controller::create,
             note_controller::create,
             note_controller::update,
             note_controller::index,
@@ -46,6 +48,8 @@ use utoipa_rapidoc::RapiDoc;
             organization_controller::create,
             organization_controller::update,
             organization_controller::delete,
+            organization::coaching_relationship_controller::index,
+            organization::coaching_relationship_controller::read,
             overarching_goal_controller::create,
             overarching_goal_controller::update,
             overarching_goal_controller::index,
@@ -53,9 +57,6 @@ use utoipa_rapidoc::RapiDoc;
             overarching_goal_controller::update_status,
             user_session_controller::login,
             user_session_controller::logout,
-            organization::coaching_relationship_controller::index,
-            organization::coaching_relationship_controller::read,
-            coaching_session_controller::index,
         ),
         components(
             schemas(
@@ -103,8 +104,8 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(note_routes(app_state.clone()))
         .merge(organization_coaching_relationship_routes(app_state.clone()))
         .merge(overarching_goal_routes(app_state.clone()))
-        .merge(session_routes())
-        .merge(protected_routes())
+        .merge(user_session_routes())
+        .merge(user_session_protected_routes())
         .merge(coaching_sessions_routes(app_state.clone()))
         // FIXME: protect the OpenAPI web UI
         .merge(RapiDoc::with_openapi("/api-docs/openapi2.json", ApiDoc::openapi()).path("/rapidoc"))
@@ -206,20 +207,24 @@ pub fn coaching_sessions_routes(app_state: AppState) -> Router {
     Router::new()
         .route(
             "/coaching_sessions",
+            post(coaching_session_controller::create),
+        )
+        .route(
+            "/coaching_sessions",
             get(coaching_session_controller::index),
         )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
 
-pub fn protected_routes() -> Router {
+pub fn user_session_protected_routes() -> Router {
     Router::new()
         .route("/protected", get(user_session_controller::protected))
         .route("/logout", get(user_session_controller::logout))
         .route_layer(login_required!(Backend, login_url = "/login"))
 }
 
-pub fn session_routes() -> Router {
+pub fn user_session_routes() -> Router {
     Router::new().route("/login", post(user_session_controller::login))
 }
 

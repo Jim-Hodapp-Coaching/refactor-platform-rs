@@ -1,8 +1,35 @@
 use super::error::{EntityApiErrorCode, Error};
 use crate::{naive_date_parse_str, uuid_parse_str};
-use entity::coaching_sessions::{self, Entity, Model};
-use sea_orm::{entity::prelude::*, DatabaseConnection};
+use entity::coaching_sessions::{self, ActiveModel, Entity, Model};
+use log::debug;
+use sea_orm::{entity::prelude::*, DatabaseConnection, Set, TryIntoModel};
 use std::collections::HashMap;
+
+pub async fn create(
+    db: &DatabaseConnection,
+    coaching_session_model: Model,
+) -> Result<Model, Error> {
+    debug!(
+        "New Coaching Session Model to be inserted: {:?}",
+        coaching_session_model
+    );
+
+    let now = chrono::Utc::now();
+
+    let coaching_session_active_model: ActiveModel = ActiveModel {
+        coaching_relationship_id: Set(coaching_session_model.coaching_relationship_id),
+        date: Set(coaching_session_model.date),
+        timezone: Set(coaching_session_model.timezone),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    };
+
+    Ok(coaching_session_active_model
+        .save(db)
+        .await?
+        .try_into_model()?)
+}
 
 pub async fn find_by(
     db: &DatabaseConnection,
@@ -48,6 +75,30 @@ mod tests {
     use chrono::NaiveDate;
     use entity::Id;
     use sea_orm::{DatabaseBackend, MockDatabase, Transaction};
+
+    #[tokio::test]
+    async fn create_returns_a_new_coaching_session_model() -> Result<(), Error> {
+        let now = chrono::Utc::now();
+
+        let coaching_session_model = Model {
+            id: Id::new_v4(),
+            coaching_relationship_id: Id::new_v4(),
+            date: chrono::Local::now().naive_utc(),
+            timezone: "Americas/Chicago".to_owned(),
+            created_at: now.into(),
+            updated_at: now.into(),
+        };
+
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results(vec![vec![coaching_session_model.clone()]])
+            .into_connection();
+
+        let coaching_session = create(&db, coaching_session_model.clone().into()).await?;
+
+        assert_eq!(coaching_session.id, coaching_session_model.id);
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn find_by_coaching_relationships_returns_all_records_associated_with_coaching_relationship(

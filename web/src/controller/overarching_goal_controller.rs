@@ -30,7 +30,6 @@ use log::*;
         ("cookie_auth" = [])
     )
 )]
-
 pub async fn create(
     CompareApiVersion(_v): CompareApiVersion,
     AuthenticatedUser(user): AuthenticatedUser,

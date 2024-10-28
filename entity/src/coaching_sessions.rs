@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, ToSchema)]
+#[schema(as = entity::coaching_sessions::Model)]
 #[sea_orm(schema_name = "refactor_platform", table_name = "coaching_sessions")]
 pub struct Model {
     #[sea_orm(primary_key)]
