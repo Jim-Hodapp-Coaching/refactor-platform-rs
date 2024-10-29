@@ -9,7 +9,8 @@ use tower_http::services::ServeDir;
 
 use crate::controller::{
     action_controller, agreement_controller, coaching_session_controller, note_controller,
-    organization, organization_controller, overarching_goal_controller, user_session_controller,
+    organization, organization_controller, overarching_goal_controller, user_controller,
+    user_session_controller,
 };
 
 use utoipa::{
@@ -58,6 +59,7 @@ use self::organization::coaching_relationship_controller;
             overarching_goal_controller::index,
             overarching_goal_controller::read,
             overarching_goal_controller::update_status,
+            user_controller::create,
             user_session_controller::login,
             user_session_controller::logout,
         ),
@@ -107,6 +109,7 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(note_routes(app_state.clone()))
         .merge(organization_coaching_relationship_routes(app_state.clone()))
         .merge(overarching_goal_routes(app_state.clone()))
+        .merge(user_routes(app_state.clone()))
         .merge(user_session_routes())
         .merge(user_session_protected_routes())
         .merge(coaching_sessions_routes(app_state.clone()))
@@ -220,6 +223,13 @@ pub fn overarching_goal_routes(app_state: AppState) -> Router {
             "/overarching_goals/:id/status",
             put(overarching_goal_controller::update_status),
         )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
+}
+
+pub fn user_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route("/users", post(user_controller::create))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
