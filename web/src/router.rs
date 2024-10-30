@@ -9,7 +9,8 @@ use tower_http::services::ServeDir;
 
 use crate::controller::{
     action_controller, agreement_controller, coaching_session_controller, note_controller,
-    organization, organization_controller, overarching_goal_controller, user_session_controller,
+    organization, organization_controller, overarching_goal_controller, user_controller,
+    user_session_controller,
 };
 
 use utoipa::{
@@ -17,6 +18,8 @@ use utoipa::{
     Modify, OpenApi,
 };
 use utoipa_rapidoc::RapiDoc;
+
+use self::organization::coaching_relationship_controller;
 
 // This is the global definition of our OpenAPI spec. To be a part
 // of the rendered spec, a path and schema must be listed here.
@@ -48,6 +51,7 @@ use utoipa_rapidoc::RapiDoc;
             organization_controller::create,
             organization_controller::update,
             organization_controller::delete,
+            organization::coaching_relationship_controller::create,
             organization::coaching_relationship_controller::index,
             organization::coaching_relationship_controller::read,
             overarching_goal_controller::create,
@@ -55,6 +59,7 @@ use utoipa_rapidoc::RapiDoc;
             overarching_goal_controller::index,
             overarching_goal_controller::read,
             overarching_goal_controller::update_status,
+            user_controller::create,
             user_session_controller::login,
             user_session_controller::logout,
         ),
@@ -104,26 +109,13 @@ pub fn define_routes(app_state: AppState) -> Router {
         .merge(note_routes(app_state.clone()))
         .merge(organization_coaching_relationship_routes(app_state.clone()))
         .merge(overarching_goal_routes(app_state.clone()))
+        .merge(user_routes(app_state.clone()))
         .merge(user_session_routes())
         .merge(user_session_protected_routes())
         .merge(coaching_sessions_routes(app_state.clone()))
         // FIXME: protect the OpenAPI web UI
         .merge(RapiDoc::with_openapi("/api-docs/openapi2.json", ApiDoc::openapi()).path("/rapidoc"))
         .fallback_service(static_routes())
-}
-
-fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
-    Router::new()
-        .route(
-            "/organizations/:organization_id/coaching_relationships",
-            get(organization::coaching_relationship_controller::index),
-        )
-        .route(
-            "/organizations/:organization_id/coaching_relationships/:relationship_id",
-            get(organization::coaching_relationship_controller::read),
-        )
-        .route_layer(login_required!(Backend, login_url = "/login"))
-        .with_state(app_state)
 }
 
 fn action_routes(app_state: AppState) -> Router {
@@ -149,12 +141,44 @@ fn agreement_routes(app_state: AppState) -> Router {
         .with_state(app_state)
 }
 
+pub fn coaching_sessions_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route(
+            "/coaching_sessions",
+            post(coaching_session_controller::create),
+        )
+        .route(
+            "/coaching_sessions",
+            get(coaching_session_controller::index),
+        )
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
+}
+
 fn note_routes(app_state: AppState) -> Router {
     Router::new()
         .route("/notes", post(note_controller::create))
         .route("/notes/:id", put(note_controller::update))
         .route("/notes", get(note_controller::index))
         .route("/notes/:id", get(note_controller::read))
+        .route_layer(login_required!(Backend, login_url = "/login"))
+        .with_state(app_state)
+}
+
+fn organization_coaching_relationship_routes(app_state: AppState) -> Router {
+    Router::new()
+        .route(
+            "/organizations/:organization_id/coaching_relationships",
+            post(coaching_relationship_controller::create),
+        )
+        .route(
+            "/organizations/:organization_id/coaching_relationships",
+            get(organization::coaching_relationship_controller::index),
+        )
+        .route(
+            "/organizations/:organization_id/coaching_relationships/:relationship_id",
+            get(organization::coaching_relationship_controller::read),
+        )
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
@@ -203,16 +227,9 @@ pub fn overarching_goal_routes(app_state: AppState) -> Router {
         .with_state(app_state)
 }
 
-pub fn coaching_sessions_routes(app_state: AppState) -> Router {
+pub fn user_routes(app_state: AppState) -> Router {
     Router::new()
-        .route(
-            "/coaching_sessions",
-            post(coaching_session_controller::create),
-        )
-        .route(
-            "/coaching_sessions",
-            get(coaching_session_controller::index),
-        )
+        .route("/users", post(user_controller::create))
         .route_layer(login_required!(Backend, login_url = "/login"))
         .with_state(app_state)
 }
