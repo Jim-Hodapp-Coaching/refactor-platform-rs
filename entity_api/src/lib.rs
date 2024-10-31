@@ -79,8 +79,8 @@ pub async fn seed_database(db: &DatabaseConnection) {
     .await
     .unwrap();
 
-    let jim_hodapp_coaching = organizations::ActiveModel {
-        name: Set("Jim Hodapp's Coaching".to_owned()),
+    let refactor_coaching = organizations::ActiveModel {
+        name: Set("Refactor Coaching".to_owned()),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
@@ -89,8 +89,8 @@ pub async fn seed_database(db: &DatabaseConnection) {
     .await
     .unwrap();
 
-    let jim_hodapp_other_org = organizations::ActiveModel {
-        name: Set("Jim Hodapp's Other Organization".to_owned()),
+    let acme_corp = organizations::ActiveModel {
+        name: Set("Acme Corp".to_owned()),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
@@ -102,7 +102,7 @@ pub async fn seed_database(db: &DatabaseConnection) {
     let jim_caleb_coaching_relationship = coaching_relationships::ActiveModel {
         coach_id: Set(jim_hodapp.id.clone().unwrap()),
         coachee_id: Set(caleb_bourg.id.clone().unwrap()),
-        organization_id: Set(jim_hodapp_coaching.id.unwrap()),
+        organization_id: Set(refactor_coaching.id.unwrap()),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
@@ -114,7 +114,7 @@ pub async fn seed_database(db: &DatabaseConnection) {
     coaching_relationships::ActiveModel {
         coach_id: Set(jim_hodapp.id.clone().unwrap()),
         coachee_id: Set(other_user.id.clone().unwrap()),
-        organization_id: Set(jim_hodapp_other_org.id.unwrap()),
+        organization_id: Set(acme_corp.id.unwrap()),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),
         ..Default::default()
@@ -173,7 +173,7 @@ pub async fn seed_database(db: &DatabaseConnection) {
 
     coaching_sessions::ActiveModel {
         coaching_relationship_id: Set(jim_caleb_coaching_relationship.id.clone().unwrap()),
-        date: Set(now.naive_local().checked_sub_days(Days::new(28)).unwrap()),
+        date: Set(now.naive_local().checked_add_days(Days::new(28)).unwrap()),
         timezone: Set("America/Chicago".to_owned()),
         created_at: Set(now.into()),
         updated_at: Set(now.into()),

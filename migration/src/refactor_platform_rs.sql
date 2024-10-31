@@ -1,6 +1,6 @@
--- SQL dump generated using DBML (dbml.dbdiagram.io)
+-- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-10-10T11:19:54.853Z
+-- Generated at: 2024-10-31T16:04:10.825Z
 
 
 CREATE TYPE "status" AS ENUM (
