@@ -20,10 +20,14 @@ The platform itself is useful for professional independent coaches, informal men
     brew install postgresql
     ```
 
-2. Make sure you have the `dbml2sql` tool installed. You can install it with npm:
+2. Make sure you have the `dbml2sql` and SeaORM CLI tools involved. You can install them with:
 
     ```shell
     npm install -g @dbml/cli
+    ```
+
+    ```shell
+    cargo install sea-orm-cli
     ```
 
 3. Run the script with default settings:
