@@ -23,8 +23,8 @@ services:
       context: .  # Build context is current directory
       dockerfile: Dockerfile  # Use specified Dockerfile
       target: runtime  # Use runtime target
-    platform: linux/arm64  # Specify the platform
-    container_name: rust-app  # Name the container "rust-app"
+    platform: ${PLATFORM}  # Specify the platform
+    container_name: ${CONTAINER_NAME}  # Name the container, default is "rust-app"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}  # Set PostgreSQL user from environment variable
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # Set PostgreSQL password from environment variable
