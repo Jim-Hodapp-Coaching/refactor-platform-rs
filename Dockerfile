@@ -28,9 +28,6 @@ COPY ./web/Cargo.toml ./web/Cargo.toml
 # Copy the complete source code into the container's working directory
 COPY . .
 
-# Set the target directory to ensure binaries are placed in a known location
-#ENV CARGO_TARGET_DIR=/usr/src/app/target/aarch64-unknown-linux-gnu/release
-
 # Build the project
 RUN cargo build --release --workspace
 
