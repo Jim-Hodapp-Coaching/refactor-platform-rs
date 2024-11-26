@@ -108,27 +108,9 @@ cargo run  -- -l DEBUG -d postgres://refactor:password@localhost:5432/refactor_p
 
 This will start the backend with log level DEBUG and attempt to connect to a Postgres DB server on the same machine with user `refactor` and password `password` on port `5432` and selecting the database named `refactor_platform`.
 
-## Project Directory Structure
-
-`docs` - project documentation including architectural records, DB schema, API docs, etc
-
-`entity_api` - data operations on the various `Entity` models
-
-`entity` - shape of the data models and the relationships to each other
-
-`migration` - relational DB SQL migrations
-
-`scripts` - contains handy developer-related scripts that make working with this codebase more straightforward
-
-`service` - CLI flags, environment variables, config handling and backend daemon setup
-
-`src` - contains a main function that initializes logging and calls all sub-services
-
-`web` - API endpoint definition, routing, handling of request/responses, controllers
-
 ---
 
-## Refactor Coaching & Mentoring Platform with Docker & Docker Compose
+## Basic Container DB Setup and Management
 
 _This Rust-based backend/web API connects to a PostgreSQL database. It uses Docker and Docker Compose for local development and deployment, including utilities for database management and migrations. You can run PostgreSQL locally (via Docker) or remotely by configuring environment variables._
 
@@ -189,4 +171,24 @@ _This Rust-based backend/web API connects to a PostgreSQL database. It uses Dock
   docker-compose logs <service>
   ```
 
-_For additional commands, database utilities, and debugging tips, check the [full README](./runbooks/Container-README.md)._
+_For additional commands, database utilities, and debugging tips, check the [Container README](runbooks/Container-README.md)._
+
+---
+
+## Project Directory Structure
+
+`docs` - project documentation including architectural records, DB schema, API docs, etc
+
+`entity_api` - data operations on the various `Entity` models
+
+`entity` - shape of the data models and the relationships to each other
+
+`migration` - relational DB SQL migrations
+
+`scripts` - contains handy developer-related scripts that make working with this codebase more straightforward
+
+`service` - CLI flags, environment variables, config handling and backend daemon setup
+
+`src` - contains a main function that initializes logging and calls all sub-services
+
+`web` - API endpoint definition, routing, handling of request/responses, controllers
