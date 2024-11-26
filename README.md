@@ -125,3 +125,68 @@ This will start the backend with log level DEBUG and attempt to connect to a Pos
 `src` - contains a main function that initializes logging and calls all sub-services
 
 `web` - API endpoint definition, routing, handling of request/responses, controllers
+
+---
+
+## Refactor Coaching & Mentoring Platform with Docker & Docker Compose
+
+_This Rust-based backend/web API connects to a PostgreSQL database. It uses Docker and Docker Compose for local development and deployment, including utilities for database management and migrations. You can run PostgreSQL locally (via Docker) or remotely by configuring environment variables._
+
+---
+
+### Quickstart
+
+1. **Install Prerequisites**:
+   - [Docker](https://www.docker.com/products/docker-desktop) (20+)
+   - [Docker Compose](https://docs.docker.com/compose/install/) (1.29+)
+
+2. **Clone the Repository**:
+
+   ```bash
+   git clone <repository-url>
+   cd <repository-directory>
+   ```
+
+3. **Set Environment Variables**:
+   - For **local PostgreSQL**, create a `.env.local` file and set `POSTGRES_HOST=postgres`.
+   - For **remote PostgreSQL**, use a `.env.remote-db` file with `POSTGRES_HOST` pointing to the external database.
+
+4. **Build and Start the Platform**:
+   - Local PostgreSQL:
+
+     ```bash
+     docker-compose --env-file .env.local up --build
+     ```
+
+   - Remote PostgreSQL:
+
+     ```bash
+     docker-compose --env-file .env.remote-db up --build
+     ```
+
+5. **Access the API**:
+   - Visit `http://localhost:<SERVICE_PORT>` in your browser or API client.
+
+### Key Commands
+
+- **Stop all containers**:
+
+  ```bash
+  docker-compose down
+  ```
+  
+   **Note**: This will stop all containers, including the database.
+  
+- **Rebuild and restart**:
+
+  ```bash
+  docker-compose up --build
+  ```
+
+- **View logs**:
+
+  ```bash
+  docker-compose logs <service>
+  ```
+
+_For additional commands, database utilities, and debugging tips, check the [full README](./runbooks/Container-README.md)._
