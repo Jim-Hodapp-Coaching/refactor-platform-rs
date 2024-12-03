@@ -7,7 +7,7 @@ use service::config::ApiVersion;
 
 use log::*;
 
-/// CREATE a new User.
+/// CREATE a new User
 #[utoipa::path(
     post,
     path = "/users",
@@ -16,7 +16,7 @@ use log::*;
     ),
     request_body = entity::users::Model,
     responses(
-        (status = 200, description = "Successfully created a new Coaching Relationship", body = [entity::users::Model]),
+        (status = 200, description = "Successfully created a new User", body = [entity::users::Model]),
         (status = 401, description = "Unauthorized"),
         (status = 405, description = "Method not allowed")
     ),

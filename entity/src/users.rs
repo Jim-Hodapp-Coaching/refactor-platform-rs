@@ -19,7 +19,7 @@ pub struct Model {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub display_name: Option<String>,
-    #[serde(skip)]
+    #[serde(skip_serializing)]
     pub password: String,
     pub github_username: Option<String>,
     pub github_profile_url: Option<String>,
