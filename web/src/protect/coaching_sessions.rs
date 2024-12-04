@@ -10,10 +10,6 @@ use entity::Id;
 use entity_api::coaching_relationship;
 use std::collections::HashMap;
 
-// struct Params {
-//     coaching_relationship_id: Option<Id>,
-// }
-
 /// Checks that coaching relationship record referenced by `coaching_relationship_id`
 /// exists and that the authenticated user is associated with it.
 ///  Intended to be given to axum::middleware::from_fn_with_state in the router
