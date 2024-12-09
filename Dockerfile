@@ -43,7 +43,6 @@ FROM debian:stable-slim AS runtime
 RUN apt-get update && apt-get install -y \
     libssl3 \
     libpq5 \
-    postgresql-client-15 \
     bash \
     && rm -rf /var/lib/apt/lists/*
 
