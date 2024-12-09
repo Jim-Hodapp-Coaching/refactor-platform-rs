@@ -31,6 +31,22 @@ pub(crate) fn naive_date_parse_str(date_str: &str) -> Result<chrono::NaiveDate, 
 pub async fn seed_database(db: &DatabaseConnection) {
     let now = Utc::now();
 
+    let _admin_user: users::ActiveModel = users::ActiveModel {
+        email: Set("admin@refactorcoach.com".to_owned()),
+        first_name: Set(Some("Admin".to_owned())),
+        last_name: Set(Some("User".to_owned())),
+        display_name: Set(Some("Admin User".to_owned())),
+        password: Set(generate_hash("dLxNxnjn&b!2sqkwFbb4s8jX")),
+        github_username: Set(None),
+        github_profile_url: Set(None),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        ..Default::default()
+    }
+    .save(db)
+    .await
+    .unwrap();
+
     let jim_hodapp: users::ActiveModel = users::ActiveModel {
         email: Set("james.hodapp@gmail.com".to_owned()),
         first_name: Set(Some("Jim".to_owned())),
