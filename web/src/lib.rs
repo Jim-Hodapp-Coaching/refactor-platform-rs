@@ -75,8 +75,7 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
             CONTENT_TYPE,
         ])
         .expose_headers([ApiVersion::field_name().parse::<HeaderName>().unwrap()])
-        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
-        .allow_origin("http://localhost:3001".parse::<HeaderValue>().unwrap());
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
 
     axum::serve(
         listener,

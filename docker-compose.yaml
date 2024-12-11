@@ -46,7 +46,7 @@ services:
   
   nextjs-app:
     build:
-      context: https://github.com/refactor-group/refactor-platform-fe.git # change to fs directory to run locally
+      context: https://github.com/refactor-group/refactor-platform-fe.git#main # change to fs directory to run locally
       dockerfile: Dockerfile
       target: runner  # Use runner target
     ports:
