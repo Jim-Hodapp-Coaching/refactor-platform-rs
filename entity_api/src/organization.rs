@@ -107,7 +107,7 @@ pub async fn find_by(
         }
     }
 
-    Ok(query.all(db).await?)
+    Ok(query.distinct().all(db).await?)
 }
 
 pub async fn find_by_user(db: &DatabaseConnection, user_id: Id) -> Result<Vec<Model>, Error> {
@@ -124,6 +124,7 @@ async fn by_user(query: Select<Organizations>, user_id: Id) -> Select<Organizati
                 .add(coaching_relationships::Column::CoachId.eq(user_id))
                 .add(coaching_relationships::Column::CoacheeId.eq(user_id)),
         )
+        .distinct()
 }
 
 #[cfg(test)]
@@ -175,7 +176,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "organizations"."id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" = $1 OR "coaching_relationships"."coachee_id" = $2"#,
+                r#"SELECT DISTINCT "organizations"."id", "organizations"."name", "organizations"."logo", "organizations"."created_at", "organizations"."updated_at" FROM "refactor_platform"."organizations" INNER JOIN "refactor_platform"."coaching_relationships" ON "organizations"."id" = "coaching_relationships"."organization_id" WHERE "coaching_relationships"."coach_id" = $1 OR "coaching_relationships"."coachee_id" = $2"#,
                 [user_id.clone().into(), user_id.into()]
             )]
         );
