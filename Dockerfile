@@ -67,7 +67,7 @@ EXPOSE 4000
 
 # Default command starts an interactive bash shell
 # Set ENTRYPOINT to default to run the Rust binary with arguments
-ENTRYPOINT ["/bin/bash", "-c", "/usr/local/bin/refactor_platform_rs -l DEBUG -i \"$SERVICE_INTERFACE\" -p \"$SERVICE_PORT\" -d \"$DATABASE_URL\""]
+ENTRYPOINT ["/bin/bash", "-c", "/usr/local/bin/refactor_platform_rs"]
 
 # Default CMD allows overriding with custom commands
 CMD ["bash"]
