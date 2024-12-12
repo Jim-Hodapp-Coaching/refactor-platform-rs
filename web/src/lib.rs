@@ -25,6 +25,7 @@ pub(crate) mod extractors;
 mod router;
 
 pub async fn init_server(app_state: AppState) -> Result<()> {
+    info!("Connecting to DB with URI: {}", app_state.config.database_uri());
     // Session layer
     let session_store = PostgresStore::new(
         app_state
@@ -70,7 +71,7 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
         .iter()
         .filter_map(|origin| origin.parse().ok())
         .collect::<Vec<HeaderValue>>();
-    debug!("allowed_origins: {:#?}", allowed_origins);
+    info!("allowed_origins: {:#?}", allowed_origins);
 
     let cors_layer = CorsLayer::new()
         .allow_methods([
