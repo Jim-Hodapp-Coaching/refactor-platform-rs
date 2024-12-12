@@ -1,4 +1,7 @@
-use axum::http::{header::CONTENT_TYPE, HeaderName, HeaderValue, Method};
+use axum::http::{
+    header::{AUTHORIZATION, CONTENT_TYPE},
+    HeaderName, HeaderValue, Method,
+};
 use axum_login::{
     tower_sessions::{Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
@@ -60,6 +63,15 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     info!("Server starting... listening for connections on http://{host}:{port}");
 
     let listener = TcpListener::bind(listen_addr).await.unwrap();
+    // Convert the type of the allow_origins Vec into a HeaderValue that the CorsLayer accepts
+    let allowed_origins = app_state
+        .config
+        .allowed_origins
+        .iter()
+        .filter_map(|origin| origin.parse().ok())
+        .collect::<Vec<HeaderValue>>();
+    debug!("allowed_origins: {:#?}", allowed_origins);
+
     let cors_layer = CorsLayer::new()
         .allow_methods([
             Method::DELETE,
@@ -72,10 +84,12 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
         // Allow and expose the X-Version header across origins
         .allow_headers([
             ApiVersion::field_name().parse::<HeaderName>().unwrap(),
+            AUTHORIZATION,
             CONTENT_TYPE,
         ])
         .expose_headers([ApiVersion::field_name().parse::<HeaderName>().unwrap()])
-        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
+        .allow_private_network(true)
+        .allow_origin(allowed_origins);
 
     axum::serve(
         listener,

@@ -2712,6 +2712,7 @@ name = "service"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "dotenvy",
  "log",
  "sea-orm",
  "semver",
