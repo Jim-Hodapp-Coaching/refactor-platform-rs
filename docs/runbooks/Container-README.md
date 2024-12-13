@@ -44,11 +44,14 @@ POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 POSTGRES_SCHEMA=refactor_platform
 DATABASE_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
-SERVICE_PORT=4000
-SERVICE_INTERFACE=0.0.0.0
+BACKEND_PORT=4000
+BACKEND_INTERFACE=0.0.0.0
+BACKEND_ALLOWED_ORIGINS="http://localhost:3000,https://localhost:3000"
+FRONTEND_PORT=3000
 USERNAME=appuser
 USER_UID=1000
 USER_GID=1000
+CONTAINER_NAME=refactor-platform
 PLATFORM=linux/arm64
 ```
 
@@ -62,11 +65,14 @@ POSTGRES_HOST=postgres.example.com
 POSTGRES_SCHEMA=refactor_platform
 DATABASE_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
 POSTGRES_PORT=5432
-SERVICE_PORT=4000
-SERVICE_INTERFACE=0.0.0.0
+BACKEND_PORT=4000
+BACKEND_INTERFACE=0.0.0.0
+BACKEND_ALLOWED_ORIGINS="http://localhost:3000,https://localhost:3000"
+FRONTEND_PORT=3000
 USERNAME=remote_appuser
 USER_UID=1001
 USER_GID=1001
+CONTAINER_NAME=refactor-platform
 PLATFORM=linux/arm64
 ```
 
@@ -78,6 +84,7 @@ The `docker-compose.yaml` file uses environment variables defined in your `.env`
 services:
   postgres:
     image: postgres:17
+    container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -86,27 +93,56 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./migration/src/setup.sql:/docker-entrypoint-initdb.d/0-setup.sql
+      - ./migration/src/refactor_platform_rs.sql:/docker-entrypoint-initdb.d/1-refactor_plaform_rs.sql
+      - ./migration/src/setup_default_user.sql:/docker-entrypoint-initdb.d/2-setup_default_user.sql
+    networks:
+      - backend_network
 
   rust-app:
+    image: rust-backend
     build:
       context: .
       dockerfile: Dockerfile
       target: runtime
     platform: ${PLATFORM}
+    container_name: ${CONTAINER_NAME}
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA}
+      POSTGRES_HOST: postgres
       POSTGRES_PORT: ${POSTGRES_PORT}
-      DATABASE_URL: ${POSTGRES_HOST}://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      SERVICE_PORT: ${SERVICE_PORT}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      BACKEND_PORT: ${BACKEND_PORT}
+      BACKEND_INTERFACE: ${BACKEND_INTERFACE}
+      BACKEND_ALLOWED_ORIGINS: ${BACKEND_ALLOWED_ORIGINS}
+      BACKEND_LOG_FILTER_LEVEL: ${BACKEND_LOG_FILTER_LEVEL}
     ports:
-      - "${SERVICE_PORT}:4000"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       - postgres
+    networks:
+      - backend_network
+    command: ["sh", "-c", "sleep 5 && /usr/local/bin/refactor_platform_rs"]
+  
+  nextjs-app:
+    build:
+      context: https://github.com/refactor-group/refactor-platform-fe.git#main
+      dockerfile: Dockerfile
+      target: runner
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    depends_on:
+      - rust-app
+
+networks:
+  backend_network:
+    driver: bridge
+
 volumes:
-  postgres_data:
+  postgres_data
 ```
 
 ---
