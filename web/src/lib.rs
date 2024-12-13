@@ -26,7 +26,10 @@ pub(crate) mod protect;
 mod router;
 
 pub async fn init_server(app_state: AppState) -> Result<()> {
-    info!("Connecting to DB with URI: {}", app_state.config.database_uri());
+    info!(
+        "Connecting to DB with URI: {}",
+        app_state.config.database_uri()
+    );
     // Session layer
     let session_store = PostgresStore::new(
         app_state
@@ -62,7 +65,6 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
 
     let server_url = format!("{host}:{port}");
     let listen_addr = SocketAddr::from_str(&server_url).unwrap();
-
 
     let listener = TcpListener::bind(listen_addr).await.unwrap();
     // Convert the type of the allow_origins Vec into a HeaderValue that the CorsLayer accepts
