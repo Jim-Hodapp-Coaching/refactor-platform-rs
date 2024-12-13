@@ -34,8 +34,10 @@ services:
       POSTGRES_HOST: postgres  # Set PostgreSQL host to "postgres" service
       POSTGRES_PORT: ${POSTGRES_PORT}  # Set PostgreSQL port from environment variable
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}  # Configure database URL
-      PORT: ${BACKEND_PORT}  # Set service port from environment variable
-      INTERFACE: ${BACKEND_INTERFACE}  # Set service interface from environment variable
+      BACKEND_PORT: ${BACKEND_PORT}  # Set service port from environment variable
+      BACKEND_INTERFACE: ${BACKEND_INTERFACE}  # Set service interface from environment variable
+      BACKEND_ALLOWED_ORIGINS: ${BACKEND_ALLOWED_ORIGINS}
+      BACKEND_LOG_FILTER_LEVEL: ${BACKEND_LOG_FILTER_LEVEL}
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"  # Map host port to container's service port
     depends_on:
