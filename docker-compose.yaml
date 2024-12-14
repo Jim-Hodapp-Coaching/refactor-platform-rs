@@ -34,10 +34,12 @@ services:
       POSTGRES_HOST: postgres  # Set PostgreSQL host to "postgres" service
       POSTGRES_PORT: ${POSTGRES_PORT}  # Set PostgreSQL port from environment variable
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}  # Configure database URL
-      SERVICE_PORT: ${SERVICE_PORT}  # Set service port from environment variable
-      SERVICE_INTERFACE: ${SERVICE_INTERFACE}  # Set service interface from environment variable
+      BACKEND_PORT: ${BACKEND_PORT}  # Set service port from environment variable
+      BACKEND_INTERFACE: ${BACKEND_INTERFACE}  # Set service interface from environment variable
+      BACKEND_ALLOWED_ORIGINS: ${BACKEND_ALLOWED_ORIGINS}
+      BACKEND_LOG_FILTER_LEVEL: ${BACKEND_LOG_FILTER_LEVEL}
     ports:
-      - "${SERVICE_PORT}:${SERVICE_PORT}"  # Map host port to container's service port
+      - "${BACKEND_PORT}:${BACKEND_PORT}"  # Map host port to container's service port
     depends_on:
       - postgres  # Ensure postgres service starts before rust-app
     networks:
@@ -50,7 +52,7 @@ services:
       dockerfile: Dockerfile
       target: runner  # Use runner target
     ports:
-      - "${NEXTJS_FRONTEND_PORT}:${NEXTJS_FRONTEND_PORT}"  # Map host port to frontend container's service port
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"  # Map host port to frontend container's service port
     depends_on:
       - rust-app  # Ensure postgres service starts before rust-app
 

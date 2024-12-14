@@ -1,4 +1,7 @@
-use axum::http::{header::CONTENT_TYPE, HeaderName, HeaderValue, Method};
+use axum::http::{
+    header::{AUTHORIZATION, CONTENT_TYPE},
+    HeaderName, HeaderValue, Method,
+};
 use axum_login::{
     tower_sessions::{Expiry, SessionManagerLayer},
     AuthManagerLayerBuilder,
@@ -22,6 +25,10 @@ pub(crate) mod extractors;
 mod router;
 
 pub async fn init_server(app_state: AppState) -> Result<()> {
+    info!(
+        "Connecting to DB with URI: {}",
+        app_state.config.database_uri()
+    );
     // Session layer
     let session_store = PostgresStore::new(
         app_state
@@ -53,13 +60,21 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
     // These will probably come from app_state.config (command line)
     let host = app_state.config.interface.as_ref().unwrap();
     let port = app_state.config.port;
-    let server_url = format!("{host}:{port}");
-
-    let listen_addr = SocketAddr::from_str(&server_url).unwrap();
-
     info!("Server starting... listening for connections on http://{host}:{port}");
 
+    let server_url = format!("{host}:{port}");
+    let listen_addr = SocketAddr::from_str(&server_url).unwrap();
+
     let listener = TcpListener::bind(listen_addr).await.unwrap();
+    // Convert the type of the allow_origins Vec into a HeaderValue that the CorsLayer accepts
+    let allowed_origins = app_state
+        .config
+        .allowed_origins
+        .iter()
+        .filter_map(|origin| origin.parse().ok())
+        .collect::<Vec<HeaderValue>>();
+    info!("allowed_origins: {:#?}", allowed_origins);
+
     let cors_layer = CorsLayer::new()
         .allow_methods([
             Method::DELETE,
@@ -72,10 +87,12 @@ pub async fn init_server(app_state: AppState) -> Result<()> {
         // Allow and expose the X-Version header across origins
         .allow_headers([
             ApiVersion::field_name().parse::<HeaderName>().unwrap(),
+            AUTHORIZATION,
             CONTENT_TYPE,
         ])
         .expose_headers([ApiVersion::field_name().parse::<HeaderName>().unwrap()])
-        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap());
+        .allow_private_network(true)
+        .allow_origin(allowed_origins);
 
     axum::serve(
         listener,

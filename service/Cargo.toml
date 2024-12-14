@@ -16,6 +16,7 @@ features = [
 
 [dependencies]
 clap = { version = "4.5.20", features = ["cargo", "derive", "env"] }
+dotenvy = "0.15"
 log = "0.4.22"
 simplelog = { version = "0.12.2", features = ["paris"] }
 serde = { version = "1.0.210", features = ["derive"] }

@@ -1,5 +1,6 @@
 use clap::builder::TypedValueParser as _;
 use clap::Parser;
+use dotenvy::dotenv;
 use log::LevelFilter;
 use semver::{BuildMetadata, Prerelease, Version};
 use serde::Deserialize;
@@ -26,6 +27,16 @@ pub struct ApiVersion {
 #[derive(Clone, Debug, Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Config {
+    /// A list of full CORS origin URLs that allowed to receive server responses.
+    #[arg(
+        long,
+        env,
+        value_delimiter = ',',
+        use_value_delimiter = true,
+        default_value = "http://localhost:3000,https://localhost:3000"
+    )]
+    pub allowed_origins: Vec<String>,
+
     /// Set the current semantic version of the endpoint API to expose to clients. All
     /// endpoints not contained in the specified version will not be exposed by the router.
     #[arg(short, long, env, default_value = DEFAULT_API_VERSION,
@@ -44,17 +55,18 @@ pub struct Config {
     database_uri: Option<String>,
 
     /// The host interface to listen for incoming connections
-    #[arg(short, long, default_value = "127.0.0.1")]
+    #[arg(short, long, env, default_value = "127.0.0.1")]
     pub interface: Option<String>,
 
     /// The host TCP port to listen for incoming connections
-    #[arg(short, long, default_value_t = 4000)]
+    #[arg(short, long, env, default_value_t = 4000)]
     pub port: u16,
 
     /// Set the log level verbosity threshold (level) to control what gets displayed on console output
     #[arg(
         short,
         long,
+        env,
         default_value_t = LevelFilter::Warn,
         value_parser = clap::builder::PossibleValuesParser::new(["OFF", "ERROR", "WARN", "INFO", "DEBUG", "TRACE"])
             .map(|s| s.parse::<LevelFilter>().unwrap()),
@@ -70,6 +82,9 @@ impl Default for Config {
 
 impl Config {
     pub fn new() -> Self {
+        // Load .env file first
+        dotenv().ok();
+        // Then parse the command line parameters and flags
         Config::parse()
     }
 
