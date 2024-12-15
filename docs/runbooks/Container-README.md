@@ -30,11 +30,7 @@ Decide whether you're connecting to a **local PostgreSQL container** (using Dock
 
 - Create a `.env.local` file based on the template below and specify `POSTGRES_HOST=postgres`.
 
-#### **For Remote PostgreSQL**
-
-- Create a `.env.remote-db` file and set `POSTGRES_HOST` to the external IP or hostname of the remote PostgreSQL instance.
-
-Example `.env.local`:
+**Example** `.env.local`:
 
 ```env
 POSTGRES_USER=refactor
@@ -44,16 +40,29 @@ POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 POSTGRES_SCHEMA=refactor_platform
 DATABASE_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
+
+BACKEND_LOG_FILTER_LEVEL="DEBUG"
 BACKEND_PORT=4000
 BACKEND_INTERFACE=0.0.0.0
 BACKEND_ALLOWED_ORIGINS="http://localhost:3000,https://localhost:3000"
-FRONTEND_PORT=3000
+
+BACKEND_SERVICE_PROTOCOL="http"
+BACKEND_SERVICE_PORT=${BACKEND_PORT}
+BACKEND_SERVICE_HOST="localhost"
+BACKEND_API_VERSION="0.0.1"
+FRONTEND_SERVICE_INTERFACE=0.0.0.0
+FRONTEND_SERVICE_PORT=3000
+
 USERNAME=appuser
 USER_UID=1000
 USER_GID=1000
 CONTAINER_NAME=refactor-platform
 PLATFORM=linux/arm64
 ```
+
+#### **For Remote PostgreSQL**
+
+- Create a `.env.remote-db` file and set `POSTGRES_HOST` to the external IP or hostname of the remote PostgreSQL instance.
 
 **Example** `.env.remote-db`:
 
