@@ -51,8 +51,20 @@ services:
       context: https://github.com/refactor-group/refactor-platform-fe.git#main # change to fs directory to run locally
       dockerfile: Dockerfile
       target: runner  # Use runner target
+      args:
+        NEXT_PUBLIC_BACKEND_SERVICE_PROTOCOL: ${BACKEND_SERVICE_PROTOCOL}
+        NEXT_PUBLIC_BACKEND_SERVICE_PORT: ${BACKEND_PORT}
+        NEXT_PUBLIC_BACKEND_SERVICE_HOST: ${BACKEND_SERVICE_HOST}
+        NEXT_PUBLIC_BACKEND_API_VERSION: ${BACKEND_API_VERSION}
+        FRONTEND_SERVICE_PORT: ${FRONTEND_SERVICE_PORT}
+        FRONTEND_SERVICE_INTERFACE: ${FRONTEND_SERVICE_INTERFACE}
+    environment:
+      NEXT_PUBLIC_BACKEND_SERVICE_PROTOCOL: ${BACKEND_SERVICE_PROTOCOL}
+      NEXT_PUBLIC_BACKEND_SERVICE_PORT: ${BACKEND_PORT}
+      NEXT_PUBLIC_BACKEND_SERVICE_HOST: ${BACKEND_SERVICE_HOST}
+      NEXT_PUBLIC_BACKEND_API_VERSION: ${BACKEND_API_VERSION}
     ports:
-      - "${FRONTEND_PORT}:${FRONTEND_PORT}"  # Map host port to frontend container's service port
+      - "${FRONTEND_SERVICE_PORT}:${FRONTEND_SERVICE_PORT}"  # Map host port to frontend container's service port
     depends_on:
       - rust-app  # Ensure postgres service starts before rust-app
 
