@@ -48,7 +48,7 @@ Table refactor_platform.overarching_goals {
   coaching_session_id uuid [note: 'The coaching session that an overarching goal is associated with']
   title varchar [note: 'A short description of an overarching goal']
   body varchar [note: 'Main text of the overarching goal supporting Markdown']
-  status status [not null]
+  status refactor_platform.status [not null]
   status_changed_at timestamptz
   completed_at timestamptz [note: 'The date and time an overarching goal was completed']
   created_at timestamptz [not null, default: `now()`]
@@ -82,13 +82,13 @@ Table refactor_platform.actions {
   body varchar [note: 'Main text of the action supporting Markdown']
   user_id uuid [not null, note: 'User that created (owns) the action']
   due_by timestamptz
-  status status [not null]
+  status refactor_platform.status [not null]
   status_changed_at timestamptz [not null, default: `now()`]
   created_at timestamptz [not null, default: `now()`]
   updated_at timestamptz [not null, default: `now()`]
 }
 
-enum status {
+enum refactor_platform.status {
   not_started
   in_progress
   completed
