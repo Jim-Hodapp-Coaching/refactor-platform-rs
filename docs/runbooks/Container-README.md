@@ -30,11 +30,7 @@ Decide whether you're connecting to a **local PostgreSQL container** (using Dock
 
 - Create a `.env.local` file based on the template below and specify `POSTGRES_HOST=postgres`.
 
-#### **For Remote PostgreSQL**
-
-- Create a `.env.remote-db` file and set `POSTGRES_HOST` to the external IP or hostname of the remote PostgreSQL instance.
-
-Example `.env.local`:
+**Example** `.env.local`:
 
 ```env
 POSTGRES_USER=refactor
@@ -44,10 +40,19 @@ POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 POSTGRES_SCHEMA=refactor_platform
 DATABASE_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
+
+BACKEND_LOG_FILTER_LEVEL="DEBUG"
 BACKEND_PORT=4000
 BACKEND_INTERFACE=0.0.0.0
 BACKEND_ALLOWED_ORIGINS="http://localhost:3000,https://localhost:3000"
-FRONTEND_PORT=3000
+
+BACKEND_SERVICE_PROTOCOL="http"
+BACKEND_SERVICE_PORT=${BACKEND_PORT}
+BACKEND_SERVICE_HOST="localhost"
+BACKEND_API_VERSION="0.0.1"
+FRONTEND_SERVICE_INTERFACE=0.0.0.0
+FRONTEND_SERVICE_PORT=3000
+
 USERNAME=appuser
 USER_UID=1000
 USER_GID=1000
@@ -55,30 +60,50 @@ CONTAINER_NAME=refactor-platform
 PLATFORM=linux/arm64
 ```
 
+#### **For Remote PostgreSQL**
+
+- Create a `.env.remote-db` file and set `POSTGRES_HOST` to the external IP or hostname of the remote PostgreSQL instance.
+
 **Example** `.env.remote-db`:
 
 ```env
-POSTGRES_USER=remote_refactor
-POSTGRES_PASSWORD=remote_password
-POSTGRES_DB=refactor
-POSTGRES_HOST=postgres.example.com
-POSTGRES_SCHEMA=refactor_platform
-DATABASE_URL=postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB
-POSTGRES_PORT=5432
+# PostgreSQL environment variables for local development
+POSTGRES_USER=refactor  # Default PostgreSQL user for local development
+POSTGRES_PASSWORD=password  # Default PostgreSQL password for local development
+POSTGRES_DB=refactor  # Default PostgreSQL database for local development
+POSTGRES_HOST=postgres  # The local Docker Compose PostgreSQL container hostname
+POSTGRES_PORT=5432  # PostgreSQL default port for local development
+POSTGRES_SCHEMA=refactor_platform  # PostgreSQL schema for the application
+# Database connection URL for the Rust application
+DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+
+# Rust application environment variables
+BACKEND_LOG_FILTER_LEVEL="DEBUG"
+BACKEND_ALLOWED_ORIGINS="http://localhost:3000,https://localhost:3000"
 BACKEND_PORT=4000
 BACKEND_INTERFACE=0.0.0.0
-BACKEND_ALLOWED_ORIGINS="http://localhost:3000,https://localhost:3000"
-FRONTEND_PORT=3000
-USERNAME=remote_appuser
-USER_UID=1001
-USER_GID=1001
-CONTAINER_NAME=refactor-platform
-PLATFORM=linux/arm64
+
+# Next.js application build & environment variables
+BACKEND_SERVICE_PROTOCOL="http"
+BACKEND_SERVICE_PORT=${BACKEND_PORT}
+BACKEND_SERVICE_HOST="localhost"
+BACKEND_API_VERSION="0.0.1"
+FRONTEND_SERVICE_INTERFACE=0.0.0.0
+FRONTEND_SERVICE_PORT=3000
+
+PLATFORM=linux/arm64 # For Raspberry Pi 5 or Apple Silicon
+CONTAINER_NAME="refactor-platform"
+
+# App user configuration
+USERNAME=appuser  # Username for the non-root user in the container
+USER_UID=1000  # User ID for the appuser
+USER_GID=1000  # Group ID for the appuser
 ```
 
 ### 3. **Review `docker-compose.yaml`**
 
-The `docker-compose.yaml` file uses environment variables defined in your `.env` files.
+The `docker-compose.yaml` file uses environment variables defined in your `.env` file setting important
+configuration variables for both the Rust backend and the Next.js frontend applications.
 
 ```yaml
 services:
@@ -132,8 +157,20 @@ services:
       context: https://github.com/refactor-group/refactor-platform-fe.git#main
       dockerfile: Dockerfile
       target: runner
+      args:
+        NEXT_PUBLIC_BACKEND_SERVICE_PROTOCOL: ${BACKEND_SERVICE_PROTOCOL}
+        NEXT_PUBLIC_BACKEND_SERVICE_PORT: ${BACKEND_PORT}
+        NEXT_PUBLIC_BACKEND_SERVICE_HOST: ${BACKEND_SERVICE_HOST}
+        NEXT_PUBLIC_BACKEND_API_VERSION: ${BACKEND_API_VERSION}
+        FRONTEND_SERVICE_PORT: ${FRONTEND_SERVICE_PORT}
+        FRONTEND_SERVICE_INTERFACE: ${FRONTEND_SERVICE_INTERFACE}
+    environment:
+      NEXT_PUBLIC_BACKEND_SERVICE_PROTOCOL: ${BACKEND_SERVICE_PROTOCOL}
+      NEXT_PUBLIC_BACKEND_SERVICE_PORT: ${BACKEND_PORT}
+      NEXT_PUBLIC_BACKEND_SERVICE_HOST: ${BACKEND_SERVICE_HOST}
+      NEXT_PUBLIC_BACKEND_API_VERSION: ${BACKEND_API_VERSION}
     ports:
-      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+      - "${FRONTEND_SERVICE_PORT}:${FRONTEND_SERVICE_PORT}"
     depends_on:
       - rust-app
 
