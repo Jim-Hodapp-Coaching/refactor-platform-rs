@@ -1,9 +1,9 @@
 -- SQL dump generated using DBML (dbml-lang.org)
 -- Database: PostgreSQL
--- Generated at: 2024-12-09T16:59:54.815Z
+-- Generated at: 2024-12-16T05:18:20.372Z
 
 
-CREATE TYPE "status" AS ENUM (
+CREATE TYPE "refactor_platform"."status" AS ENUM (
   'not_started',
   'in_progress',
   'completed',
@@ -55,7 +55,7 @@ CREATE TABLE "refactor_platform"."overarching_goals" (
   "coaching_session_id" uuid,
   "title" varchar,
   "body" varchar,
-  "status" status NOT NULL,
+  "status" refactor_platform.status NOT NULL,
   "status_changed_at" timestamptz,
   "completed_at" timestamptz,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
@@ -86,7 +86,7 @@ CREATE TABLE "refactor_platform"."actions" (
   "body" varchar,
   "user_id" uuid NOT NULL,
   "due_by" timestamptz,
-  "status" status NOT NULL,
+  "status" refactor_platform.status NOT NULL,
   "status_changed_at" timestamptz NOT NULL DEFAULT (now()),
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
